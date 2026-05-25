@@ -115,3 +115,46 @@ test("GitHubStore.save throws ConflictError on 409", async () => {
     (err) => err instanceof ConflictError
   );
 });
+import { normalizeEntry } from "../store.js";
+
+test("normalizeEntry: oggetto già strutturato resta tale (con default done/note)", () => {
+  const v = { sets: [{ reps: "8", kg: "72.5", done: true }], note: "presa media" };
+  assert.deepEqual(normalizeEntry(v), {
+    sets: [{ reps: "8", kg: "72.5", done: true }],
+    note: "presa media",
+  });
+});
+
+test("normalizeEntry: legacy {kg,reps} con reps slash si espande in serie, kg ripetuto", () => {
+  const v = { kg: "70", reps: "8/8/7" };
+  assert.deepEqual(normalizeEntry(v), {
+    sets: [
+      { reps: "8", kg: "70", done: false },
+      { reps: "8", kg: "70", done: false },
+      { reps: "7", kg: "70", done: false },
+    ],
+    note: "",
+  });
+});
+
+test("normalizeEntry: legacy {kg,reps} con kg multipli paralleli", () => {
+  const v = { kg: "70/72.5", reps: "8/8" };
+  assert.deepEqual(normalizeEntry(v).sets, [
+    { reps: "8", kg: "70", done: false },
+    { reps: "8", kg: "72.5", done: false },
+  ]);
+});
+
+test("normalizeEntry: stringa legacy = sole ripetizioni", () => {
+  assert.deepEqual(normalizeEntry("8/8/7").sets, [
+    { reps: "8", kg: "", done: false },
+    { reps: "8", kg: "", done: false },
+    { reps: "7", kg: "", done: false },
+  ]);
+});
+
+test("normalizeEntry: vuoto/assente -> nessuna serie", () => {
+  assert.deepEqual(normalizeEntry(""), { sets: [], note: "" });
+  assert.deepEqual(normalizeEntry(undefined), { sets: [], note: "" });
+  assert.deepEqual(normalizeEntry({ kg: "", reps: "" }), { sets: [], note: "" });
+});

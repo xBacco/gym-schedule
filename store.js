@@ -35,6 +35,44 @@ export function getEntry(data, weekKey, day, exIndex) {
   return data?.weeks?.[weekKey]?.entries?.[day]?.[String(exIndex)] ?? "";
 }
 
+// ---- Entry per-serie: { sets: [{reps, kg, done}], note }. Migra i formati legacy. ----
+
+function splitVals(str) {
+  return String(str ?? "").split("/").map((x) => x.trim()).filter((x) => x !== "");
+}
+
+function zipSets(repsStr, kgStr) {
+  const reps = splitVals(repsStr);
+  const kgs = splitVals(kgStr);
+  const n = Math.max(reps.length, kgs.length);
+  const sets = [];
+  for (let i = 0; i < n; i++) {
+    sets.push({
+      reps: reps[i] ?? reps[reps.length - 1] ?? "",
+      kg: kgs[i] ?? kgs[kgs.length - 1] ?? "",
+      done: false,
+    });
+  }
+  return sets;
+}
+
+export function normalizeSet(s) {
+  return { reps: String(s?.reps ?? ""), kg: String(s?.kg ?? ""), done: !!s?.done };
+}
+
+export function normalizeEntry(v) {
+  if (v && typeof v === "object" && Array.isArray(v.sets)) {
+    return { sets: v.sets.map(normalizeSet), note: v.note ?? "" };
+  }
+  if (v && typeof v === "object") {
+    return { sets: zipSets(v.reps, v.kg), note: v.note ?? "" };
+  }
+  if (typeof v === "string" && v.trim()) {
+    return { sets: zipSets(v, ""), note: "" };
+  }
+  return { sets: [], note: "" };
+}
+
 // ---- Base64 helpers (UTF-8 safe). btoa/atob + TextEncoder/Decoder exist
 //      both in modern browsers and in Node >= 16. ----
 
