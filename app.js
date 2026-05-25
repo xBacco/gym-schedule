@@ -33,6 +33,31 @@ function applyPending(target) {
   return d;
 }
 
+// ---- Per-exercise rest overrides (browser only) ----
+const REST_KEY = "gymsched_rest";
+const getRestMap = () => JSON.parse(localStorage.getItem(REST_KEY) || "{}");
+function getRest(day, idx, fallback) {
+  const v = getRestMap()[`${day}-${idx}`];
+  return Number.isFinite(v) ? v : fallback;
+}
+function setRest(day, idx, seconds) {
+  const m = getRestMap();
+  m[`${day}-${idx}`] = seconds;
+  localStorage.setItem(REST_KEY, JSON.stringify(m));
+}
+
+// ---- Entry shape: { kg, reps }. Tolerates legacy string entries. ----
+function normalizeEntry(v) {
+  if (v && typeof v === "object") return { kg: v.kg ?? "", reps: v.reps ?? "" };
+  if (typeof v === "string" && v) return { kg: "", reps: v };
+  return { kg: "", reps: "" };
+}
+function entrySummary(v) {
+  const e = normalizeEntry(v);
+  if (!e.kg && !e.reps) return "";
+  return [e.kg ? e.kg + " kg" : "", e.reps].filter(Boolean).join(" · ");
+}
+
 // ---- Status indicator ----
 function setStatus(text, kind = "") {
   const el = document.getElementById("status");
@@ -144,25 +169,52 @@ function renderDays() {
       const meta = document.createElement("div");
       meta.className = "ex-meta";
       const b = document.createElement("b"); b.textContent = ex.setsReps;
-      meta.append(b, document.createTextNode("  ·  rec " + ex.recText));
+      meta.append(b, document.createTextNode("  ·  rec "));
+      const restIn = document.createElement("input");
+      restIn.type = "number"; restIn.className = "in-rest";
+      restIn.min = "5"; restIn.step = "5";
+      restIn.value = getRest(day.day, ei, ex.restSeconds);
+      restIn.setAttribute("aria-label", "Secondi di recupero");
+      restIn.addEventListener("change", () => {
+        let v = parseInt(restIn.value, 10);
+        if (!Number.isFinite(v) || v < 5) { v = ex.restSeconds; restIn.value = v; }
+        setRest(day.day, ei, v);
+      });
+      meta.append(restIn, document.createTextNode(" s"));
+      const prevSummary = prev ? entrySummary(getEntry(data, prev, day.day, ei)) : "";
+      if (prevSummary) {
+        const pv = document.createElement("span");
+        pv.className = "prevv"; pv.textContent = "  ·  prec: " + prevSummary;
+        meta.append(pv);
+      }
       card.appendChild(meta);
 
+      const cur = normalizeEntry(getEntry(data, currentWeek, day.day, ei));
       const row = document.createElement("div");
       row.className = "ex-row";
-      const input = document.createElement("input");
-      input.type = "text";
-      const prevVal = prev ? getEntry(data, prev, day.day, ei) : "";
-      input.placeholder = prevVal ? `prec: ${prevVal}` : "carico / reps — es. 60kg 8/8/7";
-      input.value = getEntry(data, currentWeek, day.day, ei);
-      input.addEventListener("input", () => onEdit(day.day, ei, input.value));
-      input.addEventListener("blur", () => {
-        if (input.value.trim()) startRest(ex.restSeconds, ex.name);
+
+      const kg = document.createElement("input");
+      kg.type = "text"; kg.inputMode = "decimal"; kg.className = "in-kg";
+      kg.placeholder = "kg"; kg.value = cur.kg;
+      kg.setAttribute("aria-label", "Carico in kg");
+
+      const reps = document.createElement("input");
+      reps.type = "text"; reps.inputMode = "numeric"; reps.className = "in-reps";
+      reps.placeholder = "reps — es. 8/8/7"; reps.value = cur.reps;
+      reps.setAttribute("aria-label", "Ripetizioni");
+
+      const commit = () => onEdit(day.day, ei, { kg: kg.value.trim(), reps: reps.value.trim() });
+      kg.addEventListener("input", commit);
+      reps.addEventListener("input", commit);
+      reps.addEventListener("blur", () => {
+        if (kg.value.trim() || reps.value.trim()) startRest(getRest(day.day, ei, ex.restSeconds), ex.name);
       });
+
       const tBtn = document.createElement("button");
       tBtn.className = "timer-btn"; tBtn.type = "button"; tBtn.textContent = "⏱";
       tBtn.title = "Avvia recupero";
-      tBtn.addEventListener("click", () => startRest(ex.restSeconds, ex.name));
-      row.append(input, tBtn);
+      tBtn.addEventListener("click", () => startRest(getRest(day.day, ei, ex.restSeconds), ex.name));
+      row.append(kg, reps, tBtn);
       card.appendChild(row);
 
       block.appendChild(card);
@@ -256,7 +308,10 @@ function wireSettings() {
 function wireTimerControls() {
   document.getElementById("tMinus").addEventListener("click", () => timer.addSeconds(-15));
   document.getElementById("tPlus").addEventListener("click", () => timer.addSeconds(15));
-  document.getElementById("tStop").addEventListener("click", () => timer.stop());
+  document.getElementById("tStop").addEventListener("click", () => {
+    timer.stop();
+    document.getElementById("timerBar").classList.add("hidden");
+  });
   document.getElementById("tToggle").addEventListener("click", (e) => {
     if (timer.paused) { timer.resume(); e.target.textContent = "⏸"; }
     else { timer.pause(); e.target.textContent = "▶"; }
