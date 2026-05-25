@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#C45A3B">
+  <title>Gym Schedule</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <p class="kicker">Allenamento · Definizione + massa lean</p>
+      <h1>Full-body 3× settimana</h1>
+      <div class="topbar">
+        <select id="weekSelect" aria-label="Settimana"></select>
+        <button id="newWeekBtn" class="btn-soft">+ Settimana</button>
+        <span id="status" class="status">—</span>
+        <button id="settingsBtn" class="btn-icon" aria-label="Impostazioni">⚙</button>
+      </div>
+    </header>
+
+    <div id="days"></div>
+
+    <dialog id="settingsDialog">
+      <form method="dialog" class="settings">
+        <h2>Impostazioni</h2>
+        <label for="tokenInput">Token GitHub (fine-grained, solo questo repo)</label>
+        <input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off">
+        <p class="hint">Il token resta solo in questo browser. Vedi il README per crearlo.</p>
+        <menu>
+          <button id="tokenSave" value="save">Salva token</button>
+          <button id="tokenClear" value="clear" class="btn-soft">Rimuovi</button>
+          <button value="cancel" class="btn-soft">Chiudi</button>
+        </menu>
+      </form>
+    </dialog>
+  </div>
+
+  <!-- Rest timer widget -->
+  <div id="timerBar" class="timerbar hidden">
+    <div class="t-info">
+      <span id="timerLabel" class="t-label"></span>
+      <span id="timerTime" class="t-time">0:00</span>
+    </div>
+    <div class="t-controls">
+      <button id="tMinus" class="t-btn">−15</button>
+      <button id="tToggle" class="t-btn">⏸</button>
+      <button id="tPlus" class="t-btn">+15</button>
+      <button id="tStop" class="t-btn t-stop">✕</button>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
