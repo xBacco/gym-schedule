@@ -62,7 +62,7 @@ export class AuthError extends Error {
 }
 
 export class GitHubStore {
-  constructor({ owner, repo, path = "data.json", branch = "main", token = null, fetchImpl = fetch }) {
+  constructor({ owner, repo, path = "data.json", branch = "main", token = null, fetchImpl = (...args) => fetch(...args) }) {
     this.owner = owner;
     this.repo = repo;
     this.path = path;
