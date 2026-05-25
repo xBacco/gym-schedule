@@ -58,6 +58,27 @@ function entrySummary(v) {
   return [e.kg ? e.kg + " kg" : "", e.reps].filter(Boolean).join(" · ");
 }
 
+// Compact week label for progression chips: "Settimana 1" -> "S1", "2026-W22" -> "W22".
+function shortLabel(label) {
+  const s = String(label);
+  let m = s.match(/W(\d+)/i);
+  if (m) return "W" + m[1];
+  m = s.match(/(\d+)/);
+  return m ? "S" + m[1] : s.slice(0, 6);
+}
+
+// History of an exercise across weeks (optionally only those before `beforeWeek`),
+// oldest first, skipping weeks with no logged value.
+function exerciseHistory(day, idx, beforeWeek) {
+  const out = [];
+  for (const k of Object.keys(data.weeks).sort()) {
+    if (beforeWeek && k >= beforeWeek) continue;
+    const e = normalizeEntry(getEntry(data, k, day, idx));
+    if (e.kg || e.reps) out.push({ key: k, label: data.weeks[k]?.label || k, kg: e.kg, reps: e.reps });
+  }
+  return out;
+}
+
 // ---- Status indicator ----
 function setStatus(text, kind = "") {
   const el = document.getElementById("status");
@@ -181,41 +202,75 @@ function renderDays() {
         setRest(day.day, ei, v);
       });
       meta.append(restIn, document.createTextNode(" s"));
-      const prevSummary = prev ? entrySummary(getEntry(data, prev, day.day, ei)) : "";
-      if (prevSummary) {
-        const pv = document.createElement("span");
-        pv.className = "prevv"; pv.textContent = "  ·  prec: " + prevSummary;
-        meta.append(pv);
-      }
       card.appendChild(meta);
 
       const cur = normalizeEntry(getEntry(data, currentWeek, day.day, ei));
       const row = document.createElement("div");
       row.className = "ex-row";
 
-      const kg = document.createElement("input");
-      kg.type = "text"; kg.inputMode = "decimal"; kg.className = "in-kg";
-      kg.placeholder = "kg"; kg.value = cur.kg;
-      kg.setAttribute("aria-label", "Carico in kg");
-
+      // Reps first, then kg — each in a labelled field.
+      const repsField = document.createElement("label");
+      repsField.className = "field reps";
       const reps = document.createElement("input");
       reps.type = "text"; reps.inputMode = "numeric"; reps.className = "in-reps";
-      reps.placeholder = "reps — es. 8/8/7"; reps.value = cur.reps;
+      reps.placeholder = "es. 8/8/7"; reps.value = cur.reps;
       reps.setAttribute("aria-label", "Ripetizioni");
+      const repsCap = document.createElement("span");
+      repsCap.className = "cap"; repsCap.textContent = "reps";
+      repsField.append(repsCap, reps);
 
-      const commit = () => onEdit(day.day, ei, { kg: kg.value.trim(), reps: reps.value.trim() });
-      kg.addEventListener("input", commit);
-      reps.addEventListener("input", commit);
-      reps.addEventListener("blur", () => {
-        if (kg.value.trim() || reps.value.trim()) startRest(getRest(day.day, ei, ex.restSeconds), ex.name);
-      });
+      const kgField = document.createElement("label");
+      kgField.className = "field kg";
+      const kg = document.createElement("input");
+      kg.type = "text"; kg.inputMode = "decimal"; kg.className = "in-kg";
+      kg.placeholder = "es. 60"; kg.value = cur.kg;
+      kg.setAttribute("aria-label", "Carico in kg");
+      const kgCap = document.createElement("span");
+      kgCap.className = "cap"; kgCap.textContent = "kg";
+      kgField.append(kgCap, kg);
 
       const tBtn = document.createElement("button");
       tBtn.className = "timer-btn"; tBtn.type = "button"; tBtn.textContent = "⏱";
       tBtn.title = "Avvia recupero";
       tBtn.addEventListener("click", () => startRest(getRest(day.day, ei, ex.restSeconds), ex.name));
-      row.append(kg, reps, tBtn);
+
+      const commit = () => onEdit(day.day, ei, { kg: kg.value.trim(), reps: reps.value.trim() });
+      reps.addEventListener("input", commit);
+      kg.addEventListener("input", commit);
+      kg.addEventListener("blur", () => {
+        if (kg.value.trim() || reps.value.trim()) startRest(getRest(day.day, ei, ex.restSeconds), ex.name);
+      });
+
+      row.append(repsField, kgField, tBtn);
       card.appendChild(row);
+
+      // Progression: previous weeks' values, oldest→newest. Chip turns green when the
+      // load went up vs the prior logged week, amber when it dropped.
+      const hist = exerciseHistory(day.day, ei, currentWeek);
+      if (hist.length) {
+        const prog = document.createElement("div");
+        prog.className = "prog";
+        const lbl = document.createElement("span");
+        lbl.className = "prog-label"; lbl.textContent = "andamento";
+        prog.appendChild(lbl);
+        let prevKg = null;
+        for (const h of hist.slice(-5)) {
+          const chip = document.createElement("span");
+          chip.className = "prog-chip";
+          const curKg = parseFloat(String(h.kg).replace(",", "."));
+          if (prevKg !== null && Number.isFinite(curKg) && Number.isFinite(prevKg)) {
+            if (curKg > prevKg) chip.classList.add("up");
+            else if (curKg < prevKg) chip.classList.add("down");
+          }
+          if (Number.isFinite(curKg)) prevKg = curKg;
+          const parts = [shortLabel(h.label)];
+          if (h.reps) parts.push(h.reps);
+          if (h.kg) parts.push(h.kg + " kg");
+          chip.textContent = parts.join(" · ");
+          prog.appendChild(chip);
+        }
+        card.appendChild(prog);
+      }
 
       block.appendChild(card);
     });
