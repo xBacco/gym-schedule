@@ -158,3 +158,22 @@ test("normalizeEntry: vuoto/assente -> nessuna serie", () => {
   assert.deepEqual(normalizeEntry(undefined), { sets: [], note: "" });
   assert.deepEqual(normalizeEntry({ kg: "", reps: "" }), { sets: [], note: "" });
 });
+import { normalizeSupersetEntry } from "../store.js";
+
+test("normalizeSupersetEntry: forma {a,b,note} normalizza entrambe le tracce", () => {
+  const v = { a: { sets: [{ reps: "15", kg: "25", done: true }] }, b: { reps: "15", kg: "12" }, note: "ok" };
+  const out = normalizeSupersetEntry(v);
+  assert.deepEqual(out.a.sets, [{ reps: "15", kg: "25", done: true }]);
+  assert.deepEqual(out.b.sets, [{ reps: "15", kg: "12", done: false }]);
+  assert.equal(out.note, "ok");
+});
+
+test("normalizeSupersetEntry: entry legacy singola finisce nella traccia A, B vuota", () => {
+  const out = normalizeSupersetEntry({ kg: "", reps: "15/15" });
+  assert.equal(out.a.sets.length, 2);
+  assert.deepEqual(out.b, { sets: [], note: "" });
+});
+
+test("normalizeSupersetEntry: vuoto -> due tracce vuote", () => {
+  assert.deepEqual(normalizeSupersetEntry(""), { a: { sets: [], note: "" }, b: { sets: [], note: "" }, note: "" });
+});

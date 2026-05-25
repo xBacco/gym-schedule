@@ -73,6 +73,14 @@ export function normalizeEntry(v) {
   return { sets: [], note: "" };
 }
 
+export function normalizeSupersetEntry(v) {
+  if (v && typeof v === "object" && (v.a || v.b)) {
+    return { a: normalizeEntry(v.a), b: normalizeEntry(v.b), note: v.note ?? "" };
+  }
+  const base = normalizeEntry(v);
+  return { a: base, b: { sets: [], note: "" }, note: base.note };
+}
+
 // ---- Base64 helpers (UTF-8 safe). btoa/atob + TextEncoder/Decoder exist
 //      both in modern browsers and in Node >= 16. ----
 
