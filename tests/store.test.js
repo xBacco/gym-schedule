@@ -199,3 +199,10 @@ test("prefillSets: usa la settimana loggata più recente fra le precedenti", () 
 test("prefillSets: nessuno storico -> array vuoto", () => {
   assert.deepEqual(prefillSets(emptyData(), "2026-W22", "A", 0), []);
 });
+
+test("prefillSets: salta settimane con serie vuote e usa la più recente non vuota", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W20", "A", 0, { sets: [{ reps: "10", kg: "50" }] }, "t1");
+  d = setEntry(d, "2026-W21", "A", 0, { sets: [] }, "t2"); // loggata ma senza serie
+  assert.deepEqual(prefillSets(d, "2026-W22", "A", 0), [{ reps: "10", kg: "50", done: false }]);
+});

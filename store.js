@@ -83,10 +83,12 @@ export function normalizeSupersetEntry(v) {
 }
 
 export function prefillSets(data, weekKey, day, idx) {
-  const keys = Object.keys(data?.weeks ?? {}).filter((k) => k < weekKey).sort();
+  const keys = Object.keys(data?.weeks ?? {})
+    .filter((k) => /^\d{4}-W\d{2}$/.test(k) && k < weekKey)
+    .sort();
   for (let i = keys.length - 1; i >= 0; i--) {
     const e = normalizeEntry(getEntry(data, keys[i], day, idx));
-    if (e.sets.length) return e.sets.map((s) => ({ reps: s.reps, kg: s.kg, done: false }));
+    if (e.sets.length) return e.sets.map(({ reps, kg }) => ({ reps, kg, done: false }));
   }
   return [];
 }
