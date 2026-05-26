@@ -56,8 +56,11 @@ function zipSets(repsStr, kgStr) {
   return sets;
 }
 
+const FEELS = new Set(["easy", "ok", "hard"]);
+
 export function normalizeSet(s) {
-  return { reps: String(s?.reps ?? ""), kg: String(s?.kg ?? ""), done: !!s?.done };
+  const feel = FEELS.has(s?.feel) ? s.feel : "";
+  return { reps: String(s?.reps ?? ""), kg: String(s?.kg ?? ""), done: !!s?.done, feel };
 }
 
 export function normalizeEntry(v) {

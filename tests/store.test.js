@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isoWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet } from "../store.js";
+import { isoWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet } from "../store.js";
 
 test("isoWeekKey returns ISO year-week", () => {
   assert.equal(isoWeekKey(new Date(2020, 0, 1)), "2020-W01"); // Wed 1 Jan 2020
@@ -120,7 +120,7 @@ import { normalizeEntry } from "../store.js";
 test("normalizeEntry: oggetto già strutturato resta tale (con default done/note)", () => {
   const v = { sets: [{ reps: "8", kg: "72.5", done: true }], note: "presa media" };
   assert.deepEqual(normalizeEntry(v), {
-    sets: [{ reps: "8", kg: "72.5", done: true }],
+    sets: [{ reps: "8", kg: "72.5", done: true, feel: "" }],
     note: "presa media",
   });
 });
@@ -163,7 +163,7 @@ import { normalizeSupersetEntry } from "../store.js";
 test("normalizeSupersetEntry: forma {a,b,note} normalizza entrambe le tracce", () => {
   const v = { a: { sets: [{ reps: "15", kg: "25", done: true }] }, b: { reps: "15", kg: "12" }, note: "ok" };
   const out = normalizeSupersetEntry(v);
-  assert.deepEqual(out.a.sets, [{ reps: "15", kg: "25", done: true }]);
+  assert.deepEqual(out.a.sets, [{ reps: "15", kg: "25", done: true, feel: "" }]);
   assert.deepEqual(out.b.sets, [{ reps: "15", kg: "12", done: false }]);
   assert.equal(out.note, "ok");
 });
@@ -264,4 +264,21 @@ test("parsePlateSet: stringa vuota -> []", () => {
 test("parsePlateSet: virgola decimale all'italiana ('2,5') con item separati da spazio/virgola-spazio", () => {
   assert.deepEqual(parsePlateSet("20, 15, 2,5"), [20, 15, 2.5]);
   assert.deepEqual(parsePlateSet("10 2,5 1,25"), [10, 2.5, 1.25]);
+});
+
+test("normalizeSet: conserva un feel valido", () => {
+  assert.equal(normalizeSet({ reps: 8, kg: 70, done: true, feel: "hard" }).feel, "hard");
+  assert.equal(normalizeSet({ reps: 8, kg: 70, feel: "easy" }).feel, "easy");
+  assert.equal(normalizeSet({ reps: 8, kg: 70, feel: "ok" }).feel, "ok");
+});
+
+test("normalizeSet: feel mancante o non valido -> stringa vuota", () => {
+  assert.equal(normalizeSet({ reps: 8, kg: 70, done: true }).feel, "");
+  assert.equal(normalizeSet({ reps: 8, kg: 70, feel: "boh" }).feel, "");
+  assert.equal(normalizeSet({ reps: 8, kg: 70, feel: 5 }).feel, "");
+});
+
+test("normalizeSet: non altera reps/kg/done aggiungendo feel", () => {
+  assert.deepEqual(normalizeSet({ reps: 8, kg: 72.5, done: true, feel: "ok" }),
+    { reps: "8", kg: "72.5", done: true, feel: "ok" });
 });
