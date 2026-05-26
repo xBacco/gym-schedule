@@ -234,3 +234,12 @@ test("platesPerSide: array dischi vuoto -> leftover = carico per lato", () => {
 test("platesPerSide: dischi 0/negativi ignorati, niente loop infinito", () => {
   assert.deepEqual(platesPerSide(60, { bar: 20, plates: [20, 0, -5] }), { perSide: [20], leftover: 0 });
 });
+
+test("setEntry/getEntry reggono il valore per-serie e il round-trip base64", () => {
+  const val = { sets: [{ reps: "8", kg: "72.5", done: true }], note: "ok" };
+  let d = setEntry(emptyData(), "2026-W22", "A", 0, val, "t1");
+  assert.deepEqual(getEntry(d, "2026-W22", "A", 0), val);
+  // round-trip come fa GitHubStore.save/load
+  const round = JSON.parse(fromBase64(toBase64(JSON.stringify(d, null, 2))));
+  assert.deepEqual(getEntry(round, "2026-W22", "A", 0), val);
+});
