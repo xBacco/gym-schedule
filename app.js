@@ -901,11 +901,27 @@ async function boot() {
 boot();
 
 // PWA: registra il service worker e gestisce l'aggiornamento (best-effort).
+// `swUpdating` distingue l'aggiornamento voluto dall'utente (tap sul banner)
+// dal primo clients.claim alla prima installazione: ricarica solo nel primo caso.
+let swUpdating = false;
+
+function showUpdateBanner(reg) {
+  if (document.getElementById("updateBanner")) return;
+  const b = document.createElement("button");
+  b.id = "updateBanner";
+  b.type = "button";
+  b.textContent = "Nuova versione · tocca per aggiornare";
+  b.addEventListener("click", () => {
+    swUpdating = true;
+    if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+  });
+  document.body.appendChild(b);
+}
+
 if ("serviceWorker" in navigator) {
-  let reloaded = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloaded) return;
-    reloaded = true;
+    if (!swUpdating) return;
+    swUpdating = false;
     window.location.reload();
   });
   window.addEventListener("load", () => {
@@ -923,16 +939,4 @@ if ("serviceWorker" in navigator) {
       });
     }).catch(() => { /* SW non disponibile */ });
   });
-}
-
-function showUpdateBanner(reg) {
-  if (document.getElementById("updateBanner")) return;
-  const b = document.createElement("button");
-  b.id = "updateBanner";
-  b.type = "button";
-  b.textContent = "Nuova versione · tocca per aggiornare";
-  b.addEventListener("click", () => {
-    if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
-  });
-  document.body.appendChild(b);
 }
