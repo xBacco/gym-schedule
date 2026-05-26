@@ -29,27 +29,36 @@ export function activeSetIndex(sets) {
   return i === -1 ? arr.length : i;
 }
 
-function trackDoneOrEmpty(track) {
-  return track.sets.length === 0 || track.sets.every((s) => s.done);
+// Una traccia/esercizio è "fatto" quando ha raggiunto il numero di serie suggerito
+// e tutte le serie loggate sono done.
+function trackComplete(track, targetSets) {
+  const n = track.sets.length;
+  return n > 0 && n >= targetSets && track.sets.every((s) => s.done);
 }
 
-// Un esercizio è "completo" quando ha serie loggate e sono tutte done.
-// Superset: completo se almeno una traccia ha serie e ogni traccia loggata è tutta done.
-export function isEntryComplete(entry, isSuperset) {
-  if (isSuperset) {
+// Un esercizio è "completo" quando raggiunge il target di serie ed è tutto done.
+// `ex` = { setsReps, superset }. Superset: una traccia vuota (corpo libero non
+// loggata) non blocca se l'altra è completa; due tracce vuote -> non completo.
+export function isEntryComplete(entry, ex) {
+  if (ex && ex.superset) {
     const e = normalizeSupersetEntry(entry);
-    const has = e.a.sets.length > 0 || e.b.sets.length > 0;
-    return has && trackDoneOrEmpty(e.a) && trackDoneOrEmpty(e.b);
+    const tgt = parseTarget(ex.setsReps, true);
+    const aEmpty = e.a.sets.length === 0, bEmpty = e.b.sets.length === 0;
+    if (aEmpty && bEmpty) return false;
+    const aOk = aEmpty || trackComplete(e.a, tgt.a.sets);
+    const bOk = bEmpty || trackComplete(e.b, tgt.b.sets);
+    return aOk && bOk;
   }
   const e = normalizeEntry(entry);
-  return e.sets.length > 0 && e.sets.every((s) => s.done);
+  const tgt = parseTarget(ex?.setsReps, false);
+  return trackComplete(e, tgt.sets);
 }
 
 // Indice dell'esercizio "in focus" = primo non completo (0 se tutti completi).
 export function activeExerciseIndex(data, weekKey, day, dayPlan) {
   const exs = dayPlan?.exercises ?? [];
   for (let i = 0; i < exs.length; i++) {
-    if (!isEntryComplete(getEntry(data, weekKey, day, i), exs[i].superset)) return i;
+    if (!isEntryComplete(getEntry(data, weekKey, day, i), exs[i])) return i;
   }
   return 0;
 }

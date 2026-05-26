@@ -1,11 +1,11 @@
 import { PLAN } from "./plan.js";
 import {
   isoWeekKey, emptyData, ensureWeek, setEntry, getEntry,
-  normalizeEntry, normalizeSupersetEntry, prefillSets,
+  normalizeEntry, prefillSets,
   GitHubStore, ConflictError, AuthError,
 } from "./store.js";
 import {
-  parseTarget, activeExerciseIndex, activeSetIndex, bestKg, progressionDelta,
+  parseTarget, activeExerciseIndex, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
   withSet, withoutSet, withSupersetSet, withoutSupersetSet,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
@@ -141,15 +141,7 @@ function renderHeader() {
 
 function isComplete(idx) {
   const ex = dayPlan().exercises[idx];
-  const v = getEntry(data, currentWeek, currentDay, idx);
-  if (ex.superset) {
-    const e = normalizeSupersetEntry(v);
-    const has = e.a.sets.length || e.b.sets.length;
-    const ok = (t) => t.sets.length === 0 || t.sets.every((s) => s.done);
-    return !!has && ok(e.a) && ok(e.b);
-  }
-  const e = normalizeEntry(v);
-  return e.sets.length > 0 && e.sets.every((s) => s.done);
+  return isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex);
 }
 
 function renderProgress() {

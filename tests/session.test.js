@@ -61,18 +61,37 @@ test("activeSetIndex: input non-array -> 0", () => {
   assert.equal(activeSetIndex(undefined), 0);
 });
 
-test("isEntryComplete: normale completo solo se ha serie e tutte done", () => {
-  assert.equal(isEntryComplete("", false), false);
-  assert.equal(isEntryComplete({ sets: [{ reps: "8", kg: "70", done: true }] }, false), true);
-  assert.equal(isEntryComplete({ sets: [{ reps: "8", kg: "70", done: false }] }, false), false);
+test("isEntryComplete: normale completo se raggiunge il target di serie e tutte done", () => {
+  const ex = { setsReps: "1 × 8", superset: false };
+  assert.equal(isEntryComplete("", ex), false);
+  assert.equal(isEntryComplete({ sets: [{ reps: "8", kg: "70", done: true }] }, ex), true);
+  assert.equal(isEntryComplete({ sets: [{ reps: "8", kg: "70", done: false }] }, ex), false);
 });
 
-test("isEntryComplete: superset considera solo le tracce con serie loggate", () => {
-  assert.equal(isEntryComplete("", true), false);
+test("isEntryComplete: normale NON completo se serie done < target", () => {
+  const ex = { setsReps: "4 × 6-8", superset: false };
+  assert.equal(isEntryComplete({ sets: [{ reps: "8", kg: "70", done: true }] }, ex), false);
+  const four = { sets: [0, 1, 2, 3].map(() => ({ reps: "8", kg: "70", done: true })) };
+  assert.equal(isEntryComplete(four, ex), true);
+});
+
+test("isEntryComplete: superset completo quando entrambe le tracce raggiungono il target", () => {
+  const ex = { setsReps: "1 × 15 / 1 × 15", superset: true };
+  assert.equal(isEntryComplete("", ex), false);
   const v = { a: { sets: [{ reps: "15", kg: "25", done: true }] }, b: { sets: [{ reps: "15", kg: "12", done: true }] } };
-  assert.equal(isEntryComplete(v, true), true);
+  assert.equal(isEntryComplete(v, ex), true);
+});
+
+test("isEntryComplete: superset con traccia B vuota (corpo libero) non blocca", () => {
+  const ex = { setsReps: "1 × 15 / 1 × max", superset: true };
   const half = { a: { sets: [{ reps: "15", kg: "25", done: true }] }, b: { sets: [] } };
-  assert.equal(isEntryComplete(half, true), true); // B a corpo libero non loggata -> non blocca
+  assert.equal(isEntryComplete(half, ex), true);
+});
+
+test("isEntryComplete: superset con traccia A vuota e B completa -> true", () => {
+  const ex = { setsReps: "1 × 15 / 1 × 12", superset: true };
+  const v = { a: { sets: [] }, b: { sets: [{ reps: "15", kg: "12", done: true }] } };
+  assert.equal(isEntryComplete(v, ex), true);
 });
 
 test("activeExerciseIndex: primo esercizio non completo", () => {
@@ -80,11 +99,6 @@ test("activeExerciseIndex: primo esercizio non completo", () => {
   assert.equal(activeExerciseIndex(emptyData(), "2026-W22", "A", plan), 0);
   let d = setEntry(emptyData(), "2026-W22", "A", 0, { sets: [{ reps: "8", kg: "70", done: true }] }, "t");
   assert.equal(activeExerciseIndex(d, "2026-W22", "A", plan), 1);
-});
-
-test("isEntryComplete: superset con traccia A vuota e B completa -> true", () => {
-  const v = { a: { sets: [] }, b: { sets: [{ reps: "15", kg: "12", done: true }] } };
-  assert.equal(isEntryComplete(v, true), true);
 });
 
 test("activeExerciseIndex: tutti completi -> 0 (wrap, non solo perché è il primo)", () => {
