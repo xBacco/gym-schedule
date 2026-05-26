@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-26T16:34:58.139Z",
+  "updatedAt": "2026-05-26T16:35:00.537Z",
   "weeks": {
     "2026-W22": {
       "label": "2026-W22",
@@ -314,9 +314,17 @@
                 "feel": "easy",
                 "warmup": false,
                 "comments": []
+              },
+              {
+                "reps": "",
+                "kg": "",
+                "done": false,
+                "feel": "ok",
+                "warmup": false,
+                "comments": []
               }
             ],
-            "note": "Ho fatto spinte"
+            "note": ""
           }
         }
       }
