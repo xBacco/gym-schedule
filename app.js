@@ -123,6 +123,7 @@ const timer = new RestTimer({
     document.getElementById("timerLabel").textContent = label;
   },
   onEnd: () => {
+    hideFeelAsk();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     beep();
     setTimeout(() => document.getElementById("timerBar").classList.add("hidden"), 1500);
@@ -493,6 +494,39 @@ function wireSetDialog() {
   });
 }
 
+// Sensazione chiesta dopo la conferma, durante il recupero. lastDone descrive la
+// serie appena conclusa: { idx, superset:false, setIndex } oppure
+// { idx, superset:true, aIdx, bIdx } (il superset rate entrambe le tracce).
+let lastDone = null;
+
+function showFeelAsk(info) {
+  lastDone = info;
+  const n = info.superset ? info.aIdx : info.setIndex;
+  document.getElementById("feelAskN").textContent = String(n + 1);
+  const bar = buildRpeBar("", (feel) => {
+    if (!feel) { hideFeelAsk(); return; }
+    let v = getEntry(data, currentWeek, currentDay, lastDone.idx);
+    let nv;
+    if (lastDone.superset) {
+      nv = withSupersetSet(v, "a", lastDone.aIdx, { feel });
+      nv = withSupersetSet(nv, "b", lastDone.bIdx, { feel });
+    } else {
+      nv = withSet(v, lastDone.setIndex, { feel });
+    }
+    data = setEntry(data, currentWeek, currentDay, lastDone.idx, nv, new Date().toISOString());
+    persist(lastDone.idx);
+    hideFeelAsk();
+    render();
+  });
+  document.getElementById("feelAskBar").replaceChildren(bar);
+  document.getElementById("feelAsk").classList.remove("hidden");
+}
+
+function hideFeelAsk() {
+  document.getElementById("feelAsk").classList.add("hidden");
+  lastDone = null;
+}
+
 // Campo nota per esercizio (persistente tra le settimane). Mostra la nota della
 // settimana corrente; se vuota, suggerisce in placeholder quella precedente.
 function buildNoteField(superset, idx) {
@@ -698,6 +732,7 @@ function renderFocusNormal(ex, idx, container, footer) {
       withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true, feel: entry.sets[curIdx]?.feel ?? "", comments: draft.comments }), new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
+    showFeelAsk({ idx, superset: false, setIndex: curIdx });
     render();
     if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
       closeFocus(); // esercizio finito → torna alla lista (e libera la voce di history)
@@ -823,6 +858,7 @@ function renderFocusSuperset(ex, idx, container, footer) {
     data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
+    showFeelAsk({ idx, superset: true, aIdx: a.curIdx, bIdx: b.curIdx });
     render();
     if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
       closeFocus(); // superset finito → torna alla lista (e libera la voce di history)
@@ -1052,6 +1088,7 @@ function wireTimerControls() {
   document.getElementById("tPlus").addEventListener("click", () => timer.addSeconds(10));
   document.getElementById("tStop").addEventListener("click", () => {
     timer.stop();
+    hideFeelAsk();
     document.getElementById("timerBar").classList.add("hidden");
   });
   document.getElementById("tToggle").addEventListener("click", (e) => {
