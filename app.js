@@ -8,6 +8,7 @@ import {
   parseTarget, activeExerciseIndex, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
   withSet, withoutSet, withSupersetSet, withNote, previousNote,
   previousSetInSession, previousWeekSet,
+  sessionVolume, exerciseTrend,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -279,6 +280,42 @@ function buildRepeatChips(inSession, prevWeek, onPick) {
   return row;
 }
 
+function fmtKg(n) { return Math.round(n).toLocaleString("it-IT"); }
+
+// Riga volume di sessione con delta % vs stessa giornata della settimana precedente.
+function buildVolumeRow(vol, prevVol) {
+  const row = document.createElement("div");
+  row.className = "volcard";
+  const l = document.createElement("span"); l.className = "vl"; l.textContent = "Volume sessione";
+  const v = document.createElement("span"); v.className = "vv";
+  v.appendChild(document.createTextNode(`${fmtKg(vol)} kg`));
+  if (prevVol > 0) {
+    const pct = Math.round(((vol - prevVol) / prevVol) * 100);
+    const d = document.createElement("span");
+    d.className = pct >= 0 ? "acc" : "neg";
+    d.textContent = `${pct >= 0 ? "▲ +" : "▼ "}${pct}%`;
+    v.appendChild(d);
+  }
+  row.append(l, v);
+  return row;
+}
+
+// Riga mini-trend: "W20 67.5 · W21 70 · W22 72.5" (ultima evidenziata). null se vuoto.
+function buildTrendRow(trend, weekKey) {
+  if (!trend.length) return null;
+  const row = document.createElement("div");
+  row.className = "trend";
+  for (const { week, kg } of trend) {
+    const cell = document.createElement("span");
+    if (week === weekKey) cell.className = "cur";
+    const w = document.createElement("span"); w.className = "tw"; w.textContent = week.split("-").pop();
+    const k = document.createElement("span"); k.className = "tk"; k.textContent = String(kg);
+    cell.append(w, k);
+    row.appendChild(cell);
+  }
+  return row;
+}
+
 // Costruisce il blocco di editing per una serie. `state` = {kg, reps} mutato in place.
 // prev = {reps, kg} della volta scorsa per quella serie (o null). Ritorna l'elemento.
 function buildEditBlock(label, state, prev) {
@@ -486,6 +523,9 @@ function renderFocusNormal(ex) {
   head.append(exn, tg);
   card.appendChild(head);
 
+  const trendRow = buildTrendRow(exerciseTrend(data, currentDay, focusIndex, currentWeek, 3), currentWeek);
+  if (trendRow) card.appendChild(trendRow);
+
   const setsBox = document.createElement("div");
   setsBox.className = "sets";
   const total = Math.max(entry.sets.length, tgt.sets, curIdx + 1);
@@ -551,6 +591,10 @@ function renderFocusNormal(ex) {
   });
   card.appendChild(cta);
   card.appendChild(buildNoteField(false));
+
+  const vol = sessionVolume(data, currentWeek, currentDay, dayPlan());
+  const prevVol = sessionVolume(data, prevWeekKey(), currentDay, dayPlan());
+  card.appendChild(buildVolumeRow(vol, prevVol));
 
   root.appendChild(card);
 }
@@ -630,6 +674,9 @@ function renderFocusSuperset(ex) {
   head.appendChild(exn);
   card.appendChild(head);
 
+  const trendRow = buildTrendRow(exerciseTrend(data, currentDay, focusIndex, currentWeek, 3, true), currentWeek);
+  if (trendRow) card.appendChild(trendRow);
+
   const a = trackBlock("a", nameA.trim(), e.a, tgt.a, prev.a, draftA);
   const b = trackBlock("b", nameB.trim(), e.b, tgt.b, prev.b, draftB);
   card.append(a.wrap, b.wrap);
@@ -647,6 +694,10 @@ function renderFocusSuperset(ex) {
   });
   card.appendChild(cta);
   card.appendChild(buildNoteField(true));
+
+  const vol = sessionVolume(data, currentWeek, currentDay, dayPlan());
+  const prevVol = sessionVolume(data, prevWeekKey(), currentDay, dayPlan());
+  card.appendChild(buildVolumeRow(vol, prevVol));
 
   root.appendChild(card);
 }
