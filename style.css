@@ -49,7 +49,8 @@ h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:8px 0 0;}
 
 /* serie fatte */
 .sets{margin-top:14px;}
-.srow{display:flex;align-items:center;gap:13px;font-family:"JetBrains Mono",monospace;padding:9px 0;border-bottom:1px solid var(--line);}
+.srow{display:flex;align-items:center;flex-wrap:wrap;gap:13px;font-family:"JetBrains Mono",monospace;padding:9px 0;border-bottom:1px solid var(--line);}
+.srow .cmt{flex-basis:100%;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--dim);margin:2px 0 0 27px;}
 .srow .i{font-size:11px;color:var(--faint);width:14px;}
 .srow .v{font-size:17px;letter-spacing:-.01em;cursor:pointer;}
 .srow .v .x{color:var(--faint);}
@@ -98,6 +99,12 @@ h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:8px 0 0;}
 .chip .l{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-top:2px;}
 .chip.prevbest{background:transparent;border-style:dashed;}
 .chip.prevbest .rv{color:var(--ok);}
+
+/* chip commenti veloci (riga .chips) — scoped per non collidere con .chip prev-best */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;}
+.chips .chip{flex:0 0 auto;display:inline-block;background:var(--surf2);border:1px solid var(--line);border-radius:999px;padding:8px 13px;font-size:13px;color:var(--ink);cursor:pointer;text-align:left;}
+.chips .chip.on{background:#352815;border-color:var(--acc);color:var(--acc);font-weight:700;}
+.chips .chip.write{color:var(--acc);border-style:dashed;}
 
 /* dots + cta */
 .dots{display:flex;gap:7px;justify-content:center;margin-top:16px;align-items:center;flex-wrap:wrap;}

@@ -2,7 +2,7 @@ import { PLAN } from "./plan.js";
 import {
   isoWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet,
-  GitHubStore, ConflictError, AuthError,
+  GitHubStore, ConflictError, AuthError, toggleComment,
 } from "./store.js";
 import {
   parseTarget, activeExerciseIndex, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
@@ -61,6 +61,15 @@ const BAR_KEY = "gymsched_bar";
 const PLATES_KEY = "gymsched_plates";
 const getBar = () => { const n = parseFloat(localStorage.getItem(BAR_KEY)); return Number.isFinite(n) && n > 0 ? n : 20; };
 const getPlateSet = () => { const v = parsePlateSet(localStorage.getItem(PLATES_KEY) || ""); return v.length ? v : [20, 15, 10, 5, 2.5, 1.25]; };
+
+// ---- Commenti veloci (preset, browser only) ----
+const QC_KEY = "gymsched_quickcomments";
+const QC_DEFAULT = ["alzare 1kg", "diminuire leggermente", "ultima reps forzata/sporca"];
+function getQuickComments() {
+  try { const v = JSON.parse(localStorage.getItem(QC_KEY)); if (Array.isArray(v)) return v.filter((x) => typeof x === "string" && x.trim()); } catch (_) {}
+  return QC_DEFAULT.slice();
+}
+function setQuickComments(arr) { localStorage.setItem(QC_KEY, JSON.stringify(arr)); }
 
 // ---- Status indicator ----
 function setStatus(text, kind = "") {
@@ -220,6 +229,22 @@ function buildRpeBar(current, onPick) {
     bar.appendChild(b);
   }
   return bar;
+}
+
+// Riga di chip commenti per la serie corrente. `selected` = array commenti già scelti.
+function buildQuickCommentChips(selected, onToggle, onWrite) {
+  const wrap = document.createElement("div"); wrap.className = "chips";
+  for (const text of getQuickComments()) {
+    const c = document.createElement("span");
+    c.className = "chip" + (selected.includes(text) ? " on" : "");
+    c.textContent = text;
+    c.addEventListener("click", () => onToggle(text));
+    wrap.appendChild(c);
+  }
+  const w = document.createElement("span"); w.className = "chip write"; w.textContent = "+ scrivi";
+  w.addEventListener("click", onWrite);
+  wrap.appendChild(w);
+  return wrap;
 }
 
 // Fino a due chip: "↑ serie sopra" (stessa sessione) e "↶ scorsa Wxx" (settimana precedente).
@@ -400,7 +425,7 @@ function buildNoteField(superset, idx) {
   return wrap;
 }
 
-function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel) {
+function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel, onEditComments) {
   const row = document.createElement("div");
   row.className = "srow" + (isCurrent ? " cur" : "") + (set.warmup ? " warm" : "");
   const idx = document.createElement("span"); idx.className = "i"; idx.textContent = set.warmup ? "W" : String(i + 1);
@@ -459,6 +484,13 @@ function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel) {
     rm.addEventListener("click", (e) => { e.stopPropagation(); onRemove(); });
     row.appendChild(rm);
   }
+  if (set.done && Array.isArray(set.comments) && set.comments.length) {
+    const c = document.createElement("div"); c.className = "cmt";
+    c.textContent = set.comments.join(" · ");
+    if (onEditComments) { c.title = "Tocca per modificare"; c.style.cursor = "pointer";
+      c.addEventListener("click", (e) => { e.stopPropagation(); onEditComments(); }); }
+    row.appendChild(c);
+  }
   return row;
 }
 
@@ -480,6 +512,7 @@ function renderFocusNormal(ex, idx, container) {
   draft = {
     kg: prev[curIdx]?.kg ?? "",
     reps: prev[curIdx]?.reps ?? repsLow(tgt.reps),
+    comments: (entry.sets[curIdx]?.comments ?? []).slice(),
   };
 
   const trendRow = buildTrendRow(exerciseTrend(data, currentDay, idx, currentWeek, 3), currentWeek);
@@ -502,6 +535,12 @@ function renderFocusNormal(ex, idx, container) {
       const next = nextFeel(set.feel);
       data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { feel: next }), new Date().toISOString());
       persist(idx); render();
+    } : null, set.done ? () => {
+      const t = prompt("Commenti (separati da ;):", (set.comments ?? []).join("; "));
+      if (t === null) return;
+      const comments = t.split(";").map((s) => s.trim()).filter(Boolean);
+      data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { comments }), new Date().toISOString());
+      persist(idx); render();
     } : null));
   }
   container.appendChild(setsBox);
@@ -514,6 +553,12 @@ function renderFocusNormal(ex, idx, container) {
       withSet(v, curIdx, { feel }), new Date().toISOString());
     persist(idx); render();
   }));
+
+  const qcLabel = document.createElement("div"); qcLabel.className = "editlabel"; qcLabel.textContent = "commento veloce";
+  container.appendChild(qcLabel);
+  container.appendChild(buildQuickCommentChips(draft.comments,
+    (text) => { draft.comments = toggleComment(draft.comments, text); render(); },
+    () => { const t = prompt("Commento:"); if (t && t.trim()) { draft.comments = toggleComment(draft.comments, t.trim()); render(); } }));
 
   const repInSession = previousSetInSession(v, curIdx);
   const repPrevWeek = previousWeekSet(data, currentDay, idx, currentWeek, curIdx);
@@ -554,7 +599,7 @@ function renderFocusNormal(ex, idx, container) {
   cta.className = "cta"; cta.textContent = "Serie fatta · avvia recupero ▸";
   cta.addEventListener("click", () => {
     data = setEntry(data, currentWeek, currentDay, idx,
-      withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true, feel: entry.sets[curIdx]?.feel ?? "" }), new Date().toISOString());
+      withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true, feel: entry.sets[curIdx]?.feel ?? "", comments: draft.comments }), new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
     render();
@@ -586,6 +631,7 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
   const curIdx = activeSetIndex(trackEntry.sets);
   state.kg = prevSets[curIdx]?.kg ?? "";
   state.reps = prevSets[curIdx]?.reps ?? repsLow(tgtTrack.reps);
+  state.comments = (trackEntry.sets[curIdx]?.comments ?? []).slice();
 
   const setsBox = document.createElement("div");
   setsBox.className = "sets";
@@ -601,6 +647,13 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
       const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, idx), trackKey, i, { feel: next });
       data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
       persist(idx); render();
+    } : null, set.done ? () => {
+      const t = prompt("Commenti (separati da ;):", (set.comments ?? []).join("; "));
+      if (t === null) return;
+      const comments = t.split(";").map((s) => s.trim()).filter(Boolean);
+      const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, idx), trackKey, i, { comments });
+      data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
+      persist(idx); render();
     } : null));
   }
   wrap.appendChild(setsBox);
@@ -613,6 +666,13 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
     data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
     persist(idx); render();
   }));
+
+  const qcLabel = document.createElement("div"); qcLabel.className = "editlabel"; qcLabel.textContent = "commento veloce";
+  wrap.appendChild(qcLabel);
+  wrap.appendChild(buildQuickCommentChips(state.comments,
+    (text) => { state.comments = toggleComment(state.comments, text); render(); },
+    () => { const t = prompt("Commento:"); if (t && t.trim()) { state.comments = toggleComment(state.comments, t.trim()); render(); } }));
+
   const inSess = previousSetInSession(trackEntry, curIdx);
   const prevWk = previousWeekSet(data, currentDay, idx, currentWeek, curIdx, trackKey);
   const chips = buildRepeatChips(inSess, prevWk, ({ reps, kg }) => { state.reps = reps; state.kg = kg; edit.refresh(); });
@@ -638,8 +698,8 @@ function renderFocusSuperset(ex, idx, container) {
   const cta = document.createElement("button");
   cta.className = "cta"; cta.textContent = "Serie fatta (A+B) · avvia recupero ▸";
   cta.addEventListener("click", () => {
-    let nv = withSupersetSet(v, "a", a.curIdx, { reps: draftA.reps, kg: draftA.kg, done: true, feel: e.a.sets[a.curIdx]?.feel ?? "" });
-    nv = withSupersetSet(nv, "b", b.curIdx, { reps: draftB.reps, kg: draftB.kg, done: true, feel: e.b.sets[b.curIdx]?.feel ?? "" });
+    let nv = withSupersetSet(v, "a", a.curIdx, { reps: draftA.reps, kg: draftA.kg, done: true, feel: e.a.sets[a.curIdx]?.feel ?? "", comments: draftA.comments });
+    nv = withSupersetSet(nv, "b", b.curIdx, { reps: draftB.reps, kg: draftB.kg, done: true, feel: e.b.sets[b.curIdx]?.feel ?? "", comments: draftB.comments });
     data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
