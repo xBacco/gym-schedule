@@ -206,6 +206,13 @@ test("prefillSets: salta settimane con serie vuote e usa la più recente non vuo
   d = setEntry(d, "2026-W21", "A", 0, { sets: [] }, "t2"); // loggata ma senza serie
   assert.deepEqual(prefillSets(d, "2026-W22", "A", 0), [{ reps: "10", kg: "50", done: false }]);
 });
+
+test("prefillSets: accetta chiavi con suffisso .N (settimane duplicate di newWeek)", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", 0, { sets: [{ reps: "8", kg: "60" }] }, "t1");
+  d = setEntry(d, "2026-W22.2", "A", 0, { sets: [{ reps: "8", kg: "65" }] }, "t2");
+  assert.deepEqual(prefillSets(d, "2026-W23", "A", 0), [{ reps: "8", kg: "65", done: false }]);
+});
 import { platesPerSide } from "../store.js";
 
 test("platesPerSide: 72.5 kg con bilanciere 20 -> 20+5+1.25 per lato", () => {
