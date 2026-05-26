@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mockup Fase 7 — focus esercizio + popup commenti</title>
+<style>
+  :root{
+    --bg:#100E0A; --surf:#181511; --surf2:#1E1A14; --line:#2A2620;
+    --ink:#EFEBE3; --dim:#938B7B; --faint:#6F685B;
+    --acc:#E8A93C; --acc-ink:#241803; --down:#E0843F; --field:#221D14;
+    --chip-on:#352815;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;background:#050505;color:var(--ink);
+    font-family:"Inter",system-ui,-apple-system,sans-serif;
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 10px 60px;}
+  h1{font-size:16px;margin:4px 0 0;text-align:center;font-weight:800;letter-spacing:.01em;}
+  .hint{color:var(--dim);font-size:12.5px;text-align:center;max-width:420px;line-height:1.5;margin:0 0 4px;}
+
+  /* ---- pannello varianti ---- */
+  .panel{width:100%;max-width:420px;background:var(--surf);border:1px solid var(--line);
+    border-radius:16px;padding:13px 13px 15px;}
+  .panel h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);margin:0 0 10px;}
+  .row{margin-bottom:13px;}
+  .row:last-child{margin-bottom:0;}
+  .row .lab{font-size:12px;color:var(--dim);margin-bottom:6px;}
+  .seg{display:flex;gap:6px;}
+  .seg button{flex:1;background:var(--surf2);border:1px solid var(--line);color:var(--ink);
+    border-radius:11px;padding:9px 6px;font-size:12px;cursor:pointer;line-height:1.25;}
+  .seg button.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:700;}
+
+  /* ---- telefono ---- */
+  .phone{width:100%;max-width:392px;height:760px;background:var(--bg);border:1px solid #000;
+    border-radius:34px;box-shadow:0 0 0 10px #16130d,0 18px 50px rgba(0,0,0,.6);
+    position:relative;overflow:hidden;}
+  .notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:120px;height:24px;
+    background:#000;border-radius:0 0 14px 14px;z-index:60;}
+  .scroller{position:absolute;inset:0;overflow-y:auto;padding:42px 15px 30px;}
+  .scroller.locked{overflow:hidden;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .topbar .ttl{font-size:19px;font-weight:800;}
+  .topbar .sub{font-size:11px;color:var(--dim);}
+  .day-tabs{display:flex;gap:7px;margin-bottom:14px;}
+  .day-tabs button{flex:1;background:var(--surf2);border:1px solid var(--line);border-radius:12px;
+    padding:10px 0;color:var(--dim);font-weight:700;font-size:13px;cursor:pointer;}
+  .day-tabs button.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);}
+  .prog{display:flex;gap:5px;margin-bottom:16px;}
+  .prog .seg2{flex:1;height:4px;border-radius:2px;background:var(--line);}
+  .prog .seg2.done{background:var(--ink);}
+
+  .item{background:var(--surf);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;
+    display:flex;align-items:center;gap:12px;padding:14px 14px;cursor:pointer;position:relative;}
+  .item.done{opacity:.55;}
+  .item .id{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;color:var(--faint);min-width:22px;}
+  .item .nm{font-size:15px;font-weight:600;}
+  .item .ss{font-size:11.5px;color:var(--dim);margin-top:2px;}
+  .item .mid{flex:1;}
+  .item .best{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;color:var(--ink);text-align:right;}
+  .item .bl{font-size:10px;color:var(--faint);text-align:right;}
+  .item .chk{color:var(--acc);font-size:18px;}
+
+  /* ---- overlay focus a schermo intero ---- */
+  .focus-ov{position:absolute;inset:0;z-index:50;background:var(--bg);
+    display:flex;flex-direction:column;transform:translateX(100%);transition:transform .26s ease;}
+  .focus-ov.show{transform:translateX(0);}
+  .focus-top{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:46px 15px 14px;
+    border-bottom:1px solid var(--line);background:var(--surf);}
+  .back{width:40px;height:40px;border-radius:11px;background:var(--surf2);border:1px solid var(--line);
+    color:var(--ink);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .back.hidden{display:none;}
+  .focus-top .fn{font-size:17px;font-weight:800;line-height:1.15;}
+  .focus-top .fs{font-size:11.5px;color:var(--acc);font-family:"JetBrains Mono",ui-monospace,monospace;margin-top:3px;}
+  .focus-body{flex:1;min-height:0;padding:16px 15px 18px;}
+  .focus-body.scrolly{overflow-y:auto;}
+  .focus-body.fit{overflow:hidden;}
+
+  .blk{background:var(--surf2);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:13px;}
+  .stepper{display:flex;gap:9px;}
+  .stepper .col{flex:1;}
+  .stepper .cl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:6px;text-align:center;}
+  .stepper .ctl{display:flex;align-items:center;justify-content:space-between;background:var(--field);
+    border:1px solid var(--line);border-radius:12px;padding:6px;}
+  .stepper .ctl button{width:42px;height:42px;border-radius:10px;background:var(--surf);border:1px solid var(--line);
+    color:var(--ink);font-size:20px;cursor:pointer;}
+  .stepper .ctl .v{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:20px;font-weight:700;}
+  .lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:2px 0 8px;}
+  .feel{display:flex;gap:7px;}
+  .feel button{flex:1;background:var(--field);border:1px solid var(--line);color:var(--ink);
+    border-radius:12px;padding:11px 0;font-size:13px;cursor:pointer;}
+  .feel button.on{background:var(--chip-on);border-color:var(--acc);color:var(--acc);font-weight:700;}
+
+  .qc-btn{width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--field);
+    border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font-size:14px;cursor:pointer;}
+  .qc-btn .cnt{font-size:12px;color:var(--acc-ink);background:var(--acc);border-radius:999px;
+    padding:2px 9px;font-weight:700;display:none;}
+  .qc-btn.has .cnt{display:inline-block;}
+  .qc-sel{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;}
+  .qc-sel .tag{font-size:11.5px;color:var(--acc);background:var(--chip-on);border:1px solid var(--acc);
+    border-radius:999px;padding:3px 10px;}
+
+  .cta{margin-top:6px;width:100%;background:var(--acc);color:var(--acc-ink);border:none;border-radius:14px;
+    padding:16px;font-size:15px;font-weight:800;cursor:pointer;}
+  .filler{margin-top:13px;color:var(--faint);font-size:12px;line-height:1.7;border-top:1px dashed var(--line);padding-top:12px;}
+
+  /* ---- popup commenti ---- */
+  .modal-back{position:absolute;inset:0;z-index:70;background:rgba(0,0,0,.6);
+    display:none;align-items:flex-end;justify-content:center;}
+  .modal-back.show{display:flex;}
+  .modal{width:100%;background:var(--surf);border-top:1px solid var(--line);
+    border-radius:20px 20px 0 0;padding:18px 16px 20px;transform:translateY(100%);transition:transform .24s ease;}
+  .modal-back.show .modal{transform:translateY(0);}
+  .modal h3{margin:0 0 4px;font-size:16px;}
+  .modal .msub{margin:0 0 14px;font-size:12px;color:var(--dim);}
+  .opt{display:flex;align-items:center;gap:11px;background:var(--surf2);border:1px solid var(--line);
+    border-radius:12px;padding:13px 13px;margin-bottom:8px;cursor:pointer;font-size:14px;}
+  .opt .box{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--line);flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--acc-ink);}
+  .opt.on{border-color:var(--acc);background:var(--chip-on);}
+  .opt.on .box{background:var(--acc);border-color:var(--acc);}
+  .opt .box span{display:none;}
+  .opt.on .box span{display:block;}
+  .opt.write{color:var(--dim);border-style:dashed;}
+  .done-btn{margin-top:8px;width:100%;background:var(--acc);color:var(--acc-ink);border:none;
+    border-radius:13px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;}
+  .toast{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:90;
+    background:var(--acc);color:var(--acc-ink);font-weight:700;font-size:13px;padding:10px 18px;
+    border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+  <h1>Fase 7 — banco di prova</h1>
+  <p class="hint">Cambia le varianti qui sotto, poi <b>tocca un esercizio</b> nel telefono per provarle dal vivo.
+  La lista è bloccata mentre l'esercizio è aperto. Dimmi nel terminale quali combinazioni preferisci.</p>
+
+  <div class="panel">
+    <h2>Varianti da provare</h2>
+    <div class="row">
+      <div class="lab">1 · Scroll dentro l'esercizio a schermo intero</div>
+      <div class="seg" id="segScroll">
+        <button data-v="scrolly" class="on">Pannello scrollabile</button>
+        <button data-v="fit">Blocco totale (no scroll)</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lab">2 · Come si esce dall'esercizio</div>
+      <div class="seg" id="segExit">
+        <button data-v="both" class="on">← + auto a fine</button>
+        <button data-v="manual">Solo ←</button>
+        <button data-v="auto">Solo auto</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lab">3 · Popup commento veloce</div>
+      <div class="seg" id="segPopup">
+        <button data-v="confirm" class="on">Con "Fatto"</button>
+        <button data-v="live">Applica subito</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELEFONO -->
+  <div class="phone">
+    <div class="notch"></div>
+
+    <div class="scroller" id="scroller">
+      <div class="topbar">
+        <div><div class="ttl">Giorno A</div><div class="sub">Petto + Tricipiti</div></div>
+        <div class="sub">W22</div>
+      </div>
+      <div class="day-tabs"><button class="on">A</button><button>B</button><button>C</button></div>
+      <div class="prog">
+        <span class="seg2 done"></span><span class="seg2 done"></span><span class="seg2 done"></span>
+        <span class="seg2"></span><span class="seg2"></span><span class="seg2"></span><span class="seg2"></span><span class="seg2"></span>
+      </div>
+      <div id="list"></div>
+    </div>
+
+    <!-- OVERLAY ESERCIZIO -->
+    <div class="focus-ov" id="focus">
+      <div class="focus-top">
+        <button class="back" id="back">←</button>
+        <div><div class="fn" id="fName">Panca piana</div><div class="fs" id="fSet">serie 1 / 3</div></div>
+      </div>
+      <div class="focus-body scrolly" id="fBody"></div>
+    </div>
+
+    <!-- POPUP COMMENTI -->
+    <div class="modal-back" id="modalBack">
+      <div class="modal">
+        <h3>Commento veloce</h3>
+        <p class="msub">Tocca i tag da aggiungere a questa serie.</p>
+        <div id="opts"></div>
+        <div class="opt write"><div class="box"></div>+ scrivi un commento…</div>
+        <button class="done-btn" id="doneBtn">Fatto</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+<script>
+// helper: costruisce nodi DOM da stringa statica (no innerHTML)
+const frag = (s)=>document.createRange().createContextualFragment(s);
+const setHTML = (el,s)=>{ el.replaceChildren(frag(s)); };
+const $ = (id)=>document.getElementById(id);
+
+const V = { scroll:"scrolly", exit:"both", popup:"confirm" };
+const EX = [
+  {n:"Panca piana",  ss:"3 × 6-8",  best:"55 kg"},
+  {n:"Lento avanti", ss:"3 × 8-10", best:"15 kg"},
+  {n:"Croci ai cavi",ss:"3 × 12-15",best:"7 kg"},
+  {n:"Dips",         ss:"3 × 8-12", best:"—"},
+  {n:"Pulldown",     ss:"3 × 10-12",best:"—"},
+];
+const PRESETS = ["alzare 1kg","diminuire leggermente","ultima reps forzata/sporca"];
+let curEx = 0, doneSets = 0, kg = 55, reps = 6, feel = "", comments = [];
+
+function wireSeg(id, key){
+  const box = $(id);
+  box.addEventListener("click", e=>{
+    const b = e.target.closest("button"); if(!b) return;
+    [...box.children].forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); V[key]=b.dataset.v;
+    if($("focus").classList.contains("show")) renderFocus();
+  });
+}
+wireSeg("segScroll","scroll"); wireSeg("segExit","exit"); wireSeg("segPopup","popup");
+
+function renderList(){
+  const root = $("list"); root.replaceChildren();
+  EX.forEach((e,i)=>{
+    const it = document.createElement("div"); it.className="item"+(i<3?" done":"");
+    setHTML(it, `<span class="id">${String(i+1).padStart(2,"0")}</span>
+      <div class="mid"><div class="nm">${e.n}</div><div class="ss">${e.ss} · rec 90″</div></div>
+      ${i<3?'<span class="chk">✓</span>':`<div><div class="best">${e.best}</div><div class="bl">best</div></div>`}`);
+    it.onclick = ()=>openFocus(i);
+    root.appendChild(it);
+  });
+}
+
+function openFocus(i){
+  curEx=i; doneSets=0; kg = i===0?55:14; reps = 6; feel=""; comments=[];
+  $("fName").textContent = EX[i].n;
+  $("scroller").classList.add("locked");
+  renderFocus();
+  $("focus").classList.add("show");
+}
+function closeFocus(){
+  $("focus").classList.remove("show");
+  $("scroller").classList.remove("locked");
+}
+$("back").onclick = closeFocus;
+
+function renderFocus(){
+  $("back").classList.toggle("hidden", V.exit==="auto");
+  const body = $("fBody");
+  body.className = "focus-body "+(V.scroll==="scrolly"?"scrolly":"fit");
+  $("fSet").textContent = `serie ${Math.min(doneSets+1,3)} / 3`;
+
+  const selTags = comments.length
+    ? `<div class="qc-sel">${comments.map(c=>`<span class="tag">${c}</span>`).join("")}</div>` : "";
+  setHTML(body, `
+    <div class="blk">
+      <div class="stepper">
+        <div class="col"><div class="cl">kg</div><div class="ctl">
+          <button data-d="kg" data-s="-1">−</button><span class="v" id="vKg">${fmt(kg)}</span><button data-d="kg" data-s="1">+</button></div></div>
+        <div class="col"><div class="cl">reps</div><div class="ctl">
+          <button data-d="reps" data-s="-1">−</button><span class="v" id="vReps">${reps}</span><button data-d="reps" data-s="1">+</button></div></div>
+      </div>
+    </div>
+    <div class="blk">
+      <div class="lbl">com'è andata</div>
+      <div class="feel" id="feel">
+        <button data-f="easy">facile</button><button data-f="ok">giusta</button><button data-f="hard">dura</button>
+      </div>
+    </div>
+    <div class="blk" style="padding-bottom:11px">
+      <button class="qc-btn ${comments.length?'has':''}" id="qcBtn">
+        <span>💬 commento veloce</span><span class="cnt">${comments.length}</span></button>
+      ${selTags}
+    </div>
+    <button class="cta" id="save">Salva serie ${Math.min(doneSets+1,3)}</button>
+    ${V.scroll==="scrolly" ? `<div class="filler">↓ Con "pannello scrollabile" questa zona extra scrolla DENTRO l'esercizio,
+      ma la lista dietro resta ferma. Prova a trascinare su/giù.<br><br>·<br><br>·<br><br>fine esercizio.</div>`:""}
+  `);
+  if(feel) body.querySelector(`[data-f="${feel}"]`)?.classList.add("on");
+  body.querySelector("#feel").onclick = e=>{
+    const b=e.target.closest("button"); if(!b)return;
+    feel = feel===b.dataset.f ? "" : b.dataset.f; renderFocus();
+  };
+  body.querySelectorAll(".ctl button").forEach(b=>b.onclick=()=>{
+    const s=+b.dataset.s; if(b.dataset.d==="kg"){kg=Math.max(0,kg+s*2.5);} else {reps=Math.max(1,reps+s);}
+    body.querySelector("#vKg").textContent=fmt(kg); body.querySelector("#vReps").textContent=reps;
+  });
+  body.querySelector("#qcBtn").onclick = openModal;
+  body.querySelector("#save").onclick = saveSet;
+}
+function fmt(n){ return Number.isInteger(n)?n:String(n).replace(".",","); }
+
+function saveSet(){
+  doneSets++;
+  feel=""; comments=[];
+  if(doneSets>=3){
+    toast("Esercizio completato ✓");
+    if(V.exit==="both"||V.exit==="auto"){ setTimeout(closeFocus,650); return; }
+  }
+  renderFocus();
+}
+
+function openModal(){
+  const o = $("opts"); o.replaceChildren();
+  PRESETS.forEach(p=>{
+    const d=document.createElement("div"); d.className="opt"+(comments.includes(p)?" on":"");
+    setHTML(d, `<div class="box"><span>✓</span></div>${p}`);
+    d.onclick=()=>{
+      if(comments.includes(p)) comments=comments.filter(x=>x!==p); else comments.push(p);
+      d.classList.toggle("on");
+      if(V.popup==="live"){ renderFocus(); }
+    };
+    o.appendChild(d);
+  });
+  $("doneBtn").style.display = V.popup==="confirm" ? "block":"none";
+  $("modalBack").classList.add("show");
+}
+function closeModal(){ $("modalBack").classList.remove("show"); renderFocus(); }
+$("doneBtn").onclick = closeModal;
+$("modalBack").onclick = e=>{ if(e.target.id==="modalBack") closeModal(); };
+
+function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"),1200); }
+
+renderList();
+</script>
+</body>
+</html>
