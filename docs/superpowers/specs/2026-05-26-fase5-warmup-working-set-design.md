@@ -36,6 +36,10 @@ L'app si usa col pollice in palestra: la marcatura dev'essere un'azione esplicit
                           −21% · sett. scorsa 2.900 kg
    ```
    La percentuale resta colorata (verde se ≥ 0, arancio se < 0).
+5. **Banner "nuova versione disponibile" (PWA).** Oggi il service worker è cache-first e, senza
+   svuotare la cache a mano, il telefono può servire codice stantio dopo un deploy. Si aggiunge un
+   **avviso esplicito** quando è pronta una versione nuova: l'utente tocca e l'app si ricarica con il
+   codice fresco. Niente cache da svuotare a mano. (Vedi §6.)
 
 ## 3. Modello dati
 
@@ -99,7 +103,32 @@ Non testata in Node; verifica in browser reale (come da convenzione di progetto)
 - Se non c'è volume precedente (`prevVol <= 0`), mostrare solo il numero grande (nessuna riga piccola).
 - Vale sia per il render normale sia per il superset (entrambi chiamano `buildVolumeRow`).
 
-## 6. Fuori scope (Fase 5)
+## 6. Banner di aggiornamento PWA
+
+Miglioramento incluso in questa fase (opzione "banner esplicito"). Tutto lato browser, verifica manuale.
+
+### 6.1 `sw.js`
+- **Rimuovere lo `skipWaiting()` automatico** nell'handler `install`: il nuovo service worker resta in
+  stato *waiting* invece di attivarsi subito, così la pagina può rilevarlo e avvisare.
+- Aggiungere un listener `message`: alla ricezione di `{ type: "SKIP_WAITING" }` chiamare `self.skipWaiting()`.
+- `activate` resta com'è (pulizia cache vecchie + `clients.claim()`).
+- **Continuare a bumpare `CACHE`** a ogni release: è ciò che rende `sw.js` byte-diverso e fa scattare
+  l'`updatefound`. Per la Fase 5: `gymsched-v1` → `gymsched-v2`.
+
+### 6.2 `app.js` (blocco di registrazione SW, ~riga 883)
+- Tenere il `register("./sw.js")`, ma sulla registrazione:
+  - chiamare `reg.update()` al `load` e su `visibilitychange` (quando la pagina torna visibile), per
+    controllare attivamente se c'è un `sw.js` nuovo;
+  - su `updatefound`, osservare `reg.installing`: quando passa a `installed` **e** esiste già un
+    `navigator.serviceWorker.controller` (cioè è un aggiornamento, non la prima installazione),
+    mostrare il **banner**.
+- **Banner:** elemento fisso in basso (sopra la barra timer), testo tipo *"Nuova versione · tocca per
+  aggiornare"*, accento verde. Al tap: `reg.waiting.postMessage({ type: "SKIP_WAITING" })`.
+- Un solo listener `navigator.serviceWorker.addEventListener("controllerchange", …)` che ricarica la
+  pagina **una volta** (guardia anti-loop) quando il nuovo SW prende il controllo.
+- Tutto best-effort e dentro il guard `"serviceWorker" in navigator` esistente.
+
+## 7. Fuori scope (Fase 5)
 
 - **`+ riscald.` per i superset.** Il render superset (`renderFocusSuperset` / `trackBlock`) non ha un
   pulsante "+ serie" esplicito (le serie seguono target/indice corrente). La **logica** di esclusione
@@ -108,7 +137,7 @@ Non testata in Node; verifica in browser reale (come da convenzione di progetto)
   pesanti, che sono esercizi normali). Decisione consapevole, non una svista.
 - Distinzione automatica warmup in base al carico (es. "sotto il 50% del top set"): no, è sempre manuale.
 
-## 7. Testing
+## 8. Testing
 
 - **Logica pura:** estendere `tests/store.test.js` e `tests/session.test.js` per coprire tutte le
   modifiche §4 (warmup escluso da volume/PR/trend, target sui soli working set, `normalizeSet.warmup`,
@@ -116,3 +145,6 @@ Non testata in Node; verifica in browser reale (come da convenzione di progetto)
 - **UI:** verifica manuale in browser reale (Playwright) — aggiungere un warmup con `+ riscald.`,
   confermare resa attenuata + badge, e che volume / working-set / trend lo escludano; verificare il
   nuovo formato della riga volume (numero + % colorata + totale precedente).
+- **Banner PWA (§6):** verifica manuale — simulare un aggiornamento (bump `CACHE`, ricaricare) e
+  confermare che compaia il banner, che il tap ricarichi con il codice nuovo e che non parta un loop
+  di reload. Alla prima installazione (nessun controller) il banner **non** deve comparire.
