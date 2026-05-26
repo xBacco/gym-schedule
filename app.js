@@ -287,16 +287,20 @@ function buildVolumeRow(vol, prevVol) {
   const row = document.createElement("div");
   row.className = "volcard";
   const l = document.createElement("span"); l.className = "vl"; l.textContent = "Volume sessione";
-  const v = document.createElement("span"); v.className = "vv";
-  v.appendChild(document.createTextNode(`${fmtKg(vol)} kg`));
+  const right = document.createElement("div"); right.className = "vright";
+  const v = document.createElement("span"); v.className = "vv"; v.textContent = `${fmtKg(vol)} kg`;
+  right.appendChild(v);
   if (prevVol > 0) {
+    const sub = document.createElement("span"); sub.className = "vsub";
     const pct = Math.round(((vol - prevVol) / prevVol) * 100);
-    const d = document.createElement("span");
-    d.className = pct >= 0 ? "acc" : "neg";
-    d.textContent = `${pct >= 0 ? "▲ +" : "▼ "}${Math.abs(pct)}%`;
-    v.appendChild(d);
+    const p = document.createElement("span");
+    p.className = pct >= 0 ? "acc" : "neg";
+    p.textContent = `${pct >= 0 ? "+" : ""}${pct}%`;
+    sub.appendChild(p);
+    sub.appendChild(document.createTextNode(` · sett. scorsa ${fmtKg(prevVol)} kg`));
+    right.appendChild(sub);
   }
-  row.append(l, v);
+  row.append(l, right);
   return row;
 }
 
