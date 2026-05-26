@@ -147,6 +147,11 @@ test("bestKg: massimo kg su tutte le settimane per quell'esercizio", () => {
   assert.equal(bestKg(d, "A", 0), 70);
 });
 
+test("bestKg: gestisce i decimali con virgola", () => {
+  let d = setEntry(emptyData(), "2026-W22", "A", 0, { sets: [{ reps: "8", kg: "72,5" }] }, "t1");
+  assert.equal(bestKg(d, "A", 0), 72.5);
+});
+
 test("bestKg: nessun dato -> null", () => {
   assert.equal(bestKg(emptyData(), "A", 0), null);
 });
