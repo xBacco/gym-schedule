@@ -2,7 +2,7 @@
 // dentro (vive su api.github.com, cross-origin): la sync resta gestita da app.js.
 // NB: bumpare CACHE (es. -v2) quando cambia un file dell'app-shell, per
 // invalidare la cache vecchia ed evitare codice stantio.
-const CACHE = "gymsched-v1";
+const CACHE = "gymsched-v2";
 const SHELL = [
   "./",
   "./index.html",
@@ -17,8 +17,14 @@ const SHELL = [
   "./icon.svg",
 ];
 
+// NB: niente skipWaiting() automatico: il nuovo SW resta in "waiting" finché
+// l'utente non tocca il banner di aggiornamento (vedi SKIP_WAITING sotto e app.js).
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
+});
+
+self.addEventListener("message", (e) => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {

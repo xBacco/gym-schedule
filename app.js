@@ -900,9 +900,39 @@ async function boot() {
 
 boot();
 
-// PWA: registra il service worker (best-effort, solo se supportato).
+// PWA: registra il service worker e gestisce l'aggiornamento (best-effort).
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => { /* SW non disponibile */ });
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloaded) return;
+    reloaded = true;
+    window.location.reload();
   });
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").then((reg) => {
+      reg.update().catch(() => {});
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") reg.update().catch(() => {});
+      });
+      reg.addEventListener("updatefound", () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener("statechange", () => {
+          if (nw.state === "installed" && navigator.serviceWorker.controller) showUpdateBanner(reg);
+        });
+      });
+    }).catch(() => { /* SW non disponibile */ });
+  });
+}
+
+function showUpdateBanner(reg) {
+  if (document.getElementById("updateBanner")) return;
+  const b = document.createElement("button");
+  b.id = "updateBanner";
+  b.type = "button";
+  b.textContent = "Nuova versione · tocca per aggiornare";
+  b.addEventListener("click", () => {
+    if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+  });
+  document.body.appendChild(b);
 }
