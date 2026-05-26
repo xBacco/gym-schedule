@@ -96,7 +96,7 @@ export function prefillSets(data, weekKey, day, idx) {
 export function platesPerSide(targetKg, { bar = 20, plates = [20, 15, 10, 5, 2.5, 1.25] } = {}) {
   let remaining = (Number(targetKg) - bar) / 2;
   if (!Number.isFinite(remaining) || remaining <= 0) return { perSide: [], leftover: 0 };
-  const sorted = [...plates].sort((a, b) => b - a);
+  const sorted = [...plates].filter((p) => Number.isFinite(p) && p > 0).sort((a, b) => b - a);
   const perSide = [];
   for (const p of sorted) {
     while (remaining + 1e-9 >= p) { perSide.push(p); remaining -= p; }

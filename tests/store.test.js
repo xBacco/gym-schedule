@@ -226,3 +226,11 @@ test("platesPerSide: set dischi personalizzato e resto non coperto", () => {
   assert.deepEqual(out.perSide, [10, 10]);
   assert.equal(out.leftover, 1.5);
 });
+
+test("platesPerSide: array dischi vuoto -> leftover = carico per lato", () => {
+  assert.deepEqual(platesPerSide(60, { bar: 20, plates: [] }), { perSide: [], leftover: 20 });
+});
+
+test("platesPerSide: dischi 0/negativi ignorati, niente loop infinito", () => {
+  assert.deepEqual(platesPerSide(60, { bar: 20, plates: [20, 0, -5] }), { perSide: [20], leftover: 0 });
+});
