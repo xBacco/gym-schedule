@@ -276,3 +276,31 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
   background:var(--acc);color:var(--acc-ink);border:none;border-radius:12px;padding:11px 16px;
   font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;cursor:pointer;
   box-shadow:0 6px 20px rgba(0,0,0,.4);}
+
+/* ---- Lotto 1: popup serie + striscia sensazione ---- */
+.set-dialog{max-width:330px;width:90vw;}
+.set-dialog .modal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.set-dialog .modal-h .t{font-size:16px;font-weight:800;}
+.set-dialog .modal-h .x{background:transparent;border:none;color:var(--dim);font-size:18px;cursor:pointer;line-height:1;}
+.set-dialog .editlabel{margin-top:14px;}
+.mini{display:flex;align-items:center;gap:10px;margin-top:9px;}
+.mini .lab{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--dim);width:34px;text-transform:uppercase;letter-spacing:.1em;}
+.mini .b{min-width:48px;height:44px;border-radius:11px;background:var(--field);border:1px solid var(--line);
+  color:var(--acc);font-weight:700;font-family:"JetBrains Mono",monospace;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;touch-action:none;}
+.mini .b:active{background:var(--acc);color:var(--acc-ink);}
+.mini .num{flex:1;text-align:center;font-family:"JetBrains Mono",monospace;font-size:24px;font-weight:700;}
+.mini .num .u{font-size:12px;color:var(--dim);}
+.acts{display:flex;gap:9px;margin-top:16px;}
+.acts button{flex:1;border-radius:11px;padding:12px 8px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surf2);color:var(--ink);}
+.acts .danger{color:var(--down);border-color:#633a24;}
+
+.feelask{position:fixed;left:50%;transform:translateX(-50%);bottom:74px;width:100%;max-width:440px;z-index:55;
+  background:var(--surf);border-top:1px solid var(--line);padding:10px 14px 12px;}
+.feelask.hidden{display:none;}
+.feelask .q{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:7px;}
+.feelask .q b{color:var(--ink);}
+.feelask .rpebar{margin:0;}
+
+/* il timer (fixed) non deve più coprire le note del focus */
+body.timer-on .focus-body{padding-bottom:160px;}

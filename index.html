@@ -88,6 +88,28 @@
     <div id="qcOptions" class="qc-options"></div>
   </dialog>
 
+  <!-- Popup modifica serie già fatta -->
+  <dialog id="setDialog" class="set-dialog">
+    <div class="modal-h">
+      <span id="setDlgTitle" class="t"></span>
+      <button id="setDlgClose" class="x" type="button" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="editlabel" style="text-align:left">Com'è andata</div>
+    <div id="setDlgRpe"></div>
+    <div class="editlabel" style="text-align:left">Modifica</div>
+    <div id="setDlgEdit"></div>
+    <div class="acts">
+      <button id="setDlgUndo" type="button">↩ Annulla conferma</button>
+      <button id="setDlgDelete" type="button" class="danger">🗑 Elimina serie</button>
+    </div>
+  </dialog>
+
+  <!-- Striscia sensazione durante il recupero -->
+  <div id="feelAsk" class="feelask hidden">
+    <div class="q">Serie <span id="feelAskN"></span> · <b>com'è andata?</b></div>
+    <div id="feelAskBar"></div>
+  </div>
+
   <!-- Rest timer -->
   <div id="timerBar" class="timerbar hidden">
     <div class="t-info">
