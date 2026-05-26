@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isoWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet } from "../store.js";
+import { isoWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet, toggleComment } from "../store.js";
 
 test("isoWeekKey returns ISO year-week", () => {
   assert.equal(isoWeekKey(new Date(2020, 0, 1)), "2020-W01"); // Wed 1 Jan 2020
@@ -311,4 +311,19 @@ test("normalizeSet: preserva array di commenti, trim e scarta vuoti/non-stringhe
 test("normalizeSet: deduplica i commenti mantenendo l'ordine", () => {
   const s = normalizeSet({ comments: ["a", "a", "b"] });
   assert.deepEqual(s.comments, ["a", "b"]);
+});
+
+test("toggleComment: aggiunge se assente", () => {
+  assert.deepEqual(toggleComment([], "alzare 1kg"), ["alzare 1kg"]);
+  assert.deepEqual(toggleComment(["a"], "b"), ["a", "b"]);
+});
+test("toggleComment: rimuove se presente", () => {
+  assert.deepEqual(toggleComment(["a", "b"], "a"), ["b"]);
+});
+test("toggleComment: trim e niente duplicati", () => {
+  assert.deepEqual(toggleComment(["a"], " a "), []);
+  assert.deepEqual(toggleComment([], "  x  "), ["x"]);
+});
+test("toggleComment: input vuoto non cambia nulla", () => {
+  assert.deepEqual(toggleComment(["a"], "   "), ["a"]);
 });

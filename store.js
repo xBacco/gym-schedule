@@ -70,6 +70,18 @@ export function normalizeSet(s) {
   return { reps: String(s?.reps ?? ""), kg: String(s?.kg ?? ""), done: !!s?.done, feel, warmup: !!s?.warmup, comments };
 }
 
+// Toggle immutabile di un commento in una lista: aggiunge se assente, rimuove se presente.
+// Trim; ignora stringa vuota; nessun duplicato.
+export function toggleComment(comments, text) {
+  const arr = Array.isArray(comments) ? comments.slice() : [];
+  const t = String(text ?? "").trim();
+  if (!t) return arr;
+  const i = arr.indexOf(t);
+  if (i === -1) { arr.push(t); return arr; }
+  arr.splice(i, 1);
+  return arr;
+}
+
 export function normalizeEntry(v) {
   if (v && typeof v === "object" && Array.isArray(v.sets)) {
     return { sets: v.sets.map(normalizeSet), note: v.note ?? "" };
