@@ -53,3 +53,32 @@ export function activeExerciseIndex(data, weekKey, day, dayPlan) {
   }
   return 0;
 }
+
+// Entry normale: aggiorna/aggiunge la serie `index` col patch dato (immutabile).
+export function withSet(entry, index, patch) {
+  const e = normalizeEntry(entry);
+  const sets = e.sets.slice();
+  while (sets.length <= index) sets.push({ reps: "", kg: "", done: false });
+  sets[index] = normalizeSet({ ...sets[index], ...patch });
+  return { sets, note: e.note };
+}
+
+export function withoutSet(entry, index) {
+  const e = normalizeEntry(entry);
+  const sets = e.sets.slice();
+  if (index >= 0 && index < sets.length) sets.splice(index, 1);
+  return { sets, note: e.note };
+}
+
+// Superset: stessa cosa sulla traccia "a"/"b".
+export function withSupersetSet(entry, track, index, patch) {
+  const e = normalizeSupersetEntry(entry);
+  const t = track === "b" ? "b" : "a";
+  return { ...e, [t]: withSet(e[t], index, patch) };
+}
+
+export function withoutSupersetSet(entry, track, index) {
+  const e = normalizeSupersetEntry(entry);
+  const t = track === "b" ? "b" : "a";
+  return { ...e, [t]: withoutSet(e[t], index) };
+}

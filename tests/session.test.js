@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex } from "../session.js";
+import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
 import { emptyData, setEntry } from "../store.js";
 
 test("parseTargetTrack: 'NxR' con range", () => {
@@ -90,4 +91,38 @@ test("activeExerciseIndex: tutti completi -> 0 (wrap, non solo perché è il pri
   let d = setEntry(emptyData(), "2026-W22", "A", 0, { sets: [{ reps: "8", kg: "70", done: true }] }, "t1");
   d = setEntry(d, "2026-W22", "A", 1, { sets: [{ reps: "8", kg: "70", done: true }] }, "t2");
   assert.equal(activeExerciseIndex(d, "2026-W22", "A", plan), 0);
+});
+
+test("withSet: aggiorna una serie esistente (merge del patch)", () => {
+  const e = { sets: [{ reps: "8", kg: "70", done: false }], note: "n" };
+  assert.deepEqual(withSet(e, 0, { kg: "72.5", done: true }), {
+    sets: [{ reps: "8", kg: "72.5", done: true }],
+    note: "n",
+  });
+});
+
+test("withSet: estende l'array se l'indice supera la lunghezza", () => {
+  assert.deepEqual(withSet("", 0, { reps: "8", kg: "70", done: true }), {
+    sets: [{ reps: "8", kg: "70", done: true }],
+    note: "",
+  });
+  const e = { sets: [{ reps: "8", kg: "70", done: true }] };
+  assert.equal(withSet(e, 2, { reps: "6", kg: "70" }).sets.length, 3);
+});
+
+test("withoutSet: rimuove la serie all'indice", () => {
+  const e = { sets: [{ reps: "8", kg: "70", done: true }, { reps: "6", kg: "70", done: false }] };
+  assert.deepEqual(withoutSet(e, 0).sets, [{ reps: "6", kg: "70", done: false }]);
+});
+
+test("withSupersetSet: aggiorna solo la traccia indicata", () => {
+  const v = { a: { sets: [{ reps: "15", kg: "25", done: false }] }, b: { sets: [{ reps: "15", kg: "12", done: false }] }, note: "" };
+  const out = withSupersetSet(v, "b", 0, { done: true });
+  assert.equal(out.a.sets[0].done, false);
+  assert.equal(out.b.sets[0].done, true);
+});
+
+test("withoutSupersetSet: rimuove dalla traccia indicata", () => {
+  const v = { a: { sets: [{ reps: "15", kg: "25", done: true }, { reps: "15", kg: "25", done: false }] }, b: { sets: [] }, note: "" };
+  assert.equal(withoutSupersetSet(v, "a", 1).a.sets.length, 1);
 });
