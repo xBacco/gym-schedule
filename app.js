@@ -6,7 +6,7 @@ import {
 } from "./store.js";
 import {
   parseTarget, activeExerciseIndex, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
-  withSet, withoutSet, withSupersetSet, withoutSupersetSet,
+  withSet, withoutSet, withSupersetSet,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 
@@ -300,7 +300,7 @@ function buildEditBlock(label, state, prev) {
   return block;
 }
 
-function setRow(i, set, prev, isCurrent, onRemove) {
+function setRow(i, set, prev, isCurrent, onRemove, onEditSet) {
   const row = document.createElement("div");
   row.className = "srow" + (isCurrent ? " cur" : "");
   const idx = document.createElement("span"); idx.className = "i"; idx.textContent = String(i + 1);
@@ -315,6 +315,16 @@ function setRow(i, set, prev, isCurrent, onRemove) {
     v.append(document.createTextNode("—"), x, document.createTextNode("—"));
   }
   row.append(idx, v);
+
+  if (set.done && onEditSet) {
+    v.addEventListener("click", () => {
+      const reps = prompt("Ripetizioni:", set.reps);
+      if (reps === null) return;
+      const kg = prompt("Carico (kg):", set.kg);
+      if (kg === null) return;
+      onEditSet({ reps: reps.trim(), kg: kg.trim() });
+    });
+  }
 
   const delta = prev ? progressionDelta(set.kg, prev.kg) : null;
   if (set.done && delta !== null && delta > 0) {
@@ -385,7 +395,10 @@ function renderFocusNormal(ex) {
     setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, canRemove ? () => {
       data = setEntry(data, currentWeek, currentDay, focusIndex, withoutSet(v, i), new Date().toISOString());
       persist(); render();
-    } : null));
+    } : null, (patch) => {
+      data = setEntry(data, currentWeek, currentDay, focusIndex, withSet(v, i, { ...patch, done: true }), new Date().toISOString());
+      persist(); render();
+    }));
   }
   card.appendChild(setsBox);
 
@@ -447,7 +460,11 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state) 
   const total = Math.max(trackEntry.sets.length, tgtTrack.sets, curIdx + 1);
   for (let i = 0; i < total; i++) {
     const set = trackEntry.sets[i] || { reps: "", kg: "", done: false };
-    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, null));
+    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, null, (patch) => {
+      const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, focusIndex), trackKey, i, { ...patch, done: true });
+      data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
+      persist(); render();
+    }));
   }
   wrap.appendChild(setsBox);
 
@@ -531,14 +548,6 @@ function render() {
 }
 
 // ---- Editing + saving ----
-function onEdit(day, idx, value) {
-  data = setEntry(data, currentWeek, day, idx, value, new Date().toISOString());
-  bufferEdit(currentWeek, day, idx, value);
-  setStatus("in attesa ⧗", "pending");
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveToCloud, 1500);
-}
-
 function scheduleSave() {
   clearTimeout(saveTimer);
   setStatus("in attesa ⧗", "pending");
