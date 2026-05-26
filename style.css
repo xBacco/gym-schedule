@@ -146,3 +146,16 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
 .settings menu{display:flex;gap:8px;padding:0;margin:0;flex-wrap:wrap;}
 .settings menu button{border-radius:10px;padding:9px 12px;font-weight:700;font-family:inherit;border:none;cursor:pointer;background:var(--acc);color:var(--acc-ink);}
 .settings menu button.btn-soft{background:transparent;color:var(--acc);border:1px solid var(--line);}
+
+/* Tag "com'è andata" (RPE light) */
+.rpebar{display:flex;gap:8px;margin:12px 0 2px;}
+.rpebar .rb{flex:1;background:transparent;border:1px solid var(--line);border-radius:11px;padding:10px 0;
+  font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;color:var(--dim);cursor:pointer;min-height:44px;}
+.rpebar .rb.easy.on{color:#7FC8FF;border-color:#244a63;background:rgba(127,200,255,.07);}
+.rpebar .rb.ok.on{color:var(--acc);border-color:#1e4a3b;background:rgba(63,224,168,.07);}
+.rpebar .rb.hard.on{color:#FFB37F;border-color:#633a24;background:rgba(255,179,127,.07);}
+.rpe{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;
+  border-radius:5px;padding:2px 7px;margin-left:auto;cursor:pointer;}
+.rpe.easy{color:#7FC8FF;border:1px solid #244a63;}
+.rpe.ok{color:var(--acc);border:1px solid #1e4a3b;}
+.rpe.hard{color:#FFB37F;border:1px solid #633a24;}

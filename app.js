@@ -231,6 +231,23 @@ function repsLow(repsStr) {
   return m ? m[0] : "";
 }
 
+const RPE_OPTS = [["easy", "facile"], ["ok", "giusta"], ["hard", "dura"]];
+
+// Barra a 3 pulsanti per il "feel" della serie corrente. `current` = feel attuale ("" se nessuno).
+// onPick(feel) riceve "" quando si ri-tocca il tag già attivo (toggle off).
+function buildRpeBar(current, onPick) {
+  const bar = document.createElement("div");
+  bar.className = "rpebar";
+  for (const [val, label] of RPE_OPTS) {
+    const b = document.createElement("button");
+    b.className = "rb " + val + (current === val ? " on" : "");
+    b.textContent = label;
+    b.addEventListener("click", () => onPick(current === val ? "" : val));
+    bar.appendChild(b);
+  }
+  return bar;
+}
+
 // Costruisce il blocco di editing per una serie. `state` = {kg, reps} mutato in place.
 // prev = {reps, kg} della volta scorsa per quella serie (o null). Ritorna l'elemento.
 function buildEditBlock(label, state, prev) {
@@ -345,7 +362,7 @@ function buildNoteField(superset) {
   return wrap;
 }
 
-function setRow(i, set, prev, isCurrent, onRemove, onEditSet) {
+function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel) {
   const row = document.createElement("div");
   row.className = "srow" + (isCurrent ? " cur" : "");
   const idx = document.createElement("span"); idx.className = "i"; idx.textContent = String(i + 1);
@@ -380,11 +397,19 @@ function setRow(i, set, prev, isCurrent, onRemove, onEditSet) {
     row.appendChild(tag);
   } else if (set.done) {
     const chk = document.createElement("span"); chk.className = "chk"; chk.textContent = "✓";
-    chk.style.marginLeft = "auto";
+    if (!set.feel) chk.style.marginLeft = "auto";
     row.appendChild(chk);
   } else if (isCurrent) {
     const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "in corso"; tag.style.marginLeft = "auto";
     row.appendChild(tag);
+  }
+  if (set.done && set.feel && onFeel) {
+    const fl = document.createElement("span");
+    fl.className = "rpe " + set.feel;
+    fl.textContent = set.feel === "easy" ? "facile" : set.feel === "hard" ? "dura" : "giusta";
+    fl.title = "Tocca per cambiare";
+    fl.addEventListener("click", (e) => { e.stopPropagation(); onFeel(); });
+    row.appendChild(fl);
   }
   if (onRemove) {
     const rm = document.createElement("span"); rm.className = "rm"; rm.textContent = "✕";
@@ -443,11 +468,22 @@ function renderFocusNormal(ex) {
     } : null, (patch) => {
       data = setEntry(data, currentWeek, currentDay, focusIndex, withSet(v, i, { ...patch, done: true }), new Date().toISOString());
       persist(); render();
-    }));
+    }, set.done ? () => {
+      const order = ["", "easy", "ok", "hard"];
+      const next = order[(order.indexOf(set.feel) + 1) % order.length];
+      data = setEntry(data, currentWeek, currentDay, focusIndex, withSet(v, i, { feel: next }), new Date().toISOString());
+      persist(); render();
+    } : null));
   }
   card.appendChild(setsBox);
 
   card.appendChild(buildEditBlock(`Serie ${curIdx + 1} — carico · step 0.5 kg`, draft, prev[curIdx] || null));
+
+  card.appendChild(buildRpeBar(entry.sets[curIdx]?.feel ?? "", (feel) => {
+    data = setEntry(data, currentWeek, currentDay, focusIndex,
+      withSet(v, curIdx, { ...draft, feel }), new Date().toISOString());
+    persist(); render();
+  }));
 
   const dots = document.createElement("div");
   dots.className = "dots";
@@ -510,11 +546,22 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state) 
       const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, focusIndex), trackKey, i, { ...patch, done: true });
       data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
       persist(); render();
-    }));
+    }, set.done ? () => {
+      const order = ["", "easy", "ok", "hard"];
+      const next = order[(order.indexOf(set.feel) + 1) % order.length];
+      const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, focusIndex), trackKey, i, { feel: next });
+      data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
+      persist(); render();
+    } : null));
   }
   wrap.appendChild(setsBox);
 
   wrap.appendChild(buildEditBlock(`Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`, state, prevSets[curIdx] || null));
+  wrap.appendChild(buildRpeBar(trackEntry.sets[curIdx]?.feel ?? "", (feel) => {
+    const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, focusIndex), trackKey, curIdx, { ...state, feel });
+    data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
+    persist(); render();
+  }));
   return { wrap, curIdx };
 }
 
