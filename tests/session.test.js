@@ -50,6 +50,14 @@ test("parseTarget: superset con conteggi/reps asimmetrici", () => {
   });
 });
 
+test("parseTarget gestisce reps a numero singolo (senza range)", () => {
+  assert.deepEqual(parseTarget("3 × 10"), { sets: 3, reps: "10" });
+  assert.deepEqual(parseTarget("3 × 10 / 3 × 10", true), {
+    a: { sets: 3, reps: "10" },
+    b: { sets: 3, reps: "10" },
+  });
+});
+
 test("activeSetIndex: prima serie non done", () => {
   assert.equal(activeSetIndex([]), 0);
   assert.equal(activeSetIndex([{ done: true }, { done: false }]), 1);
