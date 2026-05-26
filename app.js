@@ -2,7 +2,7 @@ import { PLAN } from "./plan.js";
 import {
   isoWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet,
-  GitHubStore, ConflictError, AuthError, toggleComment,
+  GitHubStore, ConflictError, AuthError,
 } from "./store.js";
 import {
   parseTarget, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
@@ -255,20 +255,56 @@ function buildRpeBar(current, onPick) {
 }
 
 // Riga di chip commenti per la serie corrente. `selected` = array commenti già scelti.
-function buildQuickCommentChips(selected, onToggle, onWrite) {
-  const wrap = document.createElement("div"); wrap.className = "chips";
-  const presets = getQuickComments();
-  const extras = selected.filter((s) => !presets.includes(s));
-  for (const text of [...presets, ...extras]) {
-    const c = document.createElement("span");
-    c.className = "chip" + (selected.includes(text) ? " on" : "");
-    c.textContent = text;
-    c.addEventListener("click", () => onToggle(text));
-    wrap.appendChild(c);
+// Apre il popup tag. selected = array corrente; onChange(nuovoArray) chiamato a ogni tap (applica subito).
+function openQcDialog(selected, onChange) {
+  const dlg = document.getElementById("qcDialog");
+  const opts = document.getElementById("qcOptions");
+  const draftSel = selected.slice();
+  const paint = () => {
+    opts.textContent = "";
+    getQuickComments().forEach((text) => {
+      const o = document.createElement("button");
+      o.type = "button";
+      o.className = "qc-opt" + (draftSel.includes(text) ? " on" : "");
+      o.textContent = text;
+      o.addEventListener("click", () => {
+        const i = draftSel.indexOf(text);
+        if (i === -1) draftSel.push(text); else draftSel.splice(i, 1);
+        onChange(draftSel.slice());   // applica subito
+        paint();
+      });
+      opts.appendChild(o);
+    });
+    const w = document.createElement("button");
+    w.type = "button"; w.className = "qc-opt write"; w.textContent = "＋ scrivi un commento…";
+    w.addEventListener("click", () => {
+      const t = prompt("Commento:");
+      const val = t && t.trim();
+      if (val && !draftSel.includes(val)) { draftSel.push(val); onChange(draftSel.slice()); paint(); }
+    });
+    opts.appendChild(w);
+  };
+  paint();
+  if (!dlg.open) dlg.showModal();
+}
+
+// Bottone "commento veloce (n)" + riepilogo tag. onOpen() apre il popup.
+function buildQuickCommentButton(selected, onOpen) {
+  const wrap = document.createElement("div");
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "qc-btn";
+  const lab = document.createElement("span"); lab.textContent = "💬 commento veloce";
+  const cnt = document.createElement("span");
+  cnt.className = "cnt" + (selected.length ? "" : " zero");
+  cnt.textContent = String(selected.length);
+  btn.append(lab, cnt);
+  btn.addEventListener("click", onOpen);
+  wrap.appendChild(btn);
+  if (selected.length) {
+    const sel = document.createElement("div"); sel.className = "qc-sel";
+    selected.forEach((t) => { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; sel.appendChild(s); });
+    wrap.appendChild(sel);
   }
-  const w = document.createElement("span"); w.className = "chip write"; w.textContent = "+ scrivi";
-  w.addEventListener("click", onWrite);
-  wrap.appendChild(w);
   return wrap;
 }
 
@@ -732,17 +768,15 @@ function renderFocusNormal(ex, idx, container, footer) {
     const edit = buildEditBlock(`Serie ${curIdx + 1} — carico · step 0.5 kg`, draft, prev[curIdx] || null);
     container.appendChild(edit.block);
 
-    const qcLabel = document.createElement("div"); qcLabel.className = "editlabel"; qcLabel.textContent = "commento veloce";
-    container.appendChild(qcLabel);
-    let chipsEl;
-    const refreshChips = () => {
-      const fresh = buildQuickCommentChips(draft.comments,
-        (text) => { draft.comments = toggleComment(draft.comments, text); refreshChips(); },
-        () => { const t = prompt("Commento:"); const v = t && t.trim(); if (v && !draft.comments.includes(v)) { draft.comments = [...draft.comments, v]; refreshChips(); } });
-      if (chipsEl) { chipsEl.replaceWith(fresh); } else { container.appendChild(fresh); }
-      chipsEl = fresh;
+    let qcEl;
+    const refreshQc = () => {
+      const fresh = buildQuickCommentButton(draft.comments, () => {
+        openQcDialog(draft.comments, (next) => { draft.comments = next; refreshQc(); });
+      });
+      if (qcEl) { qcEl.replaceWith(fresh); } else { container.appendChild(fresh); }
+      qcEl = fresh;
     };
-    refreshChips();
+    refreshQc();
 
     const repInSession = previousSetInSession(v, curIdx);
     const repPrevWeek = previousWeekSet(data, currentDay, idx, currentWeek, curIdx);
@@ -902,17 +936,15 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
     const edit = buildEditBlock(`Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`, state, prevSets[curIdx] || null);
     wrap.appendChild(edit.block);
 
-    const qcLabel = document.createElement("div"); qcLabel.className = "editlabel"; qcLabel.textContent = "commento veloce";
-    wrap.appendChild(qcLabel);
-    let chipsEl;
-    const refreshChips = () => {
-      const fresh = buildQuickCommentChips(state.comments,
-        (text) => { state.comments = toggleComment(state.comments, text); refreshChips(); },
-        () => { const t = prompt("Commento:"); const v = t && t.trim(); if (v && !state.comments.includes(v)) { state.comments = [...state.comments, v]; refreshChips(); } });
-      if (chipsEl) { chipsEl.replaceWith(fresh); } else { wrap.appendChild(fresh); }
-      chipsEl = fresh;
+    let qcEl;
+    const refreshQc = () => {
+      const fresh = buildQuickCommentButton(state.comments, () => {
+        openQcDialog(state.comments, (next) => { state.comments = next; refreshQc(); });
+      });
+      if (qcEl) { qcEl.replaceWith(fresh); } else { wrap.appendChild(fresh); }
+      qcEl = fresh;
     };
-    refreshChips();
+    refreshQc();
 
     const inSess = previousSetInSession(trackEntry, curIdx);
     const prevWk = previousWeekSet(data, currentDay, idx, currentWeek, curIdx, trackKey);
@@ -1256,6 +1288,10 @@ async function boot() {
     b.addEventListener("click", () => changeDay(b.dataset.day));
   }
   document.getElementById("focusBack").addEventListener("click", () => closeFocus());
+  document.getElementById("qcClose").addEventListener("click", () => document.getElementById("qcDialog").close());
+  document.getElementById("qcDialog").addEventListener("click", (e) => {
+    if (e.target.id === "qcDialog") e.target.close(); // tap sul backdrop
+  });
   window.addEventListener("popstate", () => { if (openIndex !== null) { hideFeelAsk(); openIndex = null; render(); } });
   initStore();
   setStatus("carico…");
