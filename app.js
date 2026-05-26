@@ -738,10 +738,11 @@ function renderFocusNormal(ex, idx, container, footer) {
       withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true, feel: entry.sets[curIdx]?.feel ?? "", comments: draft.comments }), new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
-    showFeelAsk({ idx, superset: false, setIndex: curIdx });
     render();
     if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
       closeFocus(); // esercizio finito → torna alla lista (e libera la voce di history)
+    } else {
+      showFeelAsk({ idx, superset: false, setIndex: curIdx });
     }
   });
   footer.appendChild(cta);
@@ -864,10 +865,11 @@ function renderFocusSuperset(ex, idx, container, footer) {
     data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
-    showFeelAsk({ idx, superset: true, aIdx: a.curIdx, bIdx: b.curIdx });
     render();
     if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
       closeFocus(); // superset finito → torna alla lista (e libera la voce di history)
+    } else {
+      showFeelAsk({ idx, superset: true, aIdx: a.curIdx, bIdx: b.curIdx });
     }
   });
   footer.appendChild(cta);
