@@ -66,7 +66,7 @@ const getPlateSet = () => { const v = parsePlateSet(localStorage.getItem(PLATES_
 const QC_KEY = "gymsched_quickcomments";
 const QC_DEFAULT = ["alzare 1kg", "diminuire leggermente", "ultima reps forzata/sporca"];
 function getQuickComments() {
-  try { const v = JSON.parse(localStorage.getItem(QC_KEY)); if (Array.isArray(v)) return v.filter((x) => typeof x === "string" && x.trim()); } catch (_) {}
+  try { const v = JSON.parse(localStorage.getItem(QC_KEY)); if (Array.isArray(v)) return v.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()); } catch (_) {}
   return QC_DEFAULT.slice();
 }
 function setQuickComments(arr) { localStorage.setItem(QC_KEY, JSON.stringify(arr)); }
@@ -558,7 +558,7 @@ function renderFocusNormal(ex, idx, container) {
   container.appendChild(qcLabel);
   container.appendChild(buildQuickCommentChips(draft.comments,
     (text) => { draft.comments = toggleComment(draft.comments, text); render(); },
-    () => { const t = prompt("Commento:"); if (t && t.trim()) { draft.comments = toggleComment(draft.comments, t.trim()); render(); } }));
+    () => { const t = prompt("Commento:"); const v = t && t.trim(); if (v && !draft.comments.includes(v)) { draft.comments = [...draft.comments, v]; render(); } }));
 
   const repInSession = previousSetInSession(v, curIdx);
   const repPrevWeek = previousWeekSet(data, currentDay, idx, currentWeek, curIdx);
@@ -613,8 +613,8 @@ function renderFocusNormal(ex, idx, container) {
 }
 
 // Bozze separate per traccia A e B della serie corrente del superset.
-let draftA = { kg: "", reps: "" };
-let draftB = { kg: "", reps: "" };
+let draftA = { kg: "", reps: "", comments: [] };
+let draftB = { kg: "", reps: "", comments: [] };
 
 function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, idx) {
   const wrap = document.createElement("div");
@@ -671,7 +671,7 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
   wrap.appendChild(qcLabel);
   wrap.appendChild(buildQuickCommentChips(state.comments,
     (text) => { state.comments = toggleComment(state.comments, text); render(); },
-    () => { const t = prompt("Commento:"); if (t && t.trim()) { state.comments = toggleComment(state.comments, t.trim()); render(); } }));
+    () => { const t = prompt("Commento:"); const v = t && t.trim(); if (v && !state.comments.includes(v)) { state.comments = [...state.comments, v]; render(); } }));
 
   const inSess = previousSetInSession(trackEntry, curIdx);
   const prevWk = previousWeekSet(data, currentDay, idx, currentWeek, curIdx, trackKey);
