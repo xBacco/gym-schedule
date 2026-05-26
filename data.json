@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-26T16:49:52.098Z",
+  "updatedAt": "2026-05-26T16:52:00.497Z",
   "weeks": {
     "2026-W22": {
       "label": "2026-W22",
@@ -373,6 +373,14 @@
                   "feel": "",
                   "warmup": false,
                   "comments": []
+                },
+                {
+                  "reps": "8",
+                  "kg": "",
+                  "done": true,
+                  "feel": "",
+                  "warmup": false,
+                  "comments": []
                 }
               ],
               "note": ""
@@ -390,6 +398,14 @@
                 {
                   "reps": "10",
                   "kg": "7.5",
+                  "done": true,
+                  "feel": "",
+                  "warmup": false,
+                  "comments": []
+                },
+                {
+                  "reps": "10",
+                  "kg": "",
                   "done": true,
                   "feel": "",
                   "warmup": false,
