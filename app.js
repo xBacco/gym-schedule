@@ -582,6 +582,13 @@ async function saveToCloud() {
   }
 }
 
+// Flush best-effort quando la sessione viene messa via (tab nascosta o pagina
+// chiusa): salva subito i pending invece di aspettare il debounce. §9.2.
+function flushPending() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (getPending().length && getToken() && store) saveToCloud();
+}
+
 // ---- Week management ----
 function changeWeek(key) {
   currentWeek = key;
@@ -651,6 +658,8 @@ async function boot() {
   wireTimerControls();
   document.getElementById("weekSelect").addEventListener("change", (e) => changeWeek(e.target.value));
   document.getElementById("newWeekBtn").addEventListener("click", newWeek);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) flushPending(); });
+  window.addEventListener("pagehide", flushPending);
   for (const b of document.querySelectorAll("#dayTabs button")) {
     b.addEventListener("click", () => changeDay(b.dataset.day));
   }
