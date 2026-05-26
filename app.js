@@ -586,7 +586,7 @@ async function saveToCloud() {
 // chiusa): salva subito i pending invece di aspettare il debounce. §9.2.
 function flushPending() {
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-  if (getPending().length && getToken() && store) saveToCloud();
+  if (getPending().length && getToken() && store) saveToCloud().catch(() => {}); // best-effort; errori già gestiti dentro saveToCloud
 }
 
 // ---- Week management ----
