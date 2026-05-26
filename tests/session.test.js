@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseTargetTrack, parseTarget } from "../session.js";
+import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex } from "../session.js";
+import { emptyData, setEntry } from "../store.js";
 
 test("parseTargetTrack: 'NxR' con range", () => {
   assert.deepEqual(parseTargetTrack("4 × 6-8"), { sets: 4, reps: "6-8" });
@@ -45,4 +46,37 @@ test("parseTarget: superset con conteggi/reps asimmetrici", () => {
     a: { sets: 3, reps: "8-10" },
     b: { sets: 3, reps: "10-12" },
   });
+});
+
+test("activeSetIndex: prima serie non done", () => {
+  assert.equal(activeSetIndex([]), 0);
+  assert.equal(activeSetIndex([{ done: true }, { done: false }]), 1);
+  assert.equal(activeSetIndex([{ done: true }, { done: true }]), 2);
+});
+
+test("isEntryComplete: normale completo solo se ha serie e tutte done", () => {
+  assert.equal(isEntryComplete("", false), false);
+  assert.equal(isEntryComplete({ sets: [{ reps: "8", kg: "70", done: true }] }, false), true);
+  assert.equal(isEntryComplete({ sets: [{ reps: "8", kg: "70", done: false }] }, false), false);
+});
+
+test("isEntryComplete: superset considera solo le tracce con serie loggate", () => {
+  assert.equal(isEntryComplete("", true), false);
+  const v = { a: { sets: [{ reps: "15", kg: "25", done: true }] }, b: { sets: [{ reps: "15", kg: "12", done: true }] } };
+  assert.equal(isEntryComplete(v, true), true);
+  const half = { a: { sets: [{ reps: "15", kg: "25", done: true }] }, b: { sets: [] } };
+  assert.equal(isEntryComplete(half, true), true); // B a corpo libero non loggata -> non blocca
+});
+
+test("activeExerciseIndex: primo esercizio non completo", () => {
+  const plan = { exercises: [{ superset: false }, { superset: false }, { superset: false }] };
+  assert.equal(activeExerciseIndex(emptyData(), "2026-W22", "A", plan), 0);
+  let d = setEntry(emptyData(), "2026-W22", "A", 0, { sets: [{ reps: "8", kg: "70", done: true }] }, "t");
+  assert.equal(activeExerciseIndex(d, "2026-W22", "A", plan), 1);
+});
+
+test("activeExerciseIndex: tutti completi -> 0", () => {
+  const plan = { exercises: [{ superset: false }] };
+  let d = setEntry(emptyData(), "2026-W22", "A", 0, { sets: [{ reps: "8", kg: "70", done: true }] }, "t");
+  assert.equal(activeExerciseIndex(d, "2026-W22", "A", plan), 0);
 });
