@@ -3,24 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#C45A3B">
+  <meta name="theme-color" content="#0E0F0E">
   <title>Gym Schedule</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <div class="wrap">
-    <header class="hero">
-      <p class="kicker">Allenamento · Definizione + massa lean</p>
-      <h1>Full-body 3× settimana</h1>
-      <div class="topbar">
-        <select id="weekSelect" aria-label="Settimana"></select>
-        <button id="newWeekBtn" class="btn-soft">+ Settimana</button>
-        <span id="status" class="status">—</span>
-        <button id="settingsBtn" class="btn-icon" aria-label="Impostazioni">⚙</button>
-      </div>
-    </header>
+    <div class="kicker">DAY <b id="kickDay">A</b> · <span id="kickWeek">SETT. —</span></div>
+    <h1 id="dayTitle">—</h1>
 
-    <div id="days"></div>
+    <div class="day-tabs" id="dayTabs">
+      <button data-day="A" class="on">A</button>
+      <button data-day="B">B</button>
+      <button data-day="C">C</button>
+    </div>
+
+    <div class="week-row">
+      <select id="weekSelect" aria-label="Settimana"></select>
+      <button id="newWeekBtn" class="btn-soft">+ Sett.</button>
+      <span id="status" class="status">—</span>
+      <button id="settingsBtn" class="btn-icon" aria-label="Impostazioni">⚙</button>
+    </div>
+
+    <div class="prog" id="progBar"></div>
+
+    <div id="focus"></div>
+    <div class="upnext" id="upnextLabel"></div>
+    <div id="upnext"></div>
 
     <dialog id="settingsDialog">
       <form method="dialog" class="settings">
@@ -37,7 +49,7 @@
     </dialog>
   </div>
 
-  <!-- Rest timer widget -->
+  <!-- Rest timer -->
   <div id="timerBar" class="timerbar hidden">
     <div class="t-info">
       <span id="timerLabel" class="t-label"></span>
