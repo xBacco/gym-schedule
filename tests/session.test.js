@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
-import { bestKg, progressionDelta, withNote, previousNote } from "../session.js";
+import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet } from "../session.js";
 import { emptyData, setEntry } from "../store.js";
 
 test("parseTargetTrack: 'NxR' con range", () => {
@@ -205,4 +205,57 @@ test("previousNote ritorna '' se non c'è nota precedente", () => {
   let d = emptyData();
   d = setEntry(d, "2026-W21", "A", 0, { sets: [{ reps: "8", kg: "70", done: true }], note: "" }, "t");
   assert.equal(previousNote(d, "A", 0, "2026-W22", false), "");
+});
+
+test("previousSetInSession: ultima serie done con indice < index", () => {
+  const entry = { sets: [
+    { reps: "8", kg: "70", done: true },
+    { reps: "8", kg: "72.5", done: true },
+    { reps: "", kg: "", done: false },
+  ] };
+  assert.deepEqual(previousSetInSession(entry, 2), { reps: "8", kg: "72.5" });
+  assert.deepEqual(previousSetInSession(entry, 1), { reps: "8", kg: "70" });
+});
+
+test("previousSetInSession: salta le serie non done", () => {
+  const entry = { sets: [
+    { reps: "8", kg: "70", done: true },
+    { reps: "5", kg: "0", done: false },
+  ] };
+  assert.deepEqual(previousSetInSession(entry, 2), { reps: "8", kg: "70" });
+});
+
+test("previousSetInSession: nessuna serie done precedente -> null", () => {
+  assert.equal(previousSetInSession({ sets: [{ reps: "8", kg: "70", done: false }] }, 1), null);
+  assert.equal(previousSetInSession({ sets: [] }, 0), null);
+});
+
+test("previousSetInSession: traccia superset", () => {
+  const entry = { a: { sets: [{ reps: "12", kg: "20", done: true }] },
+                  b: { sets: [{ reps: "15", kg: "10", done: true }] } };
+  assert.deepEqual(previousSetInSession(entry, 1, "b"), { reps: "15", kg: "10" });
+});
+
+test("previousWeekSet: stessa serie della settimana precedente con dato", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W21", "A", 0, { sets: [
+    { reps: "8", kg: "67.5", done: true }, { reps: "8", kg: "70", done: true },
+  ] });
+  const r = previousWeekSet(d, "A", 0, "2026-W22", 1);
+  assert.deepEqual({ reps: r.reps, kg: r.kg, week: r.week }, { reps: "8", kg: "70", week: "2026-W21" });
+});
+
+test("previousWeekSet: fallback all'ultima serie se l'indice non esiste", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W21", "A", 0, { sets: [{ reps: "8", kg: "67.5", done: true }] });
+  const r = previousWeekSet(d, "A", 0, "2026-W22", 3);
+  assert.equal(r.kg, "67.5");
+});
+
+test("previousWeekSet: salta settimane vuote e senza storico -> null", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W20", "A", 0, { sets: [{ reps: "8", kg: "65", done: true }] });
+  d = setEntry(d, "2026-W21", "A", 0, { sets: [] });
+  assert.equal(previousWeekSet(d, "A", 0, "2026-W22", 0).kg, "65");
+  assert.equal(previousWeekSet(d, "A", 0, "2026-W20", 0), null);
 });

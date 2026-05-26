@@ -137,3 +137,34 @@ export function progressionDelta(curKg, prevKg) {
   if (!Number.isFinite(c) || !Number.isFinite(p)) return null;
   return Math.round((c - p) * 100) / 100;
 }
+
+// Traccia (normale o superset-a/b) di un'entry, normalizzata.
+function entryTrack(entry, track) {
+  if (track === "a" || track === "b") return normalizeSupersetEntry(entry)[track];
+  return normalizeEntry(entry);
+}
+
+// {reps,kg} dell'ultima serie done con indice < `index` nella sessione corrente; null se assente.
+export function previousSetInSession(entry, index, track = null) {
+  const t = entryTrack(entry, track);
+  const start = Math.min(index, t.sets.length) - 1;
+  for (let i = start; i >= 0; i--) {
+    if (t.sets[i].done) return { reps: t.sets[i].reps, kg: t.sets[i].kg };
+  }
+  return null;
+}
+
+// {reps,kg,week} dalla settimana precedente con dato per quell'esercizio; null se assente.
+// Ritorna il set a `setIndex`, o l'ultimo disponibile di quella settimana.
+export function previousWeekSet(data, day, idx, weekKey, setIndex, track = null) {
+  const keys = Object.keys(data?.weeks ?? {})
+    .filter((k) => /^\d{4}-W\d{2}(\.\d+)?$/.test(k) && k < weekKey).sort();
+  for (let i = keys.length - 1; i >= 0; i--) {
+    const t = entryTrack(getEntry(data, keys[i], day, idx), track);
+    if (t.sets.length) {
+      const s = t.sets[setIndex] ?? t.sets[t.sets.length - 1];
+      return { reps: s.reps, kg: s.kg, week: keys[i] };
+    }
+  }
+  return null;
+}
