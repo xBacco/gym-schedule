@@ -847,10 +847,30 @@ function newWeek() {
 // ---- Settings dialog ----
 function wireSettings() {
   const dlg = document.getElementById("settingsDialog");
+
+  function renderQcList() {
+    const root = document.getElementById("qcList"); root.textContent = "";
+    getQuickComments().forEach((text, i) => {
+      const row = document.createElement("div"); row.className = "qc";
+      const t = document.createElement("span"); t.className = "txt"; t.textContent = text;
+      const del = document.createElement("span"); del.className = "del"; del.textContent = "✕";
+      del.addEventListener("click", () => { const arr = getQuickComments(); arr.splice(i, 1); setQuickComments(arr); renderQcList(); });
+      row.append(t, del); root.appendChild(row);
+    });
+  }
+
+  document.getElementById("qcAdd").addEventListener("click", () => {
+    const inp = document.getElementById("qcInput"); const t = inp.value.trim();
+    if (!t) return;
+    const arr = getQuickComments(); if (!arr.includes(t)) arr.push(t);
+    setQuickComments(arr); inp.value = ""; renderQcList();
+  });
+
   document.getElementById("settingsBtn").addEventListener("click", () => {
     document.getElementById("tokenInput").value = getToken() || "";
     document.getElementById("barInput").value = getBar();
     document.getElementById("platesInput").value = getPlateSet().join(", ");
+    renderQcList();
     dlg.showModal();
   });
   dlg.addEventListener("close", () => {
