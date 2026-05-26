@@ -323,6 +323,15 @@ body.timer-on .focus-body{padding-bottom:160px;}
 .failnote::placeholder{color:var(--faint);}
 .failnote.hidden{display:none;}
 
+/* ---- Fase 7 Task 5: compattazione dentro l'overlay (fit senza scroll) ---- */
+.focus-body .sets{margin-top:8px;}
+.focus-body .editblock{margin-top:10px;padding:11px;}
+.focus-body .rpebar{margin:9px 0 2px;}
+.focus-body .qc-btn{margin-top:9px;}
+.focus-body .dots{margin-top:11px;}
+.focus-body .trend{margin-top:0;}
+.focus-body .track-h{margin-bottom:6px;}
+
 /* Link "serie non riuscita" nell'editor della serie corrente */
 .fail-link{background:transparent;border:none;color:var(--faint);font-family:"JetBrains Mono",monospace;font-size:11px;
   cursor:pointer;padding:8px 0 0;display:block;text-align:left;letter-spacing:.03em;}
