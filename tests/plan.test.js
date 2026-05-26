@@ -21,7 +21,16 @@ test("days A/B/C have 8/8/8 exercises with required fields", () => {
   }
 });
 
-test("first exercise of day A is the bench press, 150s rest", () => {
+test("first exercise of day A is the bench press, 120s rest", () => {
   assert.match(PLAN[0].exercises[0].name, /Panca piana/);
-  assert.equal(PLAN[0].exercises[0].restSeconds, 150);
+  assert.equal(PLAN[0].exercises[0].restSeconds, 120);
+});
+
+test("rest times are calibrated to [60, 120] seconds", () => {
+  for (const day of PLAN) {
+    for (const ex of day.exercises) {
+      assert.ok(ex.restSeconds >= 60 && ex.restSeconds <= 120,
+        `${ex.name}: rest ${ex.restSeconds}s fuori da [60,120]`);
+    }
+  }
 });

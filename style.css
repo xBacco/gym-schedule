@@ -232,6 +232,17 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
 /* la barra timer resta sopra l'overlay (parte dalla CTA dentro il focus) */
 .timerbar{z-index:60;}
 
+/* editor recupero sempre visibile in cima al focus */
+.restedit{display:flex;align-items:center;gap:9px;background:var(--surf2);border:1px solid var(--line);
+  border-radius:12px;padding:8px 11px;margin-bottom:12px;}
+.restedit .rl{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);margin-right:auto;}
+.restedit .rstep{min-width:48px;height:36px;background:var(--surf);border:1px solid var(--line);
+  border-radius:9px;color:var(--acc);font-family:"JetBrains Mono",monospace;font-size:14px;font-weight:700;cursor:pointer;}
+.restedit .rstep:active{background:var(--acc);color:var(--acc-ink);}
+.restedit .rval{min-width:52px;text-align:center;font-family:"JetBrains Mono",monospace;
+  font-size:16px;font-weight:700;color:var(--ink);}
+
 /* sotto-tab A/B per i superset */
 .ss-tabs{display:flex;gap:7px;margin-bottom:12px;}
 .ss-tabs button{flex:1;background:var(--surf2);border:1px solid var(--line);color:var(--dim);
