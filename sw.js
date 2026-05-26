@@ -38,6 +38,6 @@ self.addEventListener("fetch", (e) => {
       const copy = res.clone();
       caches.open(CACHE).then((c) => c.put(req, copy));
       return res;
-    }).catch(() => caches.match("./index.html")))
+    }).catch(() => req.destination === "document" ? caches.match("./index.html") : Response.error()))
   );
 });
