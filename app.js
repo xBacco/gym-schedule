@@ -419,6 +419,78 @@ function buildEditBlock(label, state, prev) {
   return { block, refresh: () => { renderKg(); renderReps(); } };
 }
 
+// Stepper compatto per il popup serie: muta state[field] in place.
+// step < 1 ⇒ campo kg (1 decimale, " kg"); altrimenti reps (intero).
+function buildMiniStepper(label, state, field, step) {
+  const row = document.createElement("div"); row.className = "mini";
+  const lab = document.createElement("span"); lab.className = "lab"; lab.textContent = label;
+  const dec = document.createElement("button"); dec.type = "button"; dec.className = "b"; dec.textContent = "−";
+  const num = document.createElement("span"); num.className = "num";
+  const inc = document.createElement("button"); inc.type = "button"; inc.className = "b"; inc.textContent = "+";
+  const isKg = step < 1;
+  const paint = () => {
+    const n = parseFloat(String(state[field]).replace(",", "."));
+    if (!Number.isFinite(n)) { num.textContent = "—"; return; }
+    num.textContent = "";
+    num.appendChild(document.createTextNode(isKg ? n.toFixed(1) : String(Math.round(n))));
+    if (isKg) { const u = document.createElement("span"); u.className = "u"; u.textContent = " kg"; num.appendChild(u); }
+  };
+  const stepBy = (d) => {
+    const n = parseFloat(String(state[field]).replace(",", "."));
+    const base = Number.isFinite(n) ? n : 0;
+    state[field] = String(Math.max(0, Math.round((base + d) * 100) / 100));
+    paint();
+  };
+  bindHold(dec, () => stepBy(-step));
+  bindHold(inc, () => stepBy(step));
+  paint();
+  row.append(lab, dec, num, inc);
+  return row;
+}
+
+// Stato del popup serie (una sola istanza riusata). I callback sono cablati una
+// volta in wireSetDialog; openSetDialog riempie stato + callback e mostra.
+let setDlgState = null, setDlgCbs = null, setDlgAction = null;
+
+// opts: { title, reps, kg, feel, onApply(reps,kg,feel), onUndo(), onDelete() }
+function openSetDialog(opts) {
+  const dlg = document.getElementById("setDialog");
+  setDlgCbs = opts;
+  setDlgState = { reps: String(opts.reps ?? ""), kg: String(opts.kg ?? ""), feel: opts.feel || "" };
+  setDlgAction = null;
+  document.getElementById("setDlgTitle").textContent = opts.title;
+
+  const rpeBox = document.getElementById("setDlgRpe");
+  const repaintRpe = () => {
+    rpeBox.replaceChildren(buildRpeBar(setDlgState.feel, (f) => { setDlgState.feel = f; repaintRpe(); }));
+  };
+  repaintRpe();
+
+  document.getElementById("setDlgEdit").replaceChildren(
+    buildMiniStepper("reps", setDlgState, "reps", 1),
+    buildMiniStepper("kg", setDlgState, "kg", 0.5),
+  );
+  dlg.showModal();
+}
+
+function wireSetDialog() {
+  const dlg = document.getElementById("setDialog");
+  document.getElementById("setDlgUndo").addEventListener("click", () => { setDlgAction = "undo"; dlg.close(); });
+  document.getElementById("setDlgDelete").addEventListener("click", () => { setDlgAction = "delete"; dlg.close(); });
+  document.getElementById("setDlgClose").addEventListener("click", () => { setDlgAction = "cancel"; dlg.close(); });
+  // tap sullo sfondo = chiudi applicando i valori correnti
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener("close", () => {
+    if (!setDlgCbs) return;
+    const { onApply, onUndo, onDelete } = setDlgCbs;
+    const a = setDlgAction; setDlgAction = null;
+    if (a === "undo") onUndo();
+    else if (a === "delete") onDelete();
+    else if (a !== "cancel") onApply(setDlgState.reps, setDlgState.kg, setDlgState.feel);
+    setDlgCbs = null; setDlgState = null;
+  });
+}
+
 // Campo nota per esercizio (persistente tra le settimane). Mostra la nota della
 // settimana corrente; se vuota, suggerisce in placeholder quella precedente.
 function buildNoteField(superset, idx) {
@@ -1002,6 +1074,7 @@ function initStore() {
 async function boot() {
   wireSettings();
   wireTimerControls();
+  wireSetDialog();
   document.getElementById("weekSelect").addEventListener("change", (e) => changeWeek(e.target.value));
   document.getElementById("newWeekBtn").addEventListener("click", newWeek);
   document.addEventListener("visibilitychange", () => { if (document.hidden) flushPending(); });
