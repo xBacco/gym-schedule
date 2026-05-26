@@ -79,6 +79,7 @@ h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:8px 0 0;}
 .stepper .val{font-family:"JetBrains Mono",monospace;font-size:40px;font-weight:700;letter-spacing:-.03em;line-height:1;text-align:center;}
 .stepper .val .u{font-size:15px;color:var(--dim);}
 .prefill{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--dim);text-align:center;margin-top:9px;}
+.plates{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--dim);text-align:center;margin-top:9px;}
 .reprow{display:flex;gap:9px;margin-top:11px;align-items:stretch;}
 .repstep{flex:2;display:flex;align-items:center;justify-content:space-between;background:var(--field);border:1px solid var(--line);border-radius:12px;padding:6px 8px;}
 .repstep .rmb{min-width:44px;height:44px;border-radius:11px;background:var(--surf);border:1px solid var(--line);

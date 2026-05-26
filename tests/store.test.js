@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isoWeekKey, emptyData, ensureWeek, setEntry, getEntry } from "../store.js";
+import { isoWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet } from "../store.js";
 
 test("isoWeekKey returns ISO year-week", () => {
   assert.equal(isoWeekKey(new Date(2020, 0, 1)), "2020-W01"); // Wed 1 Jan 2020
@@ -249,4 +249,14 @@ test("setEntry/getEntry reggono il valore per-serie e il round-trip base64", () 
   // round-trip come fa GitHubStore.save/load
   const round = JSON.parse(fromBase64(toBase64(JSON.stringify(d, null, 2))));
   assert.deepEqual(getEntry(round, "2026-W22", "A", 0), val);
+});
+
+test("parsePlateSet: parsa, ordina decrescente e scarta invalidi", () => {
+  assert.deepEqual(parsePlateSet("20, 15, 10, 5, 2.5, 1.25"), [20, 15, 10, 5, 2.5, 1.25]);
+  assert.deepEqual(parsePlateSet("10 5 2.5"), [10, 5, 2.5]);
+  assert.deepEqual(parsePlateSet("20, abc, -5, 0, 15"), [20, 15]);
+});
+
+test("parsePlateSet: stringa vuota -> []", () => {
+  assert.deepEqual(parsePlateSet(""), []);
 });

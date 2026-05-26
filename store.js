@@ -104,6 +104,16 @@ export function platesPerSide(targetKg, { bar = 20, plates = [20, 15, 10, 5, 2.5
   return { perSide, leftover: Math.round(remaining * 100) / 100 };
 }
 
+// "20, 15, 10, 5, 2.5" -> [20,15,10,5,2.5] (decimali col punto; separatori
+// virgola o spazi). Scarta non numerici e valori <= 0; ordina decrescente.
+export function parsePlateSet(str) {
+  return String(str ?? "")
+    .split(/[,\s]+/)
+    .map((t) => parseFloat(t))
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .sort((a, b) => b - a);
+}
+
 // ---- Base64 helpers (UTF-8 safe). btoa/atob + TextEncoder/Decoder exist
 //      both in modern browsers and in Node >= 16. ----
 

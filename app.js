@@ -1,7 +1,7 @@
 import { PLAN } from "./plan.js";
 import {
   isoWeekKey, emptyData, ensureWeek, setEntry, getEntry,
-  normalizeEntry, normalizeSupersetEntry, prefillSets,
+  normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet,
   GitHubStore, ConflictError, AuthError,
 } from "./store.js";
 import {
@@ -54,6 +54,11 @@ function setRest(day, idx, seconds) {
   localStorage.setItem(REST_KEY, JSON.stringify(m));
 }
 
+// ---- Impostazioni calcolatore dischi (browser only) ----
+const BAR_KEY = "gymsched_bar";
+const PLATES_KEY = "gymsched_plates";
+const getBar = () => { const n = parseFloat(localStorage.getItem(BAR_KEY)); return Number.isFinite(n) && n > 0 ? n : 20; };
+const getPlateSet = () => { const v = parsePlateSet(localStorage.getItem(PLATES_KEY) || ""); return v.length ? v : [20, 15, 10, 5, 2.5, 1.25]; };
 
 // ---- Status indicator ----
 function setStatus(text, kind = "") {
@@ -247,9 +252,21 @@ function buildEditBlock(label, state, prev) {
   stepper.append(minus, valWrap, plus);
   block.appendChild(stepper);
 
+  const platesLine = document.createElement("div");
+  platesLine.className = "plates";
+  block.appendChild(platesLine);
+  const renderPlates = () => {
+    const n = parseFloat(String(state.kg).replace(",", "."));
+    if (!Number.isFinite(n) || n <= 0) { platesLine.textContent = ""; return; }
+    const { perSide, leftover } = platesPerSide(n, { bar: getBar(), plates: getPlateSet() });
+    if (!perSide.length) { platesLine.textContent = `per lato: — (≤ bilanciere ${getBar()} kg)`; return; }
+    platesLine.textContent = `per lato: ${perSide.join(" + ")}` + (leftover > 0 ? `  (+${leftover} scoperto)` : "");
+  };
+
   const renderKg = () => {
     const n = parseFloat(String(state.kg).replace(",", "."));
     num.textContent = Number.isFinite(n) ? n.toFixed(1) : "—";
+    renderPlates();
   };
   const stepKg = (delta) => {
     const n = parseFloat(String(state.kg).replace(",", "."));
@@ -648,13 +665,18 @@ function wireSettings() {
   const dlg = document.getElementById("settingsDialog");
   document.getElementById("settingsBtn").addEventListener("click", () => {
     document.getElementById("tokenInput").value = getToken() || "";
+    document.getElementById("barInput").value = getBar();
+    document.getElementById("platesInput").value = getPlateSet().join(", ");
     dlg.showModal();
   });
   dlg.addEventListener("close", () => {
     if (dlg.returnValue === "save") {
       setToken(document.getElementById("tokenInput").value.trim() || null);
+      localStorage.setItem(BAR_KEY, String(parseFloat(document.getElementById("barInput").value) || 20));
+      localStorage.setItem(PLATES_KEY, document.getElementById("platesInput").value);
       initStore();
       saveToCloud();
+      render(); // ridipinge il calcolatore col nuovo set
     } else if (dlg.returnValue === "clear") {
       setToken(null);
       initStore();
