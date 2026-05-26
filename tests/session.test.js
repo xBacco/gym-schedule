@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
 import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, sessionVolume, exerciseTrend } from "../session.js";
-import { emptyData, setEntry } from "../store.js";
+import { emptyData, setEntry, getEntry } from "../store.js";
 
 test("parseTargetTrack: 'NxR' con range", () => {
   assert.deepEqual(parseTargetTrack("4 × 6-8"), { sets: 4, reps: "6-8" });
@@ -328,4 +328,48 @@ test("warmup escluso da volume, PR e trend", () => {
   assert.equal(bestKg(d2, "A", 0), 72.5);
   const tr = exerciseTrend(d2, "A", 0, "2026-W22", 3);
   assert.equal(tr[tr.length - 1].kg, 72.5);
+});
+
+test("trackComplete: il target conta solo i working set", () => {
+  const ex = { name: "Panca", setsReps: "4 × 8" };
+  // 1 warmup + 3 working, tutte done -> NON completo (servono 4 working)
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", 0, { sets: [
+    { reps: 8, kg: 40,   done: true, warmup: true },
+    { reps: 8, kg: 72.5, done: true, warmup: false },
+    { reps: 8, kg: 72.5, done: true, warmup: false },
+    { reps: 8, kg: 72.5, done: true, warmup: false },
+  ] });
+  assert.equal(isEntryComplete(getEntry(d, "2026-W22", "A", 0), ex), false);
+  // 1 warmup + 4 working, tutte done -> completo
+  let d2 = emptyData();
+  d2 = setEntry(d2, "2026-W22", "A", 0, { sets: [
+    { reps: 8, kg: 40,   done: true, warmup: true },
+    { reps: 8, kg: 72.5, done: true, warmup: false },
+    { reps: 8, kg: 72.5, done: true, warmup: false },
+    { reps: 8, kg: 72.5, done: true, warmup: false },
+    { reps: 8, kg: 72.5, done: true, warmup: false },
+  ] });
+  assert.equal(isEntryComplete(getEntry(d2, "2026-W22", "A", 0), ex), true);
+});
+
+test("previousSetInSession salta i warmup", () => {
+  const entry = { sets: [
+    { reps: 8, kg: 40, done: true, warmup: true },
+    { reps: 8, kg: 72.5, done: true, warmup: false },
+    { reps: "", kg: "", done: false, warmup: false },
+  ] };
+  // dalla serie 3 (index 2): l'ultima working done è la index 1 (72.5), non il warmup 40
+  assert.deepEqual(previousSetInSession(entry, 2), { reps: "8", kg: "72.5" });
+});
+
+test("previousWeekSet si allinea ai soli working set", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W21", "A", 0, { sets: [
+    { reps: 8, kg: 40, done: true, warmup: true },   // warmup: ignorato nell'allineamento
+    { reps: 8, kg: 70, done: true, warmup: false },  // working #0
+    { reps: 8, kg: 72.5, done: true, warmup: false },// working #1
+  ] });
+  // setIndex 0 -> primo working (70), non il warmup
+  assert.deepEqual(previousWeekSet(d, "A", 0, "2026-W22", 0), { reps: "8", kg: "70", week: "2026-W21" });
 });

@@ -32,8 +32,8 @@ export function activeSetIndex(sets) {
 // Una traccia/esercizio è "fatto" quando ha raggiunto il numero di serie suggerito
 // e tutte le serie loggate sono done.
 function trackComplete(track, targetSets) {
-  const n = track.sets.length;
-  return n > 0 && n >= targetSets && track.sets.every((s) => s.done);
+  const working = track.sets.filter((s) => !s.warmup).length;
+  return working >= targetSets && working > 0 && track.sets.every((s) => s.done);
 }
 
 // Un esercizio è "completo" quando raggiunge il target di serie ed è tutto done.
@@ -150,7 +150,7 @@ export function previousSetInSession(entry, index, track = null) {
   const t = entryTrack(entry, track);
   const start = Math.min(index, t.sets.length) - 1;
   for (let i = start; i >= 0; i--) {
-    if (t.sets[i].done) return { reps: t.sets[i].reps, kg: t.sets[i].kg };
+    if (t.sets[i].done && !t.sets[i].warmup) return { reps: t.sets[i].reps, kg: t.sets[i].kg };
   }
   return null;
 }
@@ -162,8 +162,9 @@ export function previousWeekSet(data, day, idx, weekKey, setIndex, track = null)
     .filter((k) => /^\d{4}-W\d{2}(\.\d+)?$/.test(k) && k < weekKey).sort();
   for (let i = keys.length - 1; i >= 0; i--) {
     const t = entryTrack(getEntry(data, keys[i], day, idx), track);
-    if (t.sets.length) {
-      const s = t.sets[setIndex] ?? t.sets[t.sets.length - 1];
+    const working = t.sets.filter((s) => !s.warmup);
+    if (working.length) {
+      const s = working[setIndex] ?? working[working.length - 1];
       return { reps: s.reps, kg: s.kg, week: keys[i] };
     }
   }
