@@ -82,3 +82,24 @@ export function withoutSupersetSet(entry, track, index) {
   const t = track === "b" ? "b" : "a";
   return { ...e, [t]: withoutSet(e[t], index) };
 }
+
+// Max kg loggato per un esercizio normale su tutte le settimane (null se assente).
+export function bestKg(data, day, idx) {
+  let best = null;
+  for (const k of Object.keys(data?.weeks ?? {})) {
+    const e = normalizeEntry(getEntry(data, k, day, idx));
+    for (const s of e.sets) {
+      const v = parseFloat(String(s.kg).replace(",", "."));
+      if (Number.isFinite(v) && (best === null || v > best)) best = v;
+    }
+  }
+  return best;
+}
+
+// Delta carico (cur - prev) arrotondato a 2 decimali; null se uno non è numerico.
+export function progressionDelta(curKg, prevKg) {
+  const c = parseFloat(String(curKg).replace(",", "."));
+  const p = parseFloat(String(prevKg).replace(",", "."));
+  if (!Number.isFinite(c) || !Number.isFinite(p)) return null;
+  return Math.round((c - p) * 100) / 100;
+}

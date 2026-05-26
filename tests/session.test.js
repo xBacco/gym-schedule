@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
+import { bestKg, progressionDelta } from "../session.js";
 import { emptyData, setEntry } from "../store.js";
 
 test("parseTargetTrack: 'NxR' con range", () => {
@@ -138,4 +139,22 @@ test("withSet/withSupersetSet: non mutano l'input (immutabilità)", () => {
   const sout = withSupersetSet(sv, "a", 0, { done: true });
   assert.equal(sv.a.sets[0].done, false);  // originale invariato
   assert.equal(sout.a.sets[0].done, true);
+});
+
+test("bestKg: massimo kg su tutte le settimane per quell'esercizio", () => {
+  let d = setEntry(emptyData(), "2026-W20", "A", 0, { sets: [{ reps: "8", kg: "60" }] }, "t1");
+  d = setEntry(d, "2026-W21", "A", 0, { sets: [{ reps: "8", kg: "65" }, { reps: "6", kg: "70" }] }, "t2");
+  assert.equal(bestKg(d, "A", 0), 70);
+});
+
+test("bestKg: nessun dato -> null", () => {
+  assert.equal(bestKg(emptyData(), "A", 0), null);
+});
+
+test("progressionDelta: differenza arrotondata o null", () => {
+  assert.equal(progressionDelta("72.5", "70"), 2.5);
+  assert.equal(progressionDelta("70", "72.5"), -2.5);
+  assert.equal(progressionDelta("70", "70"), 0);
+  assert.equal(progressionDelta("", "70"), null);
+  assert.equal(progressionDelta("70", ""), null);
 });
