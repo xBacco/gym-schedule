@@ -215,6 +215,51 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
 .trend .tk{color:var(--ink);font-weight:700;margin-left:4px;}
 .trend .cur .tk{color:var(--acc);}
 
+/* ---- Fase 7: focus esercizio a schermo intero ---- */
+.focus-ov{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;}
+.focus-ov.hidden{display:none;}
+.focus-top{flex:0 0 auto;display:flex;align-items:center;gap:12px;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 13px;
+  border-bottom:1px solid var(--line);background:var(--surf);}
+.focus-back{width:40px;height:40px;flex:0 0 auto;border-radius:11px;background:var(--surf2);
+  border:1px solid var(--line);color:var(--ink);font-size:20px;cursor:pointer;}
+.focus-id .fn{font-size:17px;font-weight:800;line-height:1.15;}
+.focus-id .fs{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--acc);margin-top:3px;}
+.focus-body{flex:1;min-height:0;overflow:hidden;padding:14px 16px;}
+.focus-foot{flex:0 0 auto;padding:11px 16px calc(env(safe-area-inset-bottom,0px) + 12px);
+  border-top:1px solid var(--line);background:var(--surf);}
+.focus-foot .cta{margin-top:0;}
+/* la barra timer resta sopra l'overlay (parte dalla CTA dentro il focus) */
+.timerbar{z-index:60;}
+
+/* sotto-tab A/B per i superset */
+.ss-tabs{display:flex;gap:7px;margin-bottom:12px;}
+.ss-tabs button{flex:1;background:var(--surf2);border:1px solid var(--line);color:var(--dim);
+  border-radius:11px;padding:9px 0;font-weight:700;font-size:13px;cursor:pointer;}
+.ss-tabs button.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);}
+
+/* bottone commento veloce + riepilogo tag */
+.qc-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--surf2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;
+  color:var(--ink);font-size:14px;cursor:pointer;margin-top:11px;}
+.qc-btn .cnt{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--acc-ink);
+  background:var(--acc);border-radius:999px;padding:2px 9px;font-weight:700;}
+.qc-btn .cnt.zero{display:none;}
+.qc-sel{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+.qc-sel .tag{font-size:11.5px;color:var(--acc);background:#352815;border:1px solid var(--acc);
+  border-radius:999px;padding:3px 10px;}
+
+/* popup commenti */
+.qc-dialog{max-width:340px;width:90vw;}
+.qc-head{display:flex;align-items:center;justify-content:space-between;}
+.qc-head h2{margin:0;font-size:16px;}
+.qc-x{background:transparent;border:none;color:var(--dim);font-size:16px;cursor:pointer;}
+.qc-options{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.qc-opt{display:flex;align-items:center;gap:11px;background:var(--surf2);border:1px solid var(--line);
+  border-radius:12px;padding:12px 13px;font-size:14px;color:var(--ink);cursor:pointer;text-align:left;}
+.qc-opt.on{border-color:var(--acc);background:#352815;color:var(--acc);font-weight:700;}
+.qc-opt.write{color:var(--acc);border-style:dashed;}
+
 /* banner aggiornamento PWA */
 #updateBanner{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:50;
   background:var(--acc);color:var(--acc-ink);border:none;border-radius:12px;padding:11px 16px;

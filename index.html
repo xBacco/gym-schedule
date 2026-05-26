@@ -65,6 +65,29 @@
     </dialog>
   </div>
 
+  <!-- Focus esercizio a schermo intero -->
+  <div id="focusOverlay" class="focus-ov hidden" aria-hidden="true">
+    <header class="focus-top">
+      <button id="focusBack" class="focus-back" aria-label="Chiudi esercizio">←</button>
+      <div class="focus-id">
+        <div id="focusName" class="fn"></div>
+        <div id="focusSet" class="fs"></div>
+      </div>
+    </header>
+    <div id="focusBody" class="focus-body"></div>
+    <div id="focusFoot" class="focus-foot"></div>
+  </div>
+
+  <!-- Popup commento veloce -->
+  <dialog id="qcDialog" class="qc-dialog">
+    <div class="qc-head">
+      <h2>Commento veloce</h2>
+      <button id="qcClose" class="qc-x" aria-label="Chiudi">✕</button>
+    </div>
+    <p class="hint">Tocca i tag da aggiungere a questa serie.</p>
+    <div id="qcOptions" class="qc-options"></div>
+  </dialog>
+
   <!-- Rest timer -->
   <div id="timerBar" class="timerbar hidden">
     <div class="t-info">
