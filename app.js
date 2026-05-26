@@ -232,6 +232,11 @@ function repsLow(repsStr) {
 }
 
 const RPE_OPTS = [["easy", "facile"], ["ok", "giusta"], ["hard", "dura"]];
+const RPE_CYCLE = ["", "easy", "ok", "hard"];
+function nextFeel(current) {
+  return RPE_CYCLE[(RPE_CYCLE.indexOf(current) + 1) % RPE_CYCLE.length];
+}
+const RPE_LABEL = Object.fromEntries(RPE_OPTS); // {easy:"facile", ok:"giusta", hard:"dura"}
 
 // Barra a 3 pulsanti per il "feel" della serie corrente. `current` = feel attuale ("" se nessuno).
 // onPick(feel) riceve "" quando si ri-tocca il tag già attivo (toggle off).
@@ -240,6 +245,7 @@ function buildRpeBar(current, onPick) {
   bar.className = "rpebar";
   for (const [val, label] of RPE_OPTS) {
     const b = document.createElement("button");
+    b.type = "button";
     b.className = "rb " + val + (current === val ? " on" : "");
     b.textContent = label;
     b.addEventListener("click", () => onPick(current === val ? "" : val));
@@ -406,7 +412,7 @@ function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel) {
   if (set.done && set.feel && onFeel) {
     const fl = document.createElement("span");
     fl.className = "rpe " + set.feel;
-    fl.textContent = set.feel === "easy" ? "facile" : set.feel === "hard" ? "dura" : "giusta";
+    fl.textContent = RPE_LABEL[set.feel] ?? "giusta";
     fl.title = "Tocca per cambiare";
     fl.addEventListener("click", (e) => { e.stopPropagation(); onFeel(); });
     row.appendChild(fl);
@@ -469,8 +475,7 @@ function renderFocusNormal(ex) {
       data = setEntry(data, currentWeek, currentDay, focusIndex, withSet(v, i, { ...patch, done: true }), new Date().toISOString());
       persist(); render();
     }, set.done ? () => {
-      const order = ["", "easy", "ok", "hard"];
-      const next = order[(order.indexOf(set.feel) + 1) % order.length];
+      const next = nextFeel(set.feel);
       data = setEntry(data, currentWeek, currentDay, focusIndex, withSet(v, i, { feel: next }), new Date().toISOString());
       persist(); render();
     } : null));
@@ -505,7 +510,7 @@ function renderFocusNormal(ex) {
   cta.className = "cta"; cta.textContent = "Serie fatta · avvia recupero ▸";
   cta.addEventListener("click", () => {
     data = setEntry(data, currentWeek, currentDay, focusIndex,
-      withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true }), new Date().toISOString());
+      withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true, feel: entry.sets[curIdx]?.feel ?? "" }), new Date().toISOString());
     persist();
     startRest(getRest(currentDay, focusIndex, ex.restSeconds), ex.name);
     if (isComplete(focusIndex)) focusIndex = activeExerciseIndex(data, currentWeek, currentDay, dayPlan());
@@ -547,8 +552,7 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state) 
       data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
       persist(); render();
     }, set.done ? () => {
-      const order = ["", "easy", "ok", "hard"];
-      const next = order[(order.indexOf(set.feel) + 1) % order.length];
+      const next = nextFeel(set.feel);
       const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, focusIndex), trackKey, i, { feel: next });
       data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
       persist(); render();
@@ -557,6 +561,7 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state) 
   wrap.appendChild(setsBox);
 
   wrap.appendChild(buildEditBlock(`Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`, state, prevSets[curIdx] || null));
+
   wrap.appendChild(buildRpeBar(trackEntry.sets[curIdx]?.feel ?? "", (feel) => {
     const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, focusIndex), trackKey, curIdx, { ...state, feel });
     data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
@@ -595,8 +600,8 @@ function renderFocusSuperset(ex) {
   const cta = document.createElement("button");
   cta.className = "cta"; cta.textContent = "Serie fatta (A+B) · avvia recupero ▸";
   cta.addEventListener("click", () => {
-    let nv = withSupersetSet(v, "a", a.curIdx, { reps: draftA.reps, kg: draftA.kg, done: true });
-    nv = withSupersetSet(nv, "b", b.curIdx, { reps: draftB.reps, kg: draftB.kg, done: true });
+    let nv = withSupersetSet(v, "a", a.curIdx, { reps: draftA.reps, kg: draftA.kg, done: true, feel: e.a.sets[a.curIdx]?.feel ?? "" });
+    nv = withSupersetSet(nv, "b", b.curIdx, { reps: draftB.reps, kg: draftB.kg, done: true, feel: e.b.sets[b.curIdx]?.feel ?? "" });
     data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
     persist();
     startRest(getRest(currentDay, focusIndex, ex.restSeconds), ex.name);
