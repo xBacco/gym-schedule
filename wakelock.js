@@ -32,12 +32,15 @@ export class ScreenWakeLock {
   }
 
   async _acquire() {
-    if (!this.supported() || this.sentinel) return;
+    if (!this.supported() || this.sentinel || this._acquiring) return;
+    this._acquiring = true;
     try {
       this.sentinel = await this.nav.wakeLock.request("screen");
       this.sentinel.addEventListener?.("release", () => { this.sentinel = null; });
     } catch (_) {
       this.sentinel = null; // request può rifiutare se non visibile / non permesso
+    } finally {
+      this._acquiring = false;
     }
   }
 }

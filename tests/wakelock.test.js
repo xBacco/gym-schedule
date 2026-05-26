@@ -54,3 +54,22 @@ test("API assente: supported() è false e enable() non lancia", async () => {
   await wl.enable();
   assert.equal(wl.sentinel, null);
 });
+
+test("enable concorrenti non emettono due request (guard in-flight)", async () => {
+  const calls = { request: 0 };
+  const resolvers = [];
+  const nav = {
+    wakeLock: {
+      request: () => {
+        calls.request++;
+        return new Promise((res) => resolvers.push(() => res({ release: async () => {}, addEventListener: () => {} })));
+      },
+    },
+  };
+  const wl = new ScreenWakeLock(nav);
+  const p1 = wl.enable();
+  const p2 = wl.enable(); // concorrente, prima che la prima request risolva
+  resolvers.forEach((fn) => fn());
+  await Promise.all([p1, p2]);
+  assert.equal(calls.request, 1);
+});
