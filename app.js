@@ -293,7 +293,7 @@ function buildVolumeRow(vol, prevVol) {
     const pct = Math.round(((vol - prevVol) / prevVol) * 100);
     const d = document.createElement("span");
     d.className = pct >= 0 ? "acc" : "neg";
-    d.textContent = `${pct >= 0 ? "▲ +" : "▼ "}${pct}%`;
+    d.textContent = `${pct >= 0 ? "▲ +" : "▼ "}${Math.abs(pct)}%`;
     v.appendChild(d);
   }
   row.append(l, v);
