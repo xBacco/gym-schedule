@@ -7,6 +7,7 @@ import {
 import {
   parseTarget, activeExerciseIndex, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
   withSet, withoutSet, withSupersetSet, withNote, previousNote,
+  previousSetInSession, previousWeekSet,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -254,6 +255,30 @@ function buildRpeBar(current, onPick) {
   return bar;
 }
 
+// Fino a due chip: "↑ serie sopra" (stessa sessione) e "↶ scorsa Wxx" (settimana precedente).
+// inSession/prevWeek = {reps,kg[,week]} o null. onPick({reps,kg}) precompila lo stepper.
+function buildRepeatChips(inSession, prevWeek, onPick) {
+  if (!inSession && !prevWeek) return null;
+  const row = document.createElement("div");
+  row.className = "repeats";
+  const make = (cls, label, val) => {
+    const c = document.createElement("div");
+    c.className = "rchip" + cls;
+    const l = document.createElement("div"); l.className = "rl"; l.textContent = label;
+    const vv = document.createElement("div"); vv.className = "rv";
+    vv.textContent = `${val.reps || "—"} × ${val.kg || "—"}`;
+    c.append(l, vv);
+    c.addEventListener("click", () => onPick({ reps: val.reps, kg: val.kg }));
+    row.appendChild(c);
+  };
+  if (inSession) make("", "↑ serie sopra", inSession);
+  if (prevWeek) {
+    const wk = prevWeek.week ? prevWeek.week.split("-").pop() : "scorsa";
+    make(" scorsa", `↶ ${wk}`, prevWeek);
+  }
+  return row;
+}
+
 // Costruisce il blocco di editing per una serie. `state` = {kg, reps} mutato in place.
 // prev = {reps, kg} della volta scorsa per quella serie (o null). Ritorna l'elemento.
 function buildEditBlock(label, state, prev) {
@@ -490,6 +515,14 @@ function renderFocusNormal(ex) {
     persist(); render();
   }));
 
+  const repInSession = previousSetInSession(v, curIdx);
+  const repPrevWeek = previousWeekSet(data, currentDay, focusIndex, currentWeek, curIdx);
+  const repChips = buildRepeatChips(repInSession, repPrevWeek, ({ reps, kg }) => {
+    draft.reps = reps; draft.kg = kg;
+    render();
+  });
+  if (repChips) card.appendChild(repChips);
+
   const dots = document.createElement("div");
   dots.className = "dots";
   for (let i = 0; i < total; i++) {
@@ -567,6 +600,10 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state) 
     data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
     persist(); render();
   }));
+  const inSess = previousSetInSession(trackEntry, curIdx);
+  const prevWk = previousWeekSet(data, currentDay, focusIndex, currentWeek, curIdx, trackKey);
+  const chips = buildRepeatChips(inSess, prevWk, ({ reps, kg }) => { state.reps = reps; state.kg = kg; render(); });
+  if (chips) wrap.appendChild(chips);
   return { wrap, curIdx };
 }
 
