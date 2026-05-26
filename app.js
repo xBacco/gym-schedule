@@ -462,6 +462,7 @@ function openSetDialog(opts) {
 
   const rpeBox = document.getElementById("setDlgRpe");
   const repaintRpe = () => {
+    if (!setDlgState) return;
     rpeBox.replaceChildren(buildRpeBar(setDlgState.feel, (f) => { setDlgState.feel = f; repaintRpe(); }));
   };
   repaintRpe();
@@ -480,9 +481,10 @@ function wireSetDialog() {
   document.getElementById("setDlgClose").addEventListener("click", () => { setDlgAction = "cancel"; dlg.close(); });
   // tap sullo sfondo = chiudi applicando i valori correnti
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener("cancel", (e) => { e.preventDefault(); setDlgAction = "cancel"; dlg.close(); });
   dlg.addEventListener("close", () => {
     if (!setDlgCbs) return;
-    const { onApply, onUndo, onDelete } = setDlgCbs;
+    const { onApply = () => {}, onUndo = () => {}, onDelete = () => {} } = setDlgCbs;
     const a = setDlgAction; setDlgAction = null;
     if (a === "undo") onUndo();
     else if (a === "delete") onDelete();
