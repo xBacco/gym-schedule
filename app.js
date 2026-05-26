@@ -402,7 +402,7 @@ function buildEditBlock(label, state, prev) {
   reprow.appendChild(chip);
   block.appendChild(reprow);
 
-  return block;
+  return { block, refresh: () => { renderKg(); renderReps(); } };
 }
 
 // Campo nota per esercizio (persistente tra le settimane). Mostra la nota della
@@ -547,19 +547,19 @@ function renderFocusNormal(ex) {
   }
   card.appendChild(setsBox);
 
-  card.appendChild(buildEditBlock(`Serie ${curIdx + 1} — carico · step 0.5 kg`, draft, prev[curIdx] || null));
+  const edit = buildEditBlock(`Serie ${curIdx + 1} — carico · step 0.5 kg`, draft, prev[curIdx] || null);
+  card.appendChild(edit.block);
 
   card.appendChild(buildRpeBar(entry.sets[curIdx]?.feel ?? "", (feel) => {
     data = setEntry(data, currentWeek, currentDay, focusIndex,
-      withSet(v, curIdx, { ...draft, feel }), new Date().toISOString());
+      withSet(v, curIdx, { feel }), new Date().toISOString());
     persist(); render();
   }));
 
   const repInSession = previousSetInSession(v, curIdx);
   const repPrevWeek = previousWeekSet(data, currentDay, focusIndex, currentWeek, curIdx);
   const repChips = buildRepeatChips(repInSession, repPrevWeek, ({ reps, kg }) => {
-    draft.reps = reps; draft.kg = kg;
-    render();
+    draft.reps = reps; draft.kg = kg; edit.refresh();
   });
   if (repChips) card.appendChild(repChips);
 
@@ -637,16 +637,17 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state) 
   }
   wrap.appendChild(setsBox);
 
-  wrap.appendChild(buildEditBlock(`Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`, state, prevSets[curIdx] || null));
+  const edit = buildEditBlock(`Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`, state, prevSets[curIdx] || null);
+  wrap.appendChild(edit.block);
 
   wrap.appendChild(buildRpeBar(trackEntry.sets[curIdx]?.feel ?? "", (feel) => {
-    const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, focusIndex), trackKey, curIdx, { ...state, feel });
+    const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, focusIndex), trackKey, curIdx, { feel });
     data = setEntry(data, currentWeek, currentDay, focusIndex, nv, new Date().toISOString());
     persist(); render();
   }));
   const inSess = previousSetInSession(trackEntry, curIdx);
   const prevWk = previousWeekSet(data, currentDay, focusIndex, currentWeek, curIdx, trackKey);
-  const chips = buildRepeatChips(inSess, prevWk, ({ reps, kg }) => { state.reps = reps; state.kg = kg; render(); });
+  const chips = buildRepeatChips(inSess, prevWk, ({ reps, kg }) => { state.reps = reps; state.kg = kg; edit.refresh(); });
   if (chips) wrap.appendChild(chips);
   return { wrap, curIdx };
 }
