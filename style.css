@@ -1,6 +1,6 @@
 :root{
   --bg:#0E0F0E; --surf:#151715; --surf2:#1B1E1B; --line:#242824;
-  --ink:#ECEAE5; --dim:#8A8E86; --faint:#5C5F57;
+  --ink:#ECEAE5; --dim:#8A8E86; --faint:#73766C;
   --acc:#3FE0A8; --acc-ink:#07231B; --ok:#3FE0A8; --down:#E0843F;
   --field:#23271f;
 }
@@ -18,14 +18,14 @@ body{background:#0a0b0a;color:var(--ink);font-family:"Inter",system-ui,-apple-sy
 h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:8px 0 0;}
 .day-tabs{display:flex;gap:6px;margin-top:14px;}
 .day-tabs button{flex:1;background:var(--surf2);border:1px solid var(--line);border-radius:12px;padding:11px 0;
-  font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:700;color:var(--dim);cursor:pointer;letter-spacing:.04em;}
+  font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:700;color:var(--dim);cursor:pointer;letter-spacing:.04em;min-height:44px;}
 .day-tabs button.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);}
 .week-row{display:flex;align-items:center;gap:8px;margin-top:11px;}
 #weekSelect{flex:1;background:var(--surf2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;
   color:var(--ink);font-family:"JetBrains Mono",monospace;font-size:13px;}
 .btn-soft{background:transparent;border:1px solid var(--line);border-radius:12px;padding:10px 12px;
   color:var(--acc);font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;cursor:pointer;}
-.btn-icon{background:transparent;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:16px;color:var(--ink);cursor:pointer;}
+.btn-icon{background:transparent;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:16px;color:var(--ink);cursor:pointer;min-height:44px;}
 .status{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;padding:5px 9px;border-radius:20px;
   background:var(--surf2);color:var(--dim);border:1px solid var(--line);white-space:nowrap;}
 .status.ok{color:var(--acc);border-color:#1e4a3b;}
@@ -81,7 +81,7 @@ h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:8px 0 0;}
 .prefill{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--dim);text-align:center;margin-top:9px;}
 .reprow{display:flex;gap:9px;margin-top:11px;align-items:stretch;}
 .repstep{flex:2;display:flex;align-items:center;justify-content:space-between;background:var(--field);border:1px solid var(--line);border-radius:12px;padding:6px 8px;}
-.repstep .rmb{min-width:44px;height:42px;border-radius:11px;background:var(--surf);border:1px solid var(--line);
+.repstep .rmb{min-width:44px;height:44px;border-radius:11px;background:var(--surf);border:1px solid var(--line);
   display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:18px;font-weight:700;color:var(--acc);cursor:pointer;user-select:none;touch-action:none;}
 .repstep .rmb:active{background:var(--acc);color:var(--acc-ink);}
 .repstep .rc{text-align:center;}
@@ -124,7 +124,7 @@ h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:8px 0 0;}
 .t-time{font-family:"JetBrains Mono",monospace;font-size:34px;font-weight:700;letter-spacing:1px;line-height:1;color:var(--acc);}
 .t-controls{display:flex;gap:7px;}
 .t-btn{background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 11px;
-  font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;}
+  font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;min-height:44px;}
 .t-stop{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);}
 
 /* settings dialog */
