@@ -54,6 +54,11 @@ test("activeSetIndex: prima serie non done", () => {
   assert.equal(activeSetIndex([{ done: true }, { done: true }]), 2);
 });
 
+test("activeSetIndex: input non-array -> 0", () => {
+  assert.equal(activeSetIndex(null), 0);
+  assert.equal(activeSetIndex(undefined), 0);
+});
+
 test("isEntryComplete: normale completo solo se ha serie e tutte done", () => {
   assert.equal(isEntryComplete("", false), false);
   assert.equal(isEntryComplete({ sets: [{ reps: "8", kg: "70", done: true }] }, false), true);
@@ -75,8 +80,14 @@ test("activeExerciseIndex: primo esercizio non completo", () => {
   assert.equal(activeExerciseIndex(d, "2026-W22", "A", plan), 1);
 });
 
-test("activeExerciseIndex: tutti completi -> 0", () => {
-  const plan = { exercises: [{ superset: false }] };
-  let d = setEntry(emptyData(), "2026-W22", "A", 0, { sets: [{ reps: "8", kg: "70", done: true }] }, "t");
+test("isEntryComplete: superset con traccia A vuota e B completa -> true", () => {
+  const v = { a: { sets: [] }, b: { sets: [{ reps: "15", kg: "12", done: true }] } };
+  assert.equal(isEntryComplete(v, true), true);
+});
+
+test("activeExerciseIndex: tutti completi -> 0 (wrap, non solo perché è il primo)", () => {
+  const plan = { exercises: [{ superset: false }, { superset: false }] };
+  let d = setEntry(emptyData(), "2026-W22", "A", 0, { sets: [{ reps: "8", kg: "70", done: true }] }, "t1");
+  d = setEntry(d, "2026-W22", "A", 1, { sets: [{ reps: "8", kg: "70", done: true }] }, "t2");
   assert.equal(activeExerciseIndex(d, "2026-W22", "A", plan), 0);
 });
