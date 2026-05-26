@@ -518,7 +518,7 @@ function buildNoteField(superset, idx) {
   return wrap;
 }
 
-function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel, onEditComments) {
+function setRow(i, set, prev, isCurrent, onRemove, onOpen) {
   const row = document.createElement("div");
   row.className = "srow" + (isCurrent ? " cur" : "") + (set.warmup ? " warm" : "");
   const idx = document.createElement("span"); idx.className = "i"; idx.textContent = set.warmup ? "W" : String(i + 1);
@@ -534,14 +534,8 @@ function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel, onEditComm
   }
   row.append(idx, v);
 
-  if (set.done && onEditSet) {
-    v.addEventListener("click", () => {
-      const reps = prompt("Ripetizioni:", set.reps);
-      if (reps === null) return;
-      const kg = prompt("Carico (kg):", set.kg);
-      if (kg === null) return;
-      onEditSet({ reps: reps.trim(), kg: kg.trim() });
-    });
+  if (set.done && onOpen) {
+    v.addEventListener("click", () => onOpen());
   }
 
   if (set.warmup && set.done) {
@@ -564,15 +558,15 @@ function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel, onEditComm
       row.appendChild(tag);
     }
   }
-  if (set.done && !set.warmup && set.feel && onFeel) {
+  if (set.done && !set.warmup && set.feel) {
     const fl = document.createElement("span");
     fl.className = "rpe " + set.feel;
     fl.textContent = RPE_LABEL[set.feel] ?? "giusta";
-    fl.title = "Tocca per cambiare";
-    fl.addEventListener("click", (e) => { e.stopPropagation(); onFeel(); });
+    fl.title = "Tocca per modificare";
+    if (onOpen) fl.addEventListener("click", (e) => { e.stopPropagation(); onOpen(); });
     row.appendChild(fl);
   }
-  if (onRemove) {
+  if (onRemove && !set.done) {
     const rm = document.createElement("span"); rm.className = "rm"; rm.textContent = "✕";
     rm.addEventListener("click", (e) => { e.stopPropagation(); onRemove(); });
     row.appendChild(rm);
@@ -580,8 +574,6 @@ function setRow(i, set, prev, isCurrent, onRemove, onEditSet, onFeel, onEditComm
   if (set.done && Array.isArray(set.comments) && set.comments.length) {
     const c = document.createElement("div"); c.className = "cmt";
     c.textContent = set.comments.join(" · ");
-    if (onEditComments) { c.title = "Tocca per modificare"; c.style.cursor = "pointer";
-      c.addEventListener("click", (e) => { e.stopPropagation(); onEditComments(); }); }
     row.appendChild(c);
   }
   return row;
@@ -605,11 +597,15 @@ function renderFocusNormal(ex, idx, container, footer) {
   document.getElementById("focusSet").textContent =
     `serie ${Math.min(curIdx + 1, tgt.sets)} / ${tgt.sets}`;
 
-  draft = {
-    kg: prev[curIdx]?.kg ?? "",
-    reps: prev[curIdx]?.reps ?? repsLow(tgt.reps),
-    comments: (entry.sets[curIdx]?.comments ?? []).slice(),
-  };
+  const draftKey = `${currentDay}-${idx}-${curIdx}-${entry.sets.length}`;
+  if (draft._key !== draftKey) {
+    draft = {
+      kg: prev[curIdx]?.kg ?? "",
+      reps: prev[curIdx]?.reps ?? repsLow(tgt.reps),
+      comments: (entry.sets[curIdx]?.comments ?? []).slice(),
+      _key: draftKey,
+    };
+  }
 
   const trendRow = buildTrendRow(exerciseTrend(data, currentDay, idx, currentWeek, 3), currentWeek);
   if (trendRow) container.appendChild(trendRow);
@@ -621,34 +617,32 @@ function renderFocusNormal(ex, idx, container, footer) {
     const set = entry.sets[i] || { reps: "", kg: "", done: false };
     const isCurrent = i === curIdx;
     const canRemove = i < entry.sets.length && entry.sets.length > 0;
-    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, canRemove ? () => {
+    const onRemove = canRemove ? () => {
       data = setEntry(data, currentWeek, currentDay, idx, withoutSet(v, i), new Date().toISOString());
       persist(idx); render();
-    } : null, (patch) => {
-      data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { ...patch, done: true }), new Date().toISOString());
-      persist(idx); render();
-    }, set.done ? () => {
-      const next = nextFeel(set.feel);
-      data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { feel: next }), new Date().toISOString());
-      persist(idx); render();
-    } : null, set.done ? () => {
-      const t = prompt("Commenti (separati da ;):", (set.comments ?? []).join("; "));
-      if (t === null) return;
-      const comments = t.split(";").map((s) => s.trim()).filter(Boolean);
-      data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { comments }), new Date().toISOString());
-      persist(idx); render();
-    } : null));
+    } : null;
+    const onOpen = set.done ? () => openSetDialog({
+      title: `Serie ${i + 1} · ${set.reps || "—"} × ${set.kg || "—"} kg`,
+      reps: set.reps, kg: set.kg, feel: set.feel,
+      onApply: (reps, kg, feel) => {
+        data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { reps, kg, feel }), new Date().toISOString());
+        persist(idx); render();
+      },
+      onUndo: () => {
+        data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { done: false }), new Date().toISOString());
+        persist(idx); render();
+      },
+      onDelete: () => {
+        data = setEntry(data, currentWeek, currentDay, idx, withoutSet(v, i), new Date().toISOString());
+        persist(idx); render();
+      },
+    }) : null;
+    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen));
   }
   container.appendChild(setsBox);
 
   const edit = buildEditBlock(`Serie ${curIdx + 1} — carico · step 0.5 kg`, draft, prev[curIdx] || null);
   container.appendChild(edit.block);
-
-  container.appendChild(buildRpeBar(entry.sets[curIdx]?.feel ?? "", (feel) => {
-    data = setEntry(data, currentWeek, currentDay, idx,
-      withSet(v, curIdx, { feel }), new Date().toISOString());
-    persist(idx); render();
-  }));
 
   const qcLabel = document.createElement("div"); qcLabel.className = "editlabel"; qcLabel.textContent = "commento veloce";
   container.appendChild(qcLabel);
