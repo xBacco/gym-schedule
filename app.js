@@ -5,7 +5,7 @@ import {
   GitHubStore, ConflictError, AuthError, toggleComment,
 } from "./store.js";
 import {
-  parseTarget, activeExerciseIndex, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
+  parseTarget, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
   withSet, withoutSet, withSupersetSet, withNote, previousNote,
   previousSetInSession, previousWeekSet,
   sessionVolume, exerciseTrend,
@@ -23,7 +23,8 @@ let data = emptyData();
 let sha = null;
 let currentWeek = isoWeekKey(new Date());
 let currentDay = "A";
-let openIndex = null;        // esercizio aperto nella fisarmonica (null = nessuno)
+let openIndex = null;        // esercizio aperto nel focus a schermo intero (null = nessuno)
+let supersetTab = "a";       // sotto-tab attivo nel focus di un superset
 let store = null;
 let saveTimer = null;
 
@@ -504,12 +505,15 @@ function persist(idx) {
   saveTimer = setTimeout(saveToCloud, 1500);
 }
 
-function renderFocusNormal(ex, idx, container) {
+function renderFocusNormal(ex, idx, container, footer) {
   const v = getEntry(data, currentWeek, currentDay, idx);
   const entry = normalizeEntry(v);
   const tgt = parseTarget(ex.setsReps, false);
   const prev = prefillSets(data, currentWeek, currentDay, idx); // [{reps,kg,done:false}]
   const curIdx = activeSetIndex(entry.sets);
+
+  document.getElementById("focusSet").textContent =
+    `serie ${Math.min(curIdx + 1, tgt.sets)} / ${tgt.sets}`;
 
   draft = {
     kg: prev[curIdx]?.kg ?? "",
@@ -610,13 +614,12 @@ function renderFocusNormal(ex, idx, container) {
       withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true, feel: entry.sets[curIdx]?.feel ?? "", comments: draft.comments }), new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
-    render();
     if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
-      openIndex = activeExerciseIndex(data, currentWeek, currentDay, dayPlan());
-      render();
+      openIndex = null; // esercizio finito → torna alla lista
     }
+    render();
   });
-  container.appendChild(cta);
+  footer.appendChild(cta);
   container.appendChild(buildNoteField(false, idx));
 }
 
@@ -694,20 +697,38 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
   return { wrap, curIdx };
 }
 
-function renderFocusSuperset(ex, idx, container) {
+function renderFocusSuperset(ex, idx, container, footer) {
   const v = getEntry(data, currentWeek, currentDay, idx);
   const e = normalizeSupersetEntry(v);
   const tgt = parseTarget(ex.setsReps, true);
   const [nameA, nameB] = ex.name.includes(" + ") ? ex.name.split(" + ") : [ex.name, ex.name];
-
   const prev = previousSupersetSets(currentWeek, currentDay, idx);
+
+  // sotto-tab A / B
+  const tabs = document.createElement("div");
+  tabs.className = "ss-tabs";
+  [["a", nameA.trim()], ["b", nameB.trim()]].forEach(([key, name]) => {
+    const b = document.createElement("button");
+    b.textContent = `${key.toUpperCase()} · ${name}`;
+    if (supersetTab === key) b.classList.add("on");
+    b.addEventListener("click", () => { supersetTab = key; render(); });
+    tabs.appendChild(b);
+  });
+  container.appendChild(tabs);
 
   const trendRow = buildTrendRow(exerciseTrend(data, currentDay, idx, currentWeek, 3, true), currentWeek);
   if (trendRow) container.appendChild(trendRow);
 
   const a = trackBlock("a", nameA.trim(), e.a, tgt.a, prev.a, draftA, idx);
   const b = trackBlock("b", nameB.trim(), e.b, tgt.b, prev.b, draftB, idx);
-  container.append(a.wrap, b.wrap);
+  // si mostra solo la traccia del tab attivo (blocco totale: una per volta)
+  container.appendChild(supersetTab === "a" ? a.wrap : b.wrap);
+
+  // header serie X/Y riferito alla traccia attiva
+  const active = supersetTab === "a" ? a : b;
+  const tgtT = supersetTab === "a" ? tgt.a : tgt.b;
+  document.getElementById("focusSet").textContent =
+    `serie ${Math.min(active.curIdx + 1, tgtT.sets)} / ${tgtT.sets} · ${supersetTab.toUpperCase()}`;
 
   const cta = document.createElement("button");
   cta.className = "cta"; cta.textContent = "Serie fatta (A+B) · avvia recupero ▸";
@@ -717,13 +738,12 @@ function renderFocusSuperset(ex, idx, container) {
     data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
-    render();
     if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
-      openIndex = activeExerciseIndex(data, currentWeek, currentDay, dayPlan());
-      render();
+      openIndex = null; // superset finito → torna alla lista
     }
+    render();
   });
-  container.appendChild(cta);
+  footer.appendChild(cta);
   container.appendChild(buildNoteField(true, idx));
 }
 
@@ -752,7 +772,7 @@ function renderList() {
     item.className = "item" + (isComplete(i) ? " done" : "") + (i === openIndex ? " open" : "");
     const r = document.createElement("div");
     r.className = "r";
-    r.addEventListener("click", () => { openIndex = (openIndex === i ? null : i); render(); });
+    r.addEventListener("click", () => { openIndex = (openIndex === i ? null : i); supersetTab = "a"; render(); });
     const id = document.createElement("span"); id.className = "id"; id.textContent = String(i + 1).padStart(2, "0");
     const mid = document.createElement("div"); mid.className = "mid";
     const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = ex.name;
@@ -767,14 +787,31 @@ function renderList() {
     const caret = document.createElement("span"); caret.className = "caret"; caret.textContent = "▾";
     r.append(id, mid, right, caret);
     item.appendChild(r);
-    const body = document.createElement("div"); body.className = "body";
-    if (i === openIndex) {
-      if (ex.superset) renderFocusSuperset(ex, i, body);
-      else renderFocusNormal(ex, i, body);
-    }
-    item.appendChild(body);
     root.appendChild(item);
   });
+}
+
+// Renderizza (o nasconde) l'overlay a schermo intero dell'esercizio aperto.
+function renderFocusOverlay() {
+  const ov = document.getElementById("focusOverlay");
+  const body = document.getElementById("focusBody");
+  const foot = document.getElementById("focusFoot");
+  if (openIndex === null) {
+    ov.classList.add("hidden");
+    ov.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    return;
+  }
+  const ex = dayPlan().exercises[openIndex];
+  if (!ex) { openIndex = null; renderFocusOverlay(); return; }
+  document.getElementById("focusName").textContent = ex.name;
+  body.textContent = "";
+  foot.textContent = "";
+  if (ex.superset) renderFocusSuperset(ex, openIndex, body, foot);
+  else renderFocusNormal(ex, openIndex, body, foot);
+  ov.classList.remove("hidden");
+  ov.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
 }
 
 function renderVolRow() {
@@ -790,6 +827,7 @@ function render() {
   renderProgress();
   renderList();
   renderVolRow();
+  renderFocusOverlay();
 }
 
 // ---- Editing + saving ----
@@ -935,6 +973,7 @@ async function boot() {
   for (const b of document.querySelectorAll("#dayTabs button")) {
     b.addEventListener("click", () => changeDay(b.dataset.day));
   }
+  document.getElementById("focusBack").addEventListener("click", () => { openIndex = null; render(); });
   initStore();
   setStatus("carico…");
   try {
