@@ -127,13 +127,17 @@ const timer = new RestTimer({
     hideFeelAsk();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     beep();
-    setTimeout(() => document.getElementById("timerBar").classList.add("hidden"), 1500);
+    setTimeout(() => {
+      document.getElementById("timerBar").classList.add("hidden");
+      document.body.classList.remove("timer-on");
+    }, 1500);
   },
 });
 const wakeLock = new ScreenWakeLock();
 function startRest(seconds, label) {
   ensureAudio(); // unlock audio within the user gesture
   wakeLock.enable();
+  document.body.classList.add("timer-on");
   document.getElementById("timerBar").classList.remove("hidden");
   document.getElementById("tToggle").textContent = "⏸";
   timer.start(seconds, label);
@@ -1092,6 +1096,7 @@ function wireTimerControls() {
     timer.stop();
     hideFeelAsk();
     document.getElementById("timerBar").classList.add("hidden");
+    document.body.classList.remove("timer-on");
   });
   document.getElementById("tToggle").addEventListener("click", (e) => {
     if (timer.paused) { timer.resume(); e.target.textContent = "⏸"; }
