@@ -781,7 +781,8 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
 
   const setsBox = document.createElement("div");
   setsBox.className = "sets";
-  const total = Math.max(trackEntry.sets.length, tgtTrack.sets, curIdx + 1);
+  const total = Math.max(trackEntry.sets.length, tgtTrack.sets);
+  const allDone = curIdx >= total;
   for (let i = 0; i < total; i++) {
     const set = trackEntry.sets[i] || { reps: "", kg: "", done: false };
     const onOpen = set.done ? () => openSetDialog({
@@ -803,30 +804,47 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
         persist(idx); render();
       },
     }) : null;
-    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, null, onOpen));
+    const onRemove = (!set.done && i < trackEntry.sets.length) ? () => {
+      data = setEntry(data, currentWeek, currentDay, idx, withoutSupersetSet(getEntry(data, currentWeek, currentDay, idx), trackKey, i), new Date().toISOString());
+      persist(idx); render();
+    } : null;
+    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen));
   }
   wrap.appendChild(setsBox);
 
-  const edit = buildEditBlock(`Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`, state, prevSets[curIdx] || null);
-  wrap.appendChild(edit.block);
+  const dots = document.createElement("div");
+  dots.className = "dots";
+  const add = document.createElement("button");
+  add.className = "addset"; add.textContent = "+ serie";
+  add.addEventListener("click", () => {
+    data = setEntry(data, currentWeek, currentDay, idx, withSupersetSet(getEntry(data, currentWeek, currentDay, idx), trackKey, trackEntry.sets.length, { reps: "", kg: "", done: false }), new Date().toISOString());
+    persist(idx); render();
+  });
+  dots.appendChild(add);
+  wrap.appendChild(dots);
 
-  const qcLabel = document.createElement("div"); qcLabel.className = "editlabel"; qcLabel.textContent = "commento veloce";
-  wrap.appendChild(qcLabel);
-  let chipsEl;
-  const refreshChips = () => {
-    const fresh = buildQuickCommentChips(state.comments,
-      (text) => { state.comments = toggleComment(state.comments, text); refreshChips(); },
-      () => { const t = prompt("Commento:"); const v = t && t.trim(); if (v && !state.comments.includes(v)) { state.comments = [...state.comments, v]; refreshChips(); } });
-    if (chipsEl) { chipsEl.replaceWith(fresh); } else { wrap.appendChild(fresh); }
-    chipsEl = fresh;
-  };
-  refreshChips();
+  if (!allDone) {
+    const edit = buildEditBlock(`Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`, state, prevSets[curIdx] || null);
+    wrap.appendChild(edit.block);
 
-  const inSess = previousSetInSession(trackEntry, curIdx);
-  const prevWk = previousWeekSet(data, currentDay, idx, currentWeek, curIdx, trackKey);
-  const chips = buildRepeatChips(inSess, prevWk, ({ reps, kg }) => { state.reps = reps; state.kg = kg; edit.refresh(); });
-  if (chips) wrap.appendChild(chips);
-  return { wrap, curIdx };
+    const qcLabel = document.createElement("div"); qcLabel.className = "editlabel"; qcLabel.textContent = "commento veloce";
+    wrap.appendChild(qcLabel);
+    let chipsEl;
+    const refreshChips = () => {
+      const fresh = buildQuickCommentChips(state.comments,
+        (text) => { state.comments = toggleComment(state.comments, text); refreshChips(); },
+        () => { const t = prompt("Commento:"); const v = t && t.trim(); if (v && !state.comments.includes(v)) { state.comments = [...state.comments, v]; refreshChips(); } });
+      if (chipsEl) { chipsEl.replaceWith(fresh); } else { wrap.appendChild(fresh); }
+      chipsEl = fresh;
+    };
+    refreshChips();
+
+    const inSess = previousSetInSession(trackEntry, curIdx);
+    const prevWk = previousWeekSet(data, currentDay, idx, currentWeek, curIdx, trackKey);
+    const chips = buildRepeatChips(inSess, prevWk, ({ reps, kg }) => { state.reps = reps; state.kg = kg; edit.refresh(); });
+    if (chips) wrap.appendChild(chips);
+  }
+  return { wrap, curIdx, allDone };
 }
 
 function renderFocusSuperset(ex, idx, container, footer) {
@@ -862,22 +880,24 @@ function renderFocusSuperset(ex, idx, container, footer) {
   document.getElementById("focusSet").textContent =
     `serie ${Math.min(active.curIdx + 1, tgtT.sets)} / ${tgtT.sets} · ${supersetTab.toUpperCase()}`;
 
-  const cta = document.createElement("button");
-  cta.className = "cta"; cta.textContent = "Serie fatta (A+B) · avvia recupero ▸";
-  cta.addEventListener("click", () => {
-    let nv = withSupersetSet(v, "a", a.curIdx, { reps: draftA.reps, kg: draftA.kg, done: true, feel: e.a.sets[a.curIdx]?.feel ?? "", comments: draftA.comments });
-    nv = withSupersetSet(nv, "b", b.curIdx, { reps: draftB.reps, kg: draftB.kg, done: true, feel: e.b.sets[b.curIdx]?.feel ?? "", comments: draftB.comments });
-    data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
-    persist(idx);
-    startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
-    render();
-    if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
-      closeFocus(); // superset finito → torna alla lista (e libera la voce di history)
-    } else {
-      showFeelAsk({ idx, superset: true, aIdx: a.curIdx, bIdx: b.curIdx });
-    }
-  });
-  footer.appendChild(cta);
+  if (!isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
+    const cta = document.createElement("button");
+    cta.className = "cta"; cta.textContent = "Serie fatta (A+B) · avvia recupero ▸";
+    cta.addEventListener("click", () => {
+      let nv = withSupersetSet(v, "a", a.curIdx, { reps: draftA.reps, kg: draftA.kg, done: true, feel: e.a.sets[a.curIdx]?.feel ?? "", comments: draftA.comments });
+      nv = withSupersetSet(nv, "b", b.curIdx, { reps: draftB.reps, kg: draftB.kg, done: true, feel: e.b.sets[b.curIdx]?.feel ?? "", comments: draftB.comments });
+      data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
+      persist(idx);
+      startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
+      render();
+      if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
+        closeFocus(); // superset finito → torna alla lista (e libera la voce di history)
+      } else {
+        showFeelAsk({ idx, superset: true, aIdx: a.curIdx, bIdx: b.curIdx });
+      }
+    });
+    footer.appendChild(cta);
+  }
   container.appendChild(buildNoteField(true, idx));
 }
 
