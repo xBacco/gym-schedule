@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-26T14:52:21.805Z",
+  "updatedAt": "2026-05-26T15:49:09.091Z",
   "weeks": {
     "2026-W22": {
       "label": "2026-W22",
@@ -206,6 +206,21 @@
               ],
               "note": "plank in secondi"
             },
+            "note": ""
+          }
+        },
+        "B": {
+          "0": {
+            "sets": [
+              {
+                "reps": "8",
+                "kg": "",
+                "done": true,
+                "feel": "",
+                "warmup": false,
+                "comments": []
+              }
+            ],
             "note": ""
           }
         }
