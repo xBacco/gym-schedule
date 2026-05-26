@@ -9,6 +9,7 @@ import {
   withSet, withoutSet, withSupersetSet,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
+import { ScreenWakeLock } from "./wakelock.js";
 
 const OWNER = "xBacco";
 const REPO = "gym-schedule";
@@ -94,8 +95,10 @@ const timer = new RestTimer({
     setTimeout(() => document.getElementById("timerBar").classList.add("hidden"), 1500);
   },
 });
+const wakeLock = new ScreenWakeLock();
 function startRest(seconds, label) {
   ensureAudio(); // unlock audio within the user gesture
+  wakeLock.enable();
   document.getElementById("timerBar").classList.remove("hidden");
   document.getElementById("tToggle").textContent = "⏸";
   timer.start(seconds, label);
@@ -645,7 +648,9 @@ function wireTimerControls() {
     if (timer.paused) { timer.resume(); e.target.textContent = "⏸"; }
     else { timer.pause(); e.target.textContent = "▶"; }
   });
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) timer.sync(); });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) { timer.sync(); wakeLock.onVisible(); }
+  });
 }
 
 // ---- Boot ----
@@ -678,6 +683,7 @@ async function boot() {
   focusIndex = activeExerciseIndex(data, currentWeek, currentDay, dayPlan());
   renderWeekSelect();
   render();
+  wakeLock.enable();
   if (getPending().length && getToken()) saveToCloud();
 }
 
