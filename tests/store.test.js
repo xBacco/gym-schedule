@@ -206,3 +206,23 @@ test("prefillSets: salta settimane con serie vuote e usa la più recente non vuo
   d = setEntry(d, "2026-W21", "A", 0, { sets: [] }, "t2"); // loggata ma senza serie
   assert.deepEqual(prefillSets(d, "2026-W22", "A", 0), [{ reps: "10", kg: "50", done: false }]);
 });
+import { platesPerSide } from "../store.js";
+
+test("platesPerSide: 72.5 kg con bilanciere 20 -> 20+5+1.25 per lato", () => {
+  assert.deepEqual(platesPerSide(72.5), { perSide: [20, 5, 1.25], leftover: 0 });
+});
+
+test("platesPerSide: 60 kg -> 20 per lato", () => {
+  assert.deepEqual(platesPerSide(60), { perSide: [20], leftover: 0 });
+});
+
+test("platesPerSide: carico <= bilanciere -> nessun disco", () => {
+  assert.deepEqual(platesPerSide(20), { perSide: [], leftover: 0 });
+  assert.deepEqual(platesPerSide(15), { perSide: [], leftover: 0 });
+});
+
+test("platesPerSide: set dischi personalizzato e resto non coperto", () => {
+  const out = platesPerSide(63, { bar: 20, plates: [10, 5] }); // perSide target 21.5 -> 10+10+... resto
+  assert.deepEqual(out.perSide, [10, 10]);
+  assert.equal(out.leftover, 1.5);
+});
