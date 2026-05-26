@@ -28,6 +28,22 @@ let supersetTab = "a";       // sotto-tab attivo nel focus di un superset
 let store = null;
 let saveTimer = null;
 
+// L'overlay dell'esercizio è registrato come voce di history, così la gesture
+// "indietro" del telefono (swipe dal bordo / tasto back) chiude l'esercizio
+// invece di uscire dall'app. open → pushState; chiusura in-app → history.back()
+// (che fa scattare popstate, dove avviene la chiusura vera).
+function openFocus(i) {
+  openIndex = i;
+  supersetTab = "a";
+  history.pushState({ gymFocus: true }, "");
+  render();
+}
+function closeFocus() {
+  if (openIndex === null) return;
+  if (history.state && history.state.gymFocus) history.back(); // → popstate chiude
+  else { openIndex = null; render(); }
+}
+
 // ---- Token + pending buffer (browser only) ----
 const getToken = () => localStorage.getItem(TOKEN_KEY) || null;
 const setToken = (t) => (t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY));
@@ -614,10 +630,10 @@ function renderFocusNormal(ex, idx, container, footer) {
       withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true, feel: entry.sets[curIdx]?.feel ?? "", comments: draft.comments }), new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
-    if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
-      openIndex = null; // esercizio finito → torna alla lista
-    }
     render();
+    if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
+      closeFocus(); // esercizio finito → torna alla lista (e libera la voce di history)
+    }
   });
   footer.appendChild(cta);
   container.appendChild(buildNoteField(false, idx));
@@ -738,10 +754,10 @@ function renderFocusSuperset(ex, idx, container, footer) {
     data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
     persist(idx);
     startRest(getRest(currentDay, idx, ex.restSeconds), ex.name);
-    if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
-      openIndex = null; // superset finito → torna alla lista
-    }
     render();
+    if (isEntryComplete(getEntry(data, currentWeek, currentDay, idx), ex)) {
+      closeFocus(); // superset finito → torna alla lista (e libera la voce di history)
+    }
   });
   footer.appendChild(cta);
   container.appendChild(buildNoteField(true, idx));
@@ -772,7 +788,7 @@ function renderList() {
     item.className = "item" + (isComplete(i) ? " done" : "") + (i === openIndex ? " open" : "");
     const r = document.createElement("div");
     r.className = "r";
-    r.addEventListener("click", () => { openIndex = (openIndex === i ? null : i); supersetTab = "a"; render(); });
+    r.addEventListener("click", () => openFocus(i));
     const id = document.createElement("span"); id.className = "id"; id.textContent = String(i + 1).padStart(2, "0");
     const mid = document.createElement("div"); mid.className = "mid";
     const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = ex.name;
@@ -973,7 +989,8 @@ async function boot() {
   for (const b of document.querySelectorAll("#dayTabs button")) {
     b.addEventListener("click", () => changeDay(b.dataset.day));
   }
-  document.getElementById("focusBack").addEventListener("click", () => { openIndex = null; render(); });
+  document.getElementById("focusBack").addEventListener("click", () => closeFocus());
+  window.addEventListener("popstate", () => { if (openIndex !== null) { openIndex = null; render(); } });
   initStore();
   setStatus("carico…");
   try {
