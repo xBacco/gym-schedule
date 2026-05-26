@@ -40,6 +40,7 @@ function openFocus(i) {
 }
 function closeFocus() {
   if (openIndex === null) return;
+  hideFeelAsk();
   if (history.state && history.state.gymFocus) history.back(); // → popstate chiude
   else { openIndex = null; render(); }
 }
@@ -504,6 +505,7 @@ function showFeelAsk(info) {
   const n = info.superset ? info.aIdx : info.setIndex;
   document.getElementById("feelAskN").textContent = String(n + 1);
   const bar = buildRpeBar("", (feel) => {
+    if (!lastDone) return;
     if (!feel) { hideFeelAsk(); return; }
     let v = getEntry(data, currentWeek, currentDay, lastDone.idx);
     let nv;
@@ -1117,7 +1119,7 @@ async function boot() {
     b.addEventListener("click", () => changeDay(b.dataset.day));
   }
   document.getElementById("focusBack").addEventListener("click", () => closeFocus());
-  window.addEventListener("popstate", () => { if (openIndex !== null) { openIndex = null; render(); } });
+  window.addEventListener("popstate", () => { if (openIndex !== null) { hideFeelAsk(); openIndex = null; render(); } });
   initStore();
   setStatus("carico…");
   try {
