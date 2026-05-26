@@ -104,10 +104,13 @@ export function platesPerSide(targetKg, { bar = 20, plates = [20, 15, 10, 5, 2.5
   return { perSide, leftover: Math.round(remaining * 100) / 100 };
 }
 
-// "20, 15, 10, 5, 2.5" -> [20,15,10,5,2.5] (decimali col punto; separatori
-// virgola o spazi). Scarta non numerici e valori <= 0; ordina decrescente.
+// "20, 15, 10, 5, 2.5" -> [20,15,10,5,2.5]. Separatori: virgola o spazi.
+// La virgola-decimale all'italiana ("2,5") è gestita: una virgola seguita da
+// cifra diventa punto, mentre la virgola separatrice (seguita da spazio) resta.
+// Scarta non numerici e valori <= 0; ordina decrescente.
 export function parsePlateSet(str) {
   return String(str ?? "")
+    .replace(/,(\d)/g, ".$1")
     .split(/[,\s]+/)
     .map((t) => parseFloat(t))
     .filter((n) => Number.isFinite(n) && n > 0)

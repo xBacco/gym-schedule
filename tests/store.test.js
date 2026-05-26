@@ -260,3 +260,8 @@ test("parsePlateSet: parsa, ordina decrescente e scarta invalidi", () => {
 test("parsePlateSet: stringa vuota -> []", () => {
   assert.deepEqual(parsePlateSet(""), []);
 });
+
+test("parsePlateSet: virgola decimale all'italiana ('2,5') con item separati da spazio/virgola-spazio", () => {
+  assert.deepEqual(parsePlateSet("20, 15, 2,5"), [20, 15, 2.5]);
+  assert.deepEqual(parsePlateSet("10 2,5 1,25"), [10, 2.5, 1.25]);
+});
