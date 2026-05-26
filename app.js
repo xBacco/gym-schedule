@@ -263,18 +263,18 @@ function buildRepeatChips(inSession, prevWeek, onPick) {
   row.className = "repeats";
   const make = (cls, label, val) => {
     const c = document.createElement("div");
-    c.className = "rchip" + cls;
+    c.className = cls ? `rchip ${cls}` : "rchip";
     const l = document.createElement("div"); l.className = "rl"; l.textContent = label;
-    const vv = document.createElement("div"); vv.className = "rv";
-    vv.textContent = `${val.reps || "—"} × ${val.kg || "—"}`;
-    c.append(l, vv);
+    const rv = document.createElement("div"); rv.className = "rv";
+    rv.textContent = `${val.reps || "—"} × ${val.kg || "—"}`;
+    c.append(l, rv);
     c.addEventListener("click", () => onPick({ reps: val.reps, kg: val.kg }));
     row.appendChild(c);
   };
   if (inSession) make("", "↑ serie sopra", inSession);
   if (prevWeek) {
     const wk = prevWeek.week ? prevWeek.week.split("-").pop() : "scorsa";
-    make(" scorsa", `↶ ${wk}`, prevWeek);
+    make("scorsa", `↶ ${wk}`, prevWeek);
   }
   return row;
 }

@@ -163,7 +163,7 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
 /* Scorciatoie "ripeti serie precedente" */
 .repeats{display:flex;gap:8px;margin:12px 0 2px;}
 .repeats .rchip{flex:1;background:var(--surf2);border:1px solid var(--line);border-radius:11px;
-  padding:8px 6px;text-align:center;cursor:pointer;min-height:44px;}
+  padding:8px 6px;text-align:center;cursor:pointer;min-height:44px;user-select:none;}
 .repeats .rchip .rl{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.1em;
   text-transform:uppercase;color:var(--dim);}
 .repeats .rchip .rv{font-family:"JetBrains Mono",monospace;font-size:14px;font-weight:700;color:var(--ink);margin-top:3px;}
