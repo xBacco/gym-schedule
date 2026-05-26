@@ -7,9 +7,9 @@ test("PLAN has 3 days A/B/C", () => {
   assert.deepEqual(PLAN.map(d => d.day), ["A", "B", "C"]);
 });
 
-test("each day has 7 exercises with required fields", () => {
+test("days A/B/C have 8/7/7 exercises with required fields", () => {
+  assert.deepEqual(PLAN.map((d) => d.exercises.length), [8, 7, 7]);
   for (const day of PLAN) {
-    assert.equal(day.exercises.length, 7);
     for (const ex of day.exercises) {
       assert.equal(typeof ex.name, "string");
       assert.equal(typeof ex.setsReps, "string");
