@@ -9,14 +9,15 @@ export function parseTargetTrack(str) {
   return { sets: parseInt(m[1], 10), reps: m[2].trim() };
 }
 
-// Normale -> { sets, reps }. Superset -> { a:{sets,reps}, b:{sets,reps} }.
+// Normale -> { sets, reps } (prima parte prima di "/").
+// Superset -> { a, b } splittando sul PRIMO "/" (così qualificatori come "max/lato" restano in B).
 export function parseTarget(setsReps, superset = false) {
-  const parts = String(setsReps ?? "").split("/");
+  const s = String(setsReps ?? "");
+  const i = s.indexOf("/");
   if (superset) {
-    return {
-      a: parseTargetTrack(parts[0] ?? ""),
-      b: parseTargetTrack(parts[1] ?? parts[0] ?? ""),
-    };
+    const aPart = i === -1 ? s : s.slice(0, i);
+    const bPart = i === -1 ? s : s.slice(i + 1);
+    return { a: parseTargetTrack(aPart), b: parseTargetTrack(bPart) };
   }
-  return parseTargetTrack(parts[0] ?? "");
+  return parseTargetTrack(i === -1 ? s : s.slice(0, i));
 }

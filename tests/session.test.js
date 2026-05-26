@@ -32,3 +32,17 @@ test("parseTarget: superset con una sola parte ricade su quella per la B", () =>
     b: { sets: 3, reps: "10" },
   });
 });
+
+test("parseTarget: superset preserva qualificatori dopo il primo '/' (es. 'max/lato')", () => {
+  assert.deepEqual(parseTarget("3 × 15 / 3 × max/lato", true), {
+    a: { sets: 3, reps: "15" },
+    b: { sets: 3, reps: "max/lato" },
+  });
+});
+
+test("parseTarget: superset con conteggi/reps asimmetrici", () => {
+  assert.deepEqual(parseTarget("3 × 8-10 / 3 × 10-12", true), {
+    a: { sets: 3, reps: "8-10" },
+    b: { sets: 3, reps: "10-12" },
+  });
+});
