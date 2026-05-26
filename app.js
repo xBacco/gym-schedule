@@ -312,10 +312,11 @@ function buildNoteField(superset) {
 
   const wrap = document.createElement("div");
   wrap.className = "noteblock";
+  const id = `note-${currentDay}-${focusIndex}`;
   const lab = document.createElement("label");
-  lab.className = "notelabel"; lab.textContent = "Nota";
+  lab.className = "notelabel"; lab.textContent = "Nota"; lab.htmlFor = id;
   const ta = document.createElement("textarea");
-  ta.className = "note"; ta.rows = 1;
+  ta.id = id; ta.className = "note"; ta.rows = 1;
   ta.placeholder = prev ? `↳ ${prev}` : "presa, set-up, sensazioni…";
   ta.value = e.note || "";
   ta.addEventListener("change", () => {
