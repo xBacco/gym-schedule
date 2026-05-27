@@ -170,7 +170,18 @@ function closeDrawer() {
   if (history.state && history.state.gymMenu) history.back(); // → popstate chiude
   else { drawerOpen = false; renderDrawer(); }
 }
-function toggleDrawer() { drawerOpen ? closeDrawer() : openDrawer(); }
+// Su touch un tap genera un click di compatibilità: aprendo, la maniglia sale
+// (il pannello si espande) e quel click cadrebbe su scrim/voce sottostante
+// richiudendo subito il drawer. preventDefault sul pointerdown non basta su
+// tutti i browser (iOS Safari lo ignora), quindi inghiottiamo ogni click per la
+// durata dell'animazione: il ghost click muore ovunque cada, i tap veri sulle
+// voci arrivano dopo e restano attivi.
+function swallowGhostClick() {
+  const swallow = (e) => { e.stopPropagation(); e.preventDefault(); };
+  document.addEventListener("click", swallow, true);
+  setTimeout(() => document.removeEventListener("click", swallow, true), 400);
+}
+function toggleDrawer() { swallowGhostClick(); drawerOpen ? closeDrawer() : openDrawer(); }
 // Chiude il drawer e, una volta chiuso (history consumata), lancia l'azione scelta.
 function drawerLaunch(fn) { drawerPending = fn; closeDrawer(); }
 
