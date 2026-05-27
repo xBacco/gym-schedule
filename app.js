@@ -11,6 +11,7 @@ import {
   previousSetInSession, previousWeekSet,
   sessionVolume, exerciseTrend, nextExercisePreview,
   topSetSeries, chartGeometry,
+  sessionDates, monthGrid,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -117,6 +118,100 @@ function renderPlanEditor() {
   ov.classList.remove("hidden");
   ov.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+}
+
+// ---- Calendario allenamenti: overlay a schermo intero (stessa logica history). ----
+let calendarOpen = false;
+let calYear = 0, calMonth = 0;   // mese visualizzato (month 0-based)
+let calSelected = null;          // "YYYY-MM-DD" del giorno selezionato, o null
+
+function openCalendar() {
+  calendarOpen = true;
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  calSelected = null;
+  history.pushState({ gymCalendar: true }, "");
+  renderCalendar();
+}
+function closeCalendar() {
+  if (!calendarOpen) return;
+  if (history.state && history.state.gymCalendar) history.back(); // → popstate chiude
+  else { calendarOpen = false; renderCalendar(); }
+}
+function calShiftMonth(delta) {
+  const d = new Date(calYear, calMonth + delta, 1);
+  calYear = d.getFullYear();
+  calMonth = d.getMonth();
+  calSelected = null;
+  renderCalendar();
+}
+
+const CAL_MONTHS = ["gennaio","febbraio","marzo","aprile","maggio","giugno",
+  "luglio","agosto","settembre","ottobre","novembre","dicembre"];
+
+function renderCalendar() {
+  const ov = document.getElementById("calendarOverlay");
+  if (!calendarOpen) {
+    ov.classList.add("hidden");
+    ov.setAttribute("aria-hidden", "true");
+    if (openIndex === null && !nutritionOpen && !planOpen) document.body.style.overflow = "";
+    return;
+  }
+  document.getElementById("calTitle").textContent = `${CAL_MONTHS[calMonth]} ${calYear}`;
+
+  const sessions = sessionDates(data);
+  const byDate = new Map();
+  for (const s of sessions) {
+    if (!byDate.has(s.date)) byDate.set(s.date, []);
+    byDate.get(s.date).push(s);
+  }
+
+  const grid = document.getElementById("calGrid");
+  grid.textContent = "";
+  for (const dow of ["L","M","M","G","V","S","D"]) {
+    const h = document.createElement("div");
+    h.className = "cal-dow"; h.textContent = dow;
+    grid.appendChild(h);
+  }
+  for (const week of monthGrid(calYear, calMonth)) {
+    for (const date of week) {
+      const cell = document.createElement("div");
+      if (date === null) { cell.className = "cal-cell empty"; grid.appendChild(cell); continue; }
+      cell.className = "cal-cell";
+      cell.textContent = String(Number(date.slice(8, 10)));
+      if (byDate.has(date)) {
+        cell.classList.add("trained");
+        if (date === calSelected) cell.classList.add("sel");
+        cell.addEventListener("click", () => { calSelected = date; renderCalendar(); });
+      }
+      grid.appendChild(cell);
+    }
+  }
+  renderCalendarDetail(byDate.get(calSelected) || null);
+
+  ov.classList.remove("hidden");
+  ov.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function renderCalendarDetail(sessions) {
+  const box = document.getElementById("calDetail");
+  box.textContent = "";
+  if (!sessions || !sessions.length) {
+    const p = document.createElement("div");
+    p.className = "empty";
+    p.textContent = "Tocca un giorno colorato per i dettagli.";
+    box.appendChild(p);
+    return;
+  }
+  for (const s of sessions) {
+    const dayPlan = planDays().find((d) => d.day === s.day);
+    const vol = Math.round(sessionVolume(data, s.weekKey, s.day, dayPlan));
+    const row = document.createElement("div");
+    row.textContent = `${s.date} — giorno ${s.day} · volume ${vol} kg`;
+    box.appendChild(row);
+  }
 }
 
 // Riga esercizio nell'editor: grip drag, nome+sub, modifica, elimina.
@@ -1747,6 +1842,10 @@ async function boot() {
   document.getElementById("nutritionBack").addEventListener("click", () => closeNutrition());
   document.getElementById("planEditBtn").addEventListener("click", openPlanEditor);
   document.getElementById("planBack").addEventListener("click", () => closePlanEditor());
+  document.getElementById("calendarBtn").addEventListener("click", openCalendar);
+  document.getElementById("calendarBack").addEventListener("click", closeCalendar);
+  document.getElementById("calPrev").addEventListener("click", () => calShiftMonth(-1));
+  document.getElementById("calNext").addEventListener("click", () => calShiftMonth(1));
   for (const b of document.querySelectorAll("#planTabs button")) {
     b.addEventListener("click", () => { planEditDay = b.dataset.day; renderPlanEditor(); });
   }
@@ -1774,6 +1873,7 @@ async function boot() {
     if (openIndex !== null) { hideFeelAsk(); openIndex = null; render(); }
     if (nutritionOpen) { nutritionOpen = false; renderNutritionOverlay(); }
     if (planOpen) { planOpen = false; renderPlanEditor(); }
+    if (calendarOpen) { calendarOpen = false; renderCalendar(); }
   });
   initStore();
   setStatus("carico…");
