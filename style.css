@@ -94,6 +94,13 @@ h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:8px 0 0;}
 .repstep .rc{text-align:center;}
 .repstep .rc .rv{font-family:"JetBrains Mono",monospace;font-size:24px;font-weight:700;}
 .repstep .rc .l{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);}
+/* Valori editabili (tap per digitare): input che eredita lo stile del numero. */
+.stepper .val input.num{font:inherit;color:var(--ink);background:transparent;border:none;text-align:center;padding:0;}
+.repstep .rc input.rv{color:var(--ink);background:transparent;border:none;text-align:center;padding:0;width:2.4em;}
+.mini input.num{background:transparent;border:none;padding:0;min-width:0;}
+.stepper .val input.num:focus,.repstep .rc input.rv:focus,.mini input.num:focus{outline:none;}
+input.num,input.rv{appearance:none;-moz-appearance:textfield;border-radius:0;}
+input.num::-webkit-outer-spin-button,input.num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 .chip{flex:1;background:var(--field);border:1px solid var(--line);border-radius:12px;padding:9px;text-align:center;display:flex;flex-direction:column;justify-content:center;}
 .chip .rv{font-family:"JetBrains Mono",monospace;font-size:16px;font-weight:700;}
 .chip .l{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-top:2px;}
@@ -407,8 +414,10 @@ body.timer-on .focus-body{padding-bottom:160px;}
 .plan-tabs button.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);}
 .plan-body{padding:0 16px 28px;overflow-y:auto;}
 .pe-row{display:flex;align-items:center;gap:8px;background:var(--surf);border:1px solid var(--line);
-  border-radius:12px;padding:10px 8px;margin-bottom:8px;touch-action:none;}
-.pe-row.dragging{opacity:.55;border-style:dashed;border-color:var(--acc);}
+  border-radius:12px;padding:10px 8px;margin-bottom:8px;touch-action:none;
+  transition:transform .16s cubic-bezier(.2,.7,.3,1);}
+.pe-row.dragging{border-color:var(--acc);box-shadow:0 8px 22px rgba(0,0,0,.45);
+  transition:none;position:relative;z-index:5;}
 .pe-grip{color:var(--acc);font-size:20px;padding:0 4px;cursor:grab;touch-action:none;user-select:none;}
 .pe-meta{flex:1;min-width:0;}
 .pe-name{color:var(--ink);font-size:14px;font-weight:600;}

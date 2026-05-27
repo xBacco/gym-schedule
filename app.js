@@ -187,45 +187,57 @@ function deletePlanExercise(day, id, name) {
   render();
 }
 
-// Drag-to-reorder col grip (pointer events, no HTML5 DnD: affidabile su mobile).
+// Drag-to-reorder fluido col grip (pointer events, no HTML5 DnD). La riga segue il
+// dito con transform e le altre si scostano per far spazio; commit al rilascio.
+// La capture è su #planBody (elemento stabile): catturarla sul grip si perdeva su
+// iOS appena il DOM cambiava, bloccando il drag dopo un passo.
 function attachDragHandle(row, grip, day) {
   grip.addEventListener("pointerdown", (e) => {
     e.preventDefault();
     const body = document.getElementById("planBody");
-    const rows = () => [...body.querySelectorAll(".pe-row")];
-    const fromIdx = rows().indexOf(row);
+    const rowsEls = [...body.querySelectorAll(".pe-row")];
+    const fromIdx = rowsEls.indexOf(row);
+    if (fromIdx < 0) return;
+    const startY = e.clientY;
+    const slot = row.getBoundingClientRect().height + 8; // altezza riga + margin-bottom
+    let target = fromIdx;
+
+    body.setPointerCapture(e.pointerId);
     row.classList.add("dragging");
-    grip.setPointerCapture(e.pointerId);
 
     const onMove = (ev) => {
-      const y = ev.clientY;
-      let target = 0;
-      rows().forEach((r, idx) => {
-        const rect = r.getBoundingClientRect();
-        if (y > rect.top + rect.height / 2) target = idx;
+      const dy = ev.clientY - startY;
+      row.style.transform = `translateY(${dy}px)`;
+      const t = Math.max(0, Math.min(rowsEls.length - 1, fromIdx + Math.round(dy / slot)));
+      if (t === target) return;
+      target = t;
+      rowsEls.forEach((r, i) => {
+        if (r === row) return;
+        let shift = 0;
+        if (fromIdx < target && i > fromIdx && i <= target) shift = -slot;
+        else if (fromIdx > target && i >= target && i < fromIdx) shift = slot;
+        r.style.transform = shift ? `translateY(${shift}px)` : "";
       });
-      const list = rows();
-      const cur = list.indexOf(row);
-      if (target !== cur) {
-        const ref = list[target];
-        if (ref && ref !== row) { if (target > cur) ref.after(row); else ref.before(row); }
-      }
+    };
+    const cleanup = () => {
+      body.removeEventListener("pointermove", onMove);
+      body.removeEventListener("pointerup", onUp);
+      body.removeEventListener("pointercancel", onCancel);
+      try { body.releasePointerCapture(e.pointerId); } catch (_) { /* già rilasciata */ }
     };
     const onUp = () => {
-      grip.releasePointerCapture(e.pointerId);
-      grip.removeEventListener("pointermove", onMove);
-      grip.removeEventListener("pointerup", onUp);
-      row.classList.remove("dragging");
-      const toIdx = [...body.querySelectorAll(".pe-row")].indexOf(row);
-      if (toIdx !== fromIdx && toIdx >= 0) {
-        data = { ...data, plan: reorderExercise(data.plan, day, fromIdx, toIdx) };
+      cleanup();
+      if (target !== fromIdx) {
+        data = { ...data, plan: reorderExercise(data.plan, day, fromIdx, target) };
         scheduleSave();
       }
-      renderPlanEditor();
+      renderPlanEditor(); // ridisegna pulito (azzera i transform)
       render();
     };
-    grip.addEventListener("pointermove", onMove);
-    grip.addEventListener("pointerup", onUp);
+    const onCancel = () => { cleanup(); renderPlanEditor(); }; // ripristina, niente commit
+    body.addEventListener("pointermove", onMove);
+    body.addEventListener("pointerup", onUp);
+    body.addEventListener("pointercancel", onCancel);
   });
 }
 
@@ -607,7 +619,9 @@ function buildEditBlock(label, state, prev, bar = getBar()) {
   stepper.className = "stepper";
   const minus = document.createElement("span"); minus.className = "mb"; minus.textContent = "−0.5";
   const valWrap = document.createElement("span"); valWrap.className = "val";
-  const num = document.createElement("span"); num.className = "num";
+  const num = document.createElement("input"); num.className = "num";
+  num.type = "text"; num.setAttribute("inputmode", "decimal"); num.size = 4;
+  num.autocomplete = "off"; num.placeholder = "—"; num.setAttribute("aria-label", "Peso in kg");
   const unit = document.createElement("span"); unit.className = "u"; unit.textContent = " kg";
   valWrap.append(num, unit);
   const plus = document.createElement("span"); plus.className = "mb"; plus.textContent = "+0.5";
@@ -625,9 +639,9 @@ function buildEditBlock(label, state, prev, bar = getBar()) {
     platesLine.textContent = `per lato: ${perSide.join(" + ")}` + (leftover > 0 ? `  (+${leftover} scoperto)` : "");
   };
 
-  const renderKg = () => {
+  const renderKg = ({ writeInput = true } = {}) => {
     const n = parseFloat(String(state.kg).replace(",", "."));
-    num.textContent = Number.isFinite(n) ? n.toFixed(1) : "—";
+    if (writeInput) num.value = Number.isFinite(n) ? String(n) : "";
     renderPlates();
   };
   const stepKg = (delta) => {
@@ -636,6 +650,13 @@ function buildEditBlock(label, state, prev, bar = getBar()) {
     state.kg = String(Math.max(0, Math.round((base + delta) * 100) / 100));
     renderKg();
   };
+  num.addEventListener("focus", () => num.select());
+  num.addEventListener("input", () => {
+    const raw = num.value.replace(",", ".").trim();
+    if (raw === "") { state.kg = ""; renderPlates(); return; }
+    const n = parseFloat(raw);
+    if (Number.isFinite(n) && n >= 0) { state.kg = String(Math.round(n * 100) / 100); renderPlates(); }
+  });
   renderKg();
   bindHold(minus, () => stepKg(-0.5));
   bindHold(plus, () => stepKg(0.5));
@@ -652,20 +673,29 @@ function buildEditBlock(label, state, prev, bar = getBar()) {
   repstep.className = "repstep";
   const rdec = document.createElement("span"); rdec.className = "rmb"; rdec.textContent = "−";
   const rc = document.createElement("div"); rc.className = "rc";
-  const rv = document.createElement("div"); rv.className = "rv";
+  const rv = document.createElement("input"); rv.className = "rv";
+  rv.type = "text"; rv.setAttribute("inputmode", "numeric"); rv.size = 3;
+  rv.autocomplete = "off"; rv.placeholder = "—"; rv.setAttribute("aria-label", "Ripetizioni");
   const rl = document.createElement("div"); rl.className = "l"; rl.textContent = "Ripetizioni";
   rc.append(rv, rl);
   const rinc = document.createElement("span"); rinc.className = "rmb"; rinc.textContent = "+";
   repstep.append(rdec, rc, rinc);
   reprow.appendChild(repstep);
 
-  const renderReps = () => { rv.textContent = state.reps === "" ? "—" : String(state.reps); };
+  const renderReps = ({ writeInput = true } = {}) => { if (writeInput) rv.value = state.reps === "" ? "" : String(state.reps); };
   const stepReps = (delta) => {
     const n = parseInt(state.reps, 10);
     const base = Number.isFinite(n) ? n : 0;
     state.reps = String(Math.max(0, base + delta));
     renderReps();
   };
+  rv.addEventListener("focus", () => rv.select());
+  rv.addEventListener("input", () => {
+    const raw = rv.value.trim();
+    if (raw === "") { state.reps = ""; return; }
+    const n = parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 0) state.reps = String(n);
+  });
   renderReps();
   bindHold(rdec, () => stepReps(-1));
   bindHold(rinc, () => stepReps(1));
@@ -688,15 +718,16 @@ function buildMiniStepper(label, state, field, step) {
   const row = document.createElement("div"); row.className = "mini";
   const lab = document.createElement("span"); lab.className = "lab"; lab.textContent = label;
   const dec = document.createElement("button"); dec.type = "button"; dec.className = "b"; dec.textContent = "−";
-  const num = document.createElement("span"); num.className = "num";
-  const inc = document.createElement("button"); inc.type = "button"; inc.className = "b"; inc.textContent = "+";
   const isKg = step < 1;
-  const paint = () => {
+  const num = document.createElement("input"); num.className = "num";
+  num.type = "text"; num.setAttribute("inputmode", isKg ? "decimal" : "numeric");
+  num.size = isKg ? 4 : 3; num.autocomplete = "off"; num.placeholder = "—";
+  num.setAttribute("aria-label", label);
+  const inc = document.createElement("button"); inc.type = "button"; inc.className = "b"; inc.textContent = "+";
+  const paint = ({ writeInput = true } = {}) => {
+    if (!writeInput) return;
     const n = parseFloat(String(state[field]).replace(",", "."));
-    if (!Number.isFinite(n)) { num.textContent = "—"; return; }
-    num.textContent = "";
-    num.appendChild(document.createTextNode(isKg ? n.toFixed(1) : String(Math.round(n))));
-    if (isKg) { const u = document.createElement("span"); u.className = "u"; u.textContent = " kg"; num.appendChild(u); }
+    num.value = Number.isFinite(n) ? (isKg ? String(n) : String(Math.round(n))) : "";
   };
   const stepBy = (d) => {
     const n = parseFloat(String(state[field]).replace(",", "."));
@@ -704,6 +735,13 @@ function buildMiniStepper(label, state, field, step) {
     state[field] = String(Math.max(0, Math.round((base + d) * 100) / 100));
     paint();
   };
+  num.addEventListener("focus", () => num.select());
+  num.addEventListener("input", () => {
+    const raw = num.value.replace(",", ".").trim();
+    if (raw === "") { state[field] = ""; return; }
+    const n = isKg ? parseFloat(raw) : parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 0) state[field] = String(isKg ? Math.round(n * 100) / 100 : n);
+  });
   bindHold(dec, () => stepBy(-step));
   bindHold(inc, () => stepBy(step));
   paint();
