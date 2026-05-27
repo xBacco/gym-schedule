@@ -487,6 +487,16 @@ test("lastWorkingSet: salta settimane senza kg numerico e quelle >= weekKey", ()
   assert.deepEqual(lastWorkingSet(d, "A", 0, "2026-W22"), { reps: "8", kg: "65", week: "2026-W20" });
 });
 
+test("lastWorkingSet: salta una settimana con sole serie warmup/failed", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W20", "A", 0, { sets: [{ reps: "8", kg: "65", done: true }] });
+  d = setEntry(d, "2026-W21", "A", 0, { sets: [
+    { reps: "10", kg: "90", warmup: true },             // tutte filtrate
+    { reps: "1", kg: "100", done: true, failed: true },
+  ] });
+  assert.deepEqual(lastWorkingSet(d, "A", 0, "2026-W22"), { reps: "8", kg: "65", week: "2026-W20" });
+});
+
 test("lastWorkingSet: nessuno storico utile -> null", () => {
   assert.equal(lastWorkingSet(emptyData(), "A", 0, "2026-W22"), null);
 });
