@@ -147,6 +147,43 @@ function calShiftMonth(delta) {
   renderCalendar();
 }
 
+// ---- Menu drawer in fondo: stessa logica history degli overlay. ----
+let drawerOpen = false;
+let drawerPending = null; // azione da eseguire dopo che il drawer si è chiuso
+
+function renderDrawer() {
+  const d = document.getElementById("menuDrawer");
+  const scrim = document.getElementById("drawerScrim");
+  d.classList.toggle("open", drawerOpen);
+  d.setAttribute("aria-hidden", drawerOpen ? "false" : "true");
+  document.getElementById("drawerHandle").setAttribute("aria-expanded", String(drawerOpen));
+  scrim.classList.toggle("hidden", !drawerOpen);
+}
+function openDrawer() {
+  if (drawerOpen) return;
+  drawerOpen = true;
+  history.pushState({ gymMenu: true }, "");
+  renderDrawer();
+}
+function closeDrawer() {
+  if (!drawerOpen) return;
+  if (history.state && history.state.gymMenu) history.back(); // → popstate chiude
+  else { drawerOpen = false; renderDrawer(); }
+}
+function toggleDrawer() { drawerOpen ? closeDrawer() : openDrawer(); }
+// Chiude il drawer e, una volta chiuso (history consumata), lancia l'azione scelta.
+function drawerLaunch(fn) { drawerPending = fn; closeDrawer(); }
+
+function openSettings() {
+  const dlg = document.getElementById("settingsDialog");
+  document.getElementById("tokenInput").value = getToken() || "";
+  document.getElementById("barInput").value = getBar();
+  document.getElementById("platesInput").value = getPlateSet().join(", ");
+  renderQcList();
+  document.getElementById("notifyToggle").checked = notifyOn();
+  dlg.showModal();
+}
+
 const CAL_MONTHS = ["gennaio","febbraio","marzo","aprile","maggio","giugno",
   "luglio","agosto","settembre","ottobre","novembre","dicembre"];
 
@@ -1767,14 +1804,6 @@ function wireSettings() {
     }
   });
 
-  document.getElementById("settingsBtn").addEventListener("click", () => {
-    document.getElementById("tokenInput").value = getToken() || "";
-    document.getElementById("barInput").value = getBar();
-    document.getElementById("platesInput").value = getPlateSet().join(", ");
-    renderQcList();
-    document.getElementById("notifyToggle").checked = notifyOn();
-    dlg.showModal();
-  });
   dlg.addEventListener("close", () => {
     if (dlg.returnValue === "save") {
       setToken(document.getElementById("tokenInput").value.trim() || null);
@@ -1811,6 +1840,35 @@ function wireTimerControls() {
   });
 }
 
+function wireDrawer() {
+  const handle = document.getElementById("drawerHandle");
+  let startY = null, moved = false;
+  handle.addEventListener("pointerdown", (e) => {
+    startY = e.clientY; moved = false;
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener("pointermove", (e) => {
+    if (startY === null) return;
+    if (Math.abs(e.clientY - startY) > 8) moved = true;
+  });
+  handle.addEventListener("pointerup", (e) => {
+    if (startY === null) return;
+    const dy = e.clientY - startY;
+    startY = null;
+    if (!moved) { toggleDrawer(); return; }      // tap
+    if (dy < -24 && !drawerOpen) openDrawer();    // trascina su → apre
+    else if (dy > 24 && drawerOpen) closeDrawer(); // trascina giù → chiude
+  });
+  document.getElementById("drawerScrim").addEventListener("click", closeDrawer);
+  document.getElementById("drawerPanel").addEventListener("click", (e) => {
+    const b = e.target.closest(".dr-item");
+    if (!b) return;
+    const map = { nutrition: openNutrition, calendar: openCalendar, plan: openPlanEditor, settings: openSettings };
+    const fn = map[b.dataset.act];
+    if (fn) drawerLaunch(fn);
+  });
+}
+
 // ---- Boot ----
 function initStore() {
   store = new GitHubStore({ owner: OWNER, repo: REPO, token: getToken() });
@@ -1838,12 +1896,10 @@ async function boot() {
   document.getElementById("chartDialog").addEventListener("click", (e) => {
     if (e.target.id === "chartDialog") e.target.close(); // tap sul backdrop
   });
-  document.getElementById("nutritionBtn").addEventListener("click", openNutrition);
   document.getElementById("nutritionBack").addEventListener("click", () => closeNutrition());
-  document.getElementById("planEditBtn").addEventListener("click", openPlanEditor);
   document.getElementById("planBack").addEventListener("click", () => closePlanEditor());
-  document.getElementById("calendarBtn").addEventListener("click", openCalendar);
   document.getElementById("calendarBack").addEventListener("click", closeCalendar);
+  wireDrawer();
   document.getElementById("calPrev").addEventListener("click", () => calShiftMonth(-1));
   document.getElementById("calNext").addEventListener("click", () => calShiftMonth(1));
   for (const b of document.querySelectorAll("#planTabs button")) {
@@ -1869,6 +1925,13 @@ async function boot() {
       else if (nutritionOpen) history.pushState({ gymNutrition: true }, "");
       else if (calendarOpen) history.pushState({ gymCalendar: true }, "");
       else if (openIndex !== null) history.pushState({ gymFocus: true }, "");
+      return;
+    }
+    if (drawerOpen) {
+      drawerOpen = false;
+      renderDrawer();
+      const t = drawerPending; drawerPending = null;
+      if (t) t();
       return;
     }
     if (openIndex !== null) { hideFeelAsk(); openIndex = null; render(); }
