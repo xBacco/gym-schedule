@@ -1863,6 +1863,7 @@ function wireDrawer() {
     if (dy < -24 && !drawerOpen) openDrawer();    // trascina su → apre
     else if (dy > 24 && drawerOpen) closeDrawer(); // trascina giù → chiude
   });
+  handle.addEventListener("pointercancel", () => { startY = null; moved = false; });
   document.getElementById("drawerScrim").addEventListener("click", closeDrawer);
   document.getElementById("drawerPanel").addEventListener("click", (e) => {
     const b = e.target.closest(".dr-item");
