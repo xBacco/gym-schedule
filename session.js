@@ -220,6 +220,27 @@ function weekTopKg(data, weekKey, day, exId, superset) {
   return best;
 }
 
+// Serie completa [{week, kg}] del top-set per settimana <= weekKey con un kg numerico,
+// ordine crescente. track: null = normale, "a"/"b" = traccia del superset.
+// Esclude warmup e serie non riuscite (come weekTopKg), ma su una sola traccia.
+export function topSetSeries(data, day, exId, weekKey, track = null) {
+  const keys = Object.keys(data?.weeks ?? {})
+    .filter((k) => /^\d{4}-W\d{2}(\.\d+)?$/.test(k) && k <= weekKey).sort();
+  const out = [];
+  for (const k of keys) {
+    const v = getEntry(data, k, day, exId);
+    const t = track ? normalizeSupersetEntry(v)[track] : normalizeEntry(v);
+    let best = null;
+    for (const s of t.sets) {
+      if (s.warmup || s.failed) continue;
+      const kg = parseNum(s.kg);
+      if (kg !== null && (best === null || kg > best)) best = kg;
+    }
+    if (best !== null) out.push({ week: k, kg: best });
+  }
+  return out;
+}
+
 // Ultime n settimane <= weekKey con dato: [{week, kg}] in ordine crescente. Salta le vuote.
 export function exerciseTrend(data, day, exId, weekKey, n = 3, superset = false) {
   const keys = Object.keys(data?.weeks ?? {})

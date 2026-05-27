@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex, nextExercisePreview } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
-import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, sessionVolume, exerciseTrend } from "../session.js";
+import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, sessionVolume, exerciseTrend, topSetSeries } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
 test("parseTargetTrack: 'NxR' con range", () => {
@@ -462,4 +462,46 @@ test("exerciseTrend: traccia per id opaco su più settimane", () => {
   } };
   const t = exerciseTrend(data, "A", "zz9", "2026-W22", 3, false);
   assert.deepEqual(t.map((x) => x.kg), [40, 42]);
+});
+
+test("topSetSeries: top-set per settimana, ordine crescente, normale", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W20", "A", "e0", { sets: [{ reps: "8", kg: "65", done: true }, { reps: "8", kg: "67.5", done: true }] });
+  d = setEntry(d, "2026-W22", "A", "e0", { sets: [{ reps: "8", kg: "72.5", done: true }] });
+  assert.deepEqual(topSetSeries(d, "A", "e0", "2026-W22"), [
+    { week: "2026-W20", kg: 67.5 }, { week: "2026-W22", kg: 72.5 },
+  ]);
+});
+
+test("topSetSeries: salta settimane senza kg e quelle oltre weekKey", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W20", "A", "e0", { sets: [{ reps: "8", kg: "", done: true }] });
+  d = setEntry(d, "2026-W21", "A", "e0", { sets: [{ reps: "8", kg: "70", done: true }] });
+  d = setEntry(d, "2026-W23", "A", "e0", { sets: [{ reps: "8", kg: "80", done: true }] });
+  assert.deepEqual(topSetSeries(d, "A", "e0", "2026-W22"), [{ week: "2026-W21", kg: 70 }]);
+});
+
+test("topSetSeries: esclude warmup e serie non riuscite", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "e0", { sets: [
+    { reps: "8", kg: "100", done: true, warmup: true },
+    { reps: "8", kg: "90", done: true, failed: true },
+    { reps: "8", kg: "72.5", done: true },
+  ] });
+  assert.deepEqual(topSetSeries(d, "A", "e0", "2026-W22"), [{ week: "2026-W22", kg: 72.5 }]);
+});
+
+test("topSetSeries: traccia 'a'/'b' di un superset", () => {
+  const data = { weeks: {
+    "2026-W22": { entries: { A: { ss: {
+      a: { sets: [{ reps: "10", kg: "20", done: true }] },
+      b: { sets: [{ reps: "10", kg: "15", done: true }] },
+    } } } },
+  } };
+  assert.deepEqual(topSetSeries(data, "A", "ss", "2026-W22", "a"), [{ week: "2026-W22", kg: 20 }]);
+  assert.deepEqual(topSetSeries(data, "A", "ss", "2026-W22", "b"), [{ week: "2026-W22", kg: 15 }]);
+});
+
+test("topSetSeries: nessuno storico -> array vuoto", () => {
+  assert.deepEqual(topSetSeries(emptyData(), "A", "e0", "2026-W22"), []);
 });
