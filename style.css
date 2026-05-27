@@ -143,6 +143,7 @@ input.num::-webkit-outer-spin-button,input.num::-webkit-inner-spin-button{-webki
 .item .r .mid{flex:1;min-width:0;}
 .item .r .nm{font-size:16px;font-weight:700;letter-spacing:-.01em;}
 .item .r .sub{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--dim);margin-top:2px;}
+.item .r .sub .ult{color:var(--acc);}
 .item .r .right{text-align:right;font-family:"JetBrains Mono",monospace;}
 .item .r .best{font-size:14px;font-weight:700;} .item .r .bl{font-size:8px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;}
 .item.done .nm{color:var(--dim);} .item .chk{color:var(--acc);font-size:16px;}

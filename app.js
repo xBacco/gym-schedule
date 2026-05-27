@@ -12,6 +12,7 @@ import {
   sessionVolume, exerciseTrend, nextExercisePreview,
   topSetSeries, chartGeometry,
   sessionDates, monthGrid,
+  lastWorkingSet,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -1606,6 +1607,26 @@ function renderList() {
     if (ex.superset) { const b = document.createElement("span"); b.className = "ssbadge"; b.textContent = "superset"; nm.appendChild(b); }
     const sub = document.createElement("div"); sub.className = "sub";
     sub.textContent = `${ex.setsReps} · rec ${getRest(currentDay, exIdAt(i), ex.restSeconds)}″`;
+    if (!isComplete(i)) {
+      const exId = exIdAt(i);
+      let lastLabel = "";
+      if (ex.superset) {
+        const a = lastWorkingSet(data, currentDay, exId, currentWeek, "a");
+        const b = lastWorkingSet(data, currentDay, exId, currentWeek, "b");
+        const parts = [];
+        if (a) parts.push(`A${a.kg}`);
+        if (b) parts.push(`B${b.kg}`);
+        if (parts.length) lastLabel = parts.join(" ");
+      } else {
+        const last = lastWorkingSet(data, currentDay, exId, currentWeek);
+        if (last) lastLabel = `${last.reps}×${last.kg}`;
+      }
+      if (lastLabel) {
+        const u = document.createElement("span"); u.className = "ult";
+        u.textContent = ` · ult. ${lastLabel}`;
+        sub.appendChild(u);
+      }
+    }
     mid.append(nm, sub);
     const right = document.createElement("div"); right.className = "right";
     if (isComplete(i)) { const c = document.createElement("span"); c.className = "chk"; c.textContent = "✓"; right.appendChild(c); }
