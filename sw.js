@@ -2,7 +2,7 @@
 // dentro (vive su api.github.com, cross-origin): la sync resta gestita da app.js.
 // NB: bumpare CACHE (es. -v2) quando cambia un file dell'app-shell, per
 // invalidare la cache vecchia ed evitare codice stantio.
-const CACHE = "gymsched-v13";
+const CACHE = "gymsched-v14";
 const SHELL = [
   "./",
   "./index.html",
@@ -45,5 +45,15 @@ self.addEventListener("fetch", (e) => {
       caches.open(CACHE).then((c) => c.put(req, copy));
       return res;
     }).catch(() => req.destination === "document" ? caches.match("./index.html") : Response.error()))
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
+      for (const c of cs) { if ("focus" in c) return c.focus(); }
+      if (self.clients.openWindow) return self.clients.openWindow("./");
+    })
   );
 });

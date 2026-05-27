@@ -122,16 +122,32 @@ function beep() {
   } catch (_) { /* audio unavailable; ignore */ }
 }
 
+function showRestDoneBanner() {
+  const b = document.getElementById("restDoneBanner");
+  if (!b) return;
+  b.classList.remove("hidden");
+  clearTimeout(showRestDoneBanner._t);
+  showRestDoneBanner._t = setTimeout(() => b.classList.add("hidden"), 2500);
+}
+
 // ---- Timer wiring ----
 const timer = new RestTimer({
   onTick: (remaining, label) => {
     document.getElementById("timerTime").textContent = formatTime(remaining);
     document.getElementById("timerLabel").textContent = label;
   },
-  onEnd: () => {
+  onEnd: (label) => {
     hideFeelAsk();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     beep();
+    if (document.hidden && notifyOn() && swReg) {
+      swReg.showNotification("Recupero finito", {
+        body: (label ? label + " · " : "") + "prossima serie",
+        tag: "rest-done", renotify: true, vibrate: [200, 100, 200], icon: "./icon.svg",
+      }).catch(() => {});
+    } else if (!document.hidden) {
+      showRestDoneBanner();
+    }
     setTimeout(() => {
       document.getElementById("timerBar").classList.add("hidden");
       document.body.classList.remove("timer-on");

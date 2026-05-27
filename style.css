@@ -314,6 +314,12 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
 .feelask .q b{color:var(--ink);}
 .feelask .rpebar{margin:0;}
 
+.restdone{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:70;
+  background:var(--acc);color:var(--acc-ink);font-weight:800;font-size:18px;
+  letter-spacing:.04em;padding:16px 26px;border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;}
+.restdone.hidden{display:none;}
+
 /* il timer (fixed) non deve più coprire le note del focus */
 body.timer-on .focus-body{padding-bottom:160px;}
 
