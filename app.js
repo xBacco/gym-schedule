@@ -79,6 +79,11 @@ const BAR_KEY = "gymsched_bar";
 const PLATES_KEY = "gymsched_plates";
 const getBar = () => { const n = parseFloat(localStorage.getItem(BAR_KEY)); return Number.isFinite(n) && n > 0 ? n : 20; };
 const getPlateSet = () => { const v = parsePlateSet(localStorage.getItem(PLATES_KEY) || ""); return v.length ? v : [20, 15, 10, 5, 2.5, 1.25]; };
+const NOTIFY_KEY = "gymsched_notify";
+function notifyOn() {
+  return localStorage.getItem(NOTIFY_KEY) === "1"
+    && "Notification" in window && Notification.permission === "granted";
+}
 
 // ---- Commenti veloci (preset, browser only) ----
 const QC_KEY = "gymsched_quickcomments";
@@ -1255,11 +1260,29 @@ function wireSettings() {
     setQuickComments(arr); inp.value = ""; renderQcList();
   });
 
+  document.getElementById("notifyToggle").addEventListener("change", async (e) => {
+    if (!e.target.checked) { localStorage.setItem(NOTIFY_KEY, "0"); return; }
+    if (!("Notification" in window)) {
+      e.target.checked = false;
+      alert("Notifiche non supportate da questo browser.");
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm === "granted") {
+      localStorage.setItem(NOTIFY_KEY, "1");
+    } else {
+      e.target.checked = false;
+      localStorage.setItem(NOTIFY_KEY, "0");
+      alert("Permesso notifiche negato dal browser/sistema.");
+    }
+  });
+
   document.getElementById("settingsBtn").addEventListener("click", () => {
     document.getElementById("tokenInput").value = getToken() || "";
     document.getElementById("barInput").value = getBar();
     document.getElementById("platesInput").value = getPlateSet().join(", ");
     renderQcList();
+    document.getElementById("notifyToggle").checked = notifyOn();
     dlg.showModal();
   });
   dlg.addEventListener("close", () => {
@@ -1344,6 +1367,7 @@ boot();
 // `swUpdating` distingue l'aggiornamento voluto dall'utente (tap sul banner)
 // dal primo clients.claim alla prima installazione: ricarica solo nel primo caso.
 let swUpdating = false;
+let swReg = null;
 
 function showUpdateBanner(reg) {
   if (document.getElementById("updateBanner")) return;
@@ -1366,6 +1390,7 @@ if ("serviceWorker" in navigator) {
   });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then((reg) => {
+      swReg = reg;
       reg.update().catch(() => {});
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") reg.update().catch(() => {});
