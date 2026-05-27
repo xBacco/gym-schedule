@@ -29,6 +29,7 @@
       <select id="weekSelect" aria-label="Settimana"></select>
       <button id="newWeekBtn" class="btn-soft">+ Sett.</button>
       <span id="status" class="status">—</span>
+      <button id="nutritionBtn" class="btn-icon" aria-label="Alimentazione">🥗</button>
       <button id="settingsBtn" class="btn-icon" aria-label="Impostazioni">⚙</button>
     </div>
 
@@ -81,6 +82,18 @@
     </header>
     <div id="focusBody" class="focus-body"></div>
     <div id="focusFoot" class="focus-foot"></div>
+  </div>
+
+  <!-- Guida alimentazione a schermo intero -->
+  <div id="nutritionOverlay" class="focus-ov hidden" aria-hidden="true">
+    <header class="focus-top">
+      <button id="nutritionBack" class="focus-back" aria-label="Chiudi guida">←</button>
+      <div class="focus-id">
+        <div class="fn">Alimentazione</div>
+        <div class="fs">guida essenziale · fuori sede</div>
+      </div>
+    </header>
+    <div id="nutritionBody" class="nutri-body"></div>
   </div>
 
   <!-- Popup commento veloce -->

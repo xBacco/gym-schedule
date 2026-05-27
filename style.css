@@ -354,3 +354,37 @@ body.timer-on .focus-body{padding-bottom:160px;}
 .fail-link{background:transparent;border:none;color:var(--faint);font-family:"JetBrains Mono",monospace;font-size:11px;
   cursor:pointer;padding:8px 0 0;display:block;text-align:left;letter-spacing:.03em;}
 .fail-link:hover,.fail-link:active{color:var(--down);}
+
+/* ---- Guida alimentazione (overlay statico) ---- */
+/* Riusa .focus-ov / .focus-top / .focus-back / .focus-id per la cornice.
+   Il body scrolla (a differenza del focus esercizio, che è overflow:hidden). */
+.nutri-body{flex:1;min-height:0;overflow-y:auto;padding:14px 16px 30px;}
+.nutri-intro{font-size:13.5px;color:var(--dim);line-height:1.5;margin-bottom:16px;}
+.nutri-intro b{color:var(--ink);}
+.nutri-foot{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--faint);text-align:center;margin-top:18px;}
+
+#nutritionOverlay .acc{border:1px solid var(--line);border-radius:16px;background:var(--surf);margin-bottom:10px;overflow:hidden;}
+#nutritionOverlay .acc.open{border-color:#4a3a1e;}
+#nutritionOverlay .acc-h{display:flex;align-items:center;gap:12px;padding:15px;cursor:pointer;}
+#nutritionOverlay .acc-h .ic{font-size:18px;}
+#nutritionOverlay .acc-h .ti{font-size:15.5px;font-weight:700;flex:1;}
+#nutritionOverlay .acc-h .cv{color:var(--dim);font-size:13px;transition:transform .2s;}
+#nutritionOverlay .acc.open .acc-h .cv{transform:rotate(180deg);color:var(--acc);}
+#nutritionOverlay .acc-c{display:none;padding:0 15px 16px;}
+#nutritionOverlay .acc.open .acc-c{display:block;}
+#nutritionOverlay .acc-c p{font-size:13.5px;color:var(--ink);line-height:1.55;margin-top:10px;}
+#nutritionOverlay .acc-c p.muted{color:var(--dim);}
+#nutritionOverlay .acc-c p b{color:var(--ink);}
+#nutritionOverlay .acc-c ul{list-style:none;margin:10px 0 0;display:flex;flex-direction:column;gap:9px;}
+#nutritionOverlay .acc-c li{display:flex;gap:9px;font-size:13.5px;line-height:1.5;}
+#nutritionOverlay .acc-c li::before{content:"\203A";color:var(--acc);font-family:"JetBrains Mono",monospace;font-weight:700;}
+#nutritionOverlay .acc-c li b{color:var(--acc);font-weight:600;}
+#nutritionOverlay .tip{margin-top:13px;border-left:2px solid var(--acc);background:var(--surf2);border-radius:0 12px 12px 0;
+  padding:10px 13px;font-size:12.5px;color:var(--dim);line-height:1.5;}
+#nutritionOverlay .tip b{color:var(--acc);}
+#nutritionOverlay .meal{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--surf2);}
+#nutritionOverlay .meal .mh{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--acc);display:flex;justify-content:space-between;}
+#nutritionOverlay .meal .mh .time{color:var(--faint);}
+#nutritionOverlay .meal .mt{font-size:13.5px;margin-top:5px;line-height:1.45;}
+#nutritionOverlay .meal.key{border-color:#4a3a1e;background:#1d1710;}

@@ -46,6 +46,33 @@ function closeFocus() {
   else { openIndex = null; render(); }
 }
 
+// Overlay guida alimentazione: stessa logica history del focus esercizio, così
+// il tasto "indietro" del telefono chiude la guida invece di uscire dall'app.
+let nutritionOpen = false;
+function openNutrition() {
+  nutritionOpen = true;
+  history.pushState({ gymNutrition: true }, "");
+  renderNutritionOverlay();
+}
+function closeNutrition() {
+  if (!nutritionOpen) return;
+  if (history.state && history.state.gymNutrition) history.back(); // → popstate chiude
+  else { nutritionOpen = false; renderNutritionOverlay(); }
+}
+function renderNutritionOverlay() {
+  const ov = document.getElementById("nutritionOverlay");
+  if (!nutritionOpen) {
+    ov.classList.add("hidden");
+    ov.setAttribute("aria-hidden", "true");
+    if (openIndex === null) document.body.style.overflow = "";
+    return;
+  }
+  renderNutritionGuide(document.getElementById("nutritionBody"));
+  ov.classList.remove("hidden");
+  ov.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
 // ---- Token + pending buffer (browser only) ----
 const getToken = () => localStorage.getItem(TOKEN_KEY) || null;
 const setToken = (t) => (t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY));
@@ -1361,11 +1388,16 @@ async function boot() {
     b.addEventListener("click", () => changeDay(b.dataset.day));
   }
   document.getElementById("focusBack").addEventListener("click", () => closeFocus());
+  document.getElementById("nutritionBtn").addEventListener("click", openNutrition);
+  document.getElementById("nutritionBack").addEventListener("click", () => closeNutrition());
   document.getElementById("qcClose").addEventListener("click", () => document.getElementById("qcDialog").close());
   document.getElementById("qcDialog").addEventListener("click", (e) => {
     if (e.target.id === "qcDialog") e.target.close(); // tap sul backdrop
   });
-  window.addEventListener("popstate", () => { if (openIndex !== null) { hideFeelAsk(); openIndex = null; render(); } });
+  window.addEventListener("popstate", () => {
+    if (openIndex !== null) { hideFeelAsk(); openIndex = null; render(); }
+    if (nutritionOpen) { nutritionOpen = false; renderNutritionOverlay(); }
+  });
   initStore();
   setStatus("carico…");
   try {
