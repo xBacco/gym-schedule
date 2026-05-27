@@ -10,6 +10,7 @@ import {
   withSet, withoutSet, withSupersetSet, withoutSupersetSet, withNote, previousNote,
   previousSetInSession, previousWeekSet,
   sessionVolume, exerciseTrend, nextExercisePreview,
+  topSetSeries, chartGeometry,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -28,6 +29,11 @@ let currentDay = "A";
 let openIndex = null;        // esercizio aperto nel focus a schermo intero (null = nessuno)
 let supersetTab = "a";       // sotto-tab attivo nel focus di un superset
 let store = null;
+
+// Stato del dialog progressione
+let chartExId = null;   // id esercizio mostrato
+let chartTrack = null;  // null | "a" | "b"
+let chartAll = false;   // false = ultime 3 settimane, true = tutto lo storico
 let saveTimer = null;
 
 // L'overlay dell'esercizio è registrato come voce di history, così la gesture
@@ -747,6 +753,124 @@ function buildMiniStepper(label, state, field, step) {
   paint();
   row.append(lab, dec, num, inc);
   return row;
+}
+
+// ---- Grafico progressione ----
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs = {}) {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function shortWeek(key) {
+  // "2026-W22" -> "W22"; "2026-W22.1" -> "W22"
+  const m = String(key).match(/W\d{2}/);
+  return m ? m[0] : String(key);
+}
+
+// Costruisce l'SVG del grafico a linea da una serie [{week,kg}].
+function renderChart(series) {
+  const W = 260, H = 150;
+  const g = chartGeometry(series, { width: W, height: H });
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart-svg" });
+  // gridlines + label asse Y
+  for (const tick of g.yTicks) {
+    svg.appendChild(svgEl("line", { x1: 34, y1: tick.y, x2: 252, y2: tick.y, stroke: "#241f16", "stroke-width": 1 }));
+    const lbl = svgEl("text", { x: 28, y: tick.y + 3, fill: "#6f6857", "font-size": 10, "text-anchor": "end" });
+    lbl.textContent = String(tick.value);
+    svg.appendChild(lbl);
+  }
+  // area sfumata + linea
+  if (g.points.length > 1) {
+    const last = g.points[g.points.length - 1], first = g.points[0];
+    svg.appendChild(svgEl("polyline", {
+      points: `${g.polyline} ${last.x},124 ${first.x},124`,
+      fill: "#E8A93C", opacity: 0.08,
+    }));
+    svg.appendChild(svgEl("polyline", {
+      points: g.polyline, fill: "none", stroke: "#E8A93C",
+      "stroke-width": 2.5, "stroke-linecap": "round", "stroke-linejoin": "round",
+    }));
+  }
+  // diradamento label X: ~6 etichette max
+  const n = g.points.length;
+  const step = Math.max(1, Math.ceil(n / 6));
+  g.points.forEach((p, i) => {
+    const isLast = i === n - 1;
+    svg.appendChild(svgEl("circle", {
+      cx: p.x, cy: p.y, r: isLast ? 4.5 : 4,
+      fill: isLast ? "#E8A93C" : "#100E0A",
+      stroke: "#E8A93C", "stroke-width": isLast ? 0 : 2.5,
+    }));
+    const val = svgEl("text", {
+      x: p.x, y: p.y - 8, fill: isLast ? "#E8A93C" : "#EDE6D8",
+      "font-size": isLast ? 11 : 10, "font-weight": isLast ? 700 : 600, "text-anchor": "middle",
+    });
+    val.textContent = String(p.kg);
+    svg.appendChild(val);
+    if (i % step === 0 || isLast) {
+      const xl = svgEl("text", {
+        x: p.x, y: 142, fill: isLast ? "#EDE6D8" : "#9a9385",
+        "font-size": 10, "font-weight": isLast ? 600 : 400, "text-anchor": "middle",
+      });
+      xl.textContent = shortWeek(p.week);
+      svg.appendChild(xl);
+    }
+  });
+  return svg;
+}
+
+function chartTitle() {
+  const ex = dayPlan().exercises.find((e) => e.id === chartExId);
+  if (!ex) return "Progressione";
+  return chartTrack ? `${ex.name} · ${chartTrack.toUpperCase()}` : ex.name;
+}
+
+// Ridisegna corpo + controllo intervallo del dialog in base allo stato.
+function renderChartDialog() {
+  const body = document.getElementById("chartBody");
+  const range = document.getElementById("chartRange");
+  document.getElementById("chartTitle").textContent = chartTitle();
+  body.textContent = "";
+  range.textContent = "";
+  const full = topSetSeries(data, currentDay, chartExId, currentWeek, chartTrack);
+  if (full.length === 0) {
+    const p = document.createElement("div");
+    p.className = "chart-empty";
+    p.textContent = "Nessuno storico ancora";
+    body.appendChild(p);
+    return;
+  }
+  const series = chartAll ? full : full.slice(-3);
+  body.appendChild(renderChart(series));
+  if (series.length === 1) {
+    const note = document.createElement("div");
+    note.className = "chart-note";
+    note.textContent = "Serve più di una settimana per vedere il trend";
+    body.appendChild(note);
+  }
+  if (full.length > 3) {
+    const mk = (label, all) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = label;
+      if (chartAll === all) b.classList.add("on");
+      b.addEventListener("click", () => { chartAll = all; renderChartDialog(); });
+      return b;
+    };
+    range.appendChild(mk("3 sett.", false));
+    range.appendChild(mk("tutto lo storico", true));
+  }
+}
+
+// Apre il dialog progressione per un esercizio/traccia.
+function openChartDialog(exId, track) {
+  chartExId = exId;
+  chartTrack = track;
+  chartAll = false;
+  renderChartDialog();
+  const dlg = document.getElementById("chartDialog");
+  if (!dlg.open) dlg.showModal();
 }
 
 // Stato del popup serie (una sola istanza riusata). I callback sono cablati una
@@ -1608,6 +1732,16 @@ async function boot() {
     b.addEventListener("click", () => changeDay(b.dataset.day));
   }
   document.getElementById("focusBack").addEventListener("click", () => closeFocus());
+  document.getElementById("chartBtn").addEventListener("click", () => {
+    if (openIndex === null) return;
+    const ex = dayPlan().exercises[openIndex];
+    if (!ex) return;
+    openChartDialog(ex.id, ex.superset ? supersetTab : null);
+  });
+  document.getElementById("chartClose").addEventListener("click", () => document.getElementById("chartDialog").close());
+  document.getElementById("chartDialog").addEventListener("click", (e) => {
+    if (e.target.id === "chartDialog") e.target.close(); // tap sul backdrop
+  });
   document.getElementById("nutritionBtn").addEventListener("click", openNutrition);
   document.getElementById("nutritionBack").addEventListener("click", () => closeNutrition());
   document.getElementById("planEditBtn").addEventListener("click", openPlanEditor);
