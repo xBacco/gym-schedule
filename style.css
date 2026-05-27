@@ -230,6 +230,7 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
   border-bottom:1px solid var(--line);background:var(--surf);}
 .focus-back{width:40px;height:40px;flex:0 0 auto;border-radius:11px;background:var(--surf2);
   border:1px solid var(--line);color:var(--ink);font-size:20px;cursor:pointer;}
+.focus-id{flex:1 1 0;min-width:0;}
 .focus-id .fn{font-size:17px;font-weight:800;line-height:1.15;}
 .focus-id .fs{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--acc);margin-top:3px;}
 .focus-body{flex:1;min-height:0;overflow:hidden;padding:14px 16px;}
@@ -436,16 +437,16 @@ body.timer-on .focus-body{padding-bottom:160px;}
 
 /* Vista progressione */
 .focus-chart {
-  margin-left: auto; background: none; border: 0; color: var(--accent, #E8A93C);
+  margin-left: auto; background: none; border: 0; color: var(--acc, #E8A93C);
   font-size: 22px; line-height: 1; padding: 4px 6px; cursor: pointer;
 }
 .chart-dialog { width: min(92vw, 360px); }
 .chart-svg { width: 100%; height: auto; display: block; }
-.chart-empty { color: #9a9385; font-size: 13px; padding: 24px 4px; text-align: center; }
-.chart-note { color: #9a9385; font-size: 12px; text-align: center; margin-top: 8px; }
+.chart-empty { color: var(--dim, #938B7B); font-size: 13px; padding: 24px 4px; text-align: center; }
+.chart-note { color: var(--dim, #938B7B); font-size: 12px; text-align: center; margin-top: 8px; }
 .chart-range { display: flex; gap: 6px; margin-top: 12px; }
 .chart-range button {
-  background: #1d1913; color: #9a9385; border: 0; border-radius: 99px;
+  background: var(--surf2, #1E1A14); color: var(--dim, #938B7B); border: 0; border-radius: 99px;
   font: 600 12px system-ui; padding: 5px 12px; cursor: pointer;
 }
-.chart-range button.on { background: var(--accent, #E8A93C); color: #100E0A; }
+.chart-range button.on { background: var(--acc, #E8A93C); color: var(--bg, #100E0A); }
