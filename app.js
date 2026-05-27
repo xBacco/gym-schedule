@@ -682,12 +682,47 @@ function buildNoteField(superset, idx) {
   return wrap;
 }
 
-function setRow(i, set, prev, isCurrent, onRemove, onOpen) {
+function setRow(i, set, prev, isCurrent, onRemove, onOpen, onEdit) {
   const row = document.createElement("div");
   row.className = "srow" + (isCurrent ? " cur" : "") + (set.warmup ? " warm" : "");
   const idx = document.createElement("span"); idx.className = "i"; idx.textContent = set.warmup ? "W" : String(i + 1);
   const v = document.createElement("span"); v.className = "v";
-  if (set.reps || set.kg) {
+  const editable = set.done && !set.warmup && typeof onEdit === "function";
+  if (editable) {
+    v.classList.add("vedit");
+    const ri = document.createElement("input");
+    ri.type = "number"; ri.className = "ein reps"; ri.inputMode = "numeric";
+    ri.min = "0"; ri.step = "1"; ri.value = set.reps === "" || set.reps == null ? "" : String(set.reps);
+    const x = document.createElement("span"); x.className = "x"; x.textContent = " × ";
+    const ki = document.createElement("input");
+    ki.type = "number"; ki.className = "ein kg"; ki.inputMode = "decimal";
+    ki.min = "0"; ki.step = "0.5"; ki.value = set.kg === "" || set.kg == null ? "" : String(set.kg);
+    const u = document.createElement("span"); u.className = "u"; u.textContent = " kg";
+    v.append(ri, x, ki, u);
+
+    const commit = () => {
+      const repsRaw = ri.value.trim();
+      const kgRaw = ki.value.trim();
+      const repsN = parseInt(repsRaw, 10);
+      const kgN = parseFloat(kgRaw.replace(",", "."));
+      const repsOk = repsRaw === "" || (Number.isInteger(repsN) && repsN >= 0);
+      const kgOk = kgRaw === "" || (Number.isFinite(kgN) && kgN >= 0);
+      if (!repsOk || !kgOk) { // ripristina, niente commit
+        ri.value = set.reps === "" || set.reps == null ? "" : String(set.reps);
+        ki.value = set.kg === "" || set.kg == null ? "" : String(set.kg);
+        return;
+      }
+      const newReps = repsRaw === "" ? "" : String(repsN);
+      const newKg = kgRaw === "" ? "" : String(kgN);
+      if (newReps === String(set.reps ?? "") && newKg === String(set.kg ?? "")) return; // nessun cambiamento
+      onEdit(newReps, newKg);
+    };
+    ri.addEventListener("blur", commit);
+    ki.addEventListener("blur", commit);
+    const onEnter = (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } };
+    ri.addEventListener("keydown", onEnter);
+    ki.addEventListener("keydown", onEnter);
+  } else if (set.reps || set.kg) {
     v.append(document.createTextNode(set.reps || "—"));
     const x = document.createElement("span"); x.className = "x"; x.textContent = " × ";
     const u = document.createElement("span"); u.className = "u"; u.textContent = " kg";
@@ -697,10 +732,6 @@ function setRow(i, set, prev, isCurrent, onRemove, onOpen) {
     v.append(document.createTextNode("—"), x, document.createTextNode("—"));
   }
   row.append(idx, v);
-
-  if (set.done && onOpen) {
-    v.addEventListener("click", () => onOpen());
-  }
 
   if (set.warmup && set.done) {
     const b = document.createElement("span"); b.className = "wbadge"; b.textContent = "RISCALD.";
@@ -751,6 +782,14 @@ function setRow(i, set, prev, isCurrent, onRemove, onOpen) {
     const fn = document.createElement("div"); fn.className = "cmt fail-note";
     fn.textContent = set.failNote;
     row.appendChild(fn);
+  }
+  if (set.done && !set.warmup && onOpen) {
+    const ed = document.createElement("span");
+    ed.className = "editset";
+    ed.textContent = "✎";
+    ed.title = "Modifica serie (feel, non riuscita, elimina)";
+    ed.addEventListener("click", (e) => { e.stopPropagation(); onOpen(); });
+    row.appendChild(ed);
   }
   return row;
 }
@@ -815,7 +854,11 @@ function renderFocusNormal(ex, idx, container, footer) {
         persist(idx); render();
       },
     }) : null;
-    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen));
+    const onEdit = set.done ? (reps, kg) => {
+      data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { reps, kg }), new Date().toISOString());
+      persist(idx); render();
+    } : null;
+    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen, onEdit));
   }
   container.appendChild(setsBox);
 
@@ -972,7 +1015,12 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
       data = setEntry(data, currentWeek, currentDay, idx, withoutSupersetSet(getEntry(data, currentWeek, currentDay, idx), trackKey, i), new Date().toISOString());
       persist(idx); render();
     } : null;
-    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen));
+    const onEdit = set.done ? (reps, kg) => {
+      const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, idx), trackKey, i, { reps, kg });
+      data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
+      persist(idx); render();
+    } : null;
+    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen, onEdit));
   }
   wrap.appendChild(setsBox);
 
