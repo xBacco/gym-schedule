@@ -535,4 +535,10 @@ test("chartGeometry: valori uguali non dividono per zero", () => {
   const g = chartGeometry([{ week: "2026-W21", kg: 50 }, { week: "2026-W22", kg: 50 }]);
   assert.ok(g.points.every((p) => p.y === 72));
   assert.equal(g.polyline, "34,72 252,72");
+  assert.deepEqual(g.yTicks, [{ value: 50, y: 72 }]);
+});
+
+test("chartGeometry: yTicks arrotondati e a metà se valori uguali", () => {
+  const g = chartGeometry([{ week: "2026-W22", kg: 60.5 }]);
+  assert.deepEqual(g.yTicks, [{ value: 60.5, y: 72 }]);
 });

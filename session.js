@@ -274,10 +274,12 @@ export function chartGeometry(series, opts = {}) {
   const yAt = (kg) => padTop + (1 - (kg - lo) / (hi - lo)) * plotH;
   const points = series.map((p, i) => ({ x: r2(xAt(i)), y: r2(yAt(p.kg)), week: p.week, kg: p.kg }));
   const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
-  const yTicks = [
-    { value: dataMax, y: r2(yAt(dataMax)) },
-    { value: dataMin, y: r2(yAt(dataMin)) },
-  ];
+  const yTicks = dataMax === dataMin
+    ? [{ value: r2(dataMax), y: r2(yAt(dataMax)) }]
+    : [
+        { value: r2(dataMax), y: r2(yAt(dataMax)) },
+        { value: r2(dataMin), y: r2(yAt(dataMin)) },
+      ];
   return { points, polyline, yTicks, min: dataMin, max: dataMax };
 }
 
