@@ -271,6 +271,18 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
 .qc-opt.on{border-color:var(--acc);background:#352815;color:var(--acc);font-weight:700;}
 .qc-opt.write{color:var(--acc);border-style:dashed;}
 
+/* striscia prossimo esercizio nell'overlay */
+.nextstrip{display:flex;align-items:center;gap:8px;padding:8px 2px 12px;
+  border-top:1px solid var(--line);margin-bottom:10px;}
+.nextstrip .nx-tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);font-weight:700;}
+.nextstrip .nx-arrow{color:var(--faint);}
+.nextstrip .nx-name{font-size:14px;font-weight:600;color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nextstrip .nx-target{margin-left:auto;font-size:12px;color:var(--dim);
+  font-family:"JetBrains Mono",monospace;opacity:.85;white-space:nowrap;}
+.nextstrip.end .nx-end{font-size:12px;color:var(--faint);font-style:italic;}
+
 /* banner aggiornamento PWA */
 #updateBanner{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:50;
   background:var(--acc);color:var(--acc-ink);border:none;border-radius:12px;padding:11px 16px;

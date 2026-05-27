@@ -8,7 +8,7 @@ import {
   parseTarget, activeSetIndex, isEntryComplete, bestKg, progressionDelta,
   withSet, withoutSet, withSupersetSet, withoutSupersetSet, withNote, previousNote,
   previousSetInSession, previousWeekSet,
-  sessionVolume, exerciseTrend,
+  sessionVolume, exerciseTrend, nextExercisePreview,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -1101,6 +1101,31 @@ function buildRestEditor(idx, ex) {
   return wrap;
 }
 
+// Striscia informativa in fondo all'overlay: prossimo esercizio o "ultimo".
+function buildNextStrip(exercises, idx) {
+  const info = nextExercisePreview(exercises, idx);
+  const strip = document.createElement("div");
+  strip.className = "nextstrip";
+  if (info.last) {
+    strip.classList.add("end");
+    const t = document.createElement("span");
+    t.className = "nx-end";
+    t.textContent = "Ultimo esercizio della sessione";
+    strip.appendChild(t);
+  } else {
+    const tag = document.createElement("span");
+    tag.className = "nx-tag"; tag.textContent = "Prossimo";
+    const arrow = document.createElement("span");
+    arrow.className = "nx-arrow"; arrow.textContent = "→";
+    const nm = document.createElement("span");
+    nm.className = "nx-name"; nm.textContent = info.name;
+    const tg = document.createElement("span");
+    tg.className = "nx-target"; tg.textContent = info.target;
+    strip.append(tag, arrow, nm, tg);
+  }
+  return strip;
+}
+
 // Renderizza (o nasconde) l'overlay a schermo intero dell'esercizio aperto.
 function renderFocusOverlay() {
   const ov = document.getElementById("focusOverlay");
@@ -1117,6 +1142,7 @@ function renderFocusOverlay() {
   document.getElementById("focusName").textContent = ex.name;
   body.textContent = "";
   foot.textContent = "";
+  foot.appendChild(buildNextStrip(dayPlan().exercises, openIndex));
   body.appendChild(buildRestEditor(openIndex, ex));
   if (ex.superset) renderFocusSuperset(ex, openIndex, body, foot);
   else renderFocusNormal(ex, openIndex, body, foot);
