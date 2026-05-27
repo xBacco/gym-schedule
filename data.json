@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-27T10:49:45.583Z",
+  "updatedAt": "2026-05-27T10:50:49.672Z",
   "weeks": {
     "2026-W22": {
       "label": "2026-W22",
@@ -520,18 +520,7 @@
             "note": ""
           },
           "v527v": {
-            "sets": [
-              {
-                "reps": "12",
-                "kg": "60",
-                "done": true,
-                "feel": "",
-                "warmup": false,
-                "failed": false,
-                "failNote": "",
-                "comments": []
-              }
-            ],
+            "sets": [],
             "note": ""
           }
         }
