@@ -297,6 +297,22 @@ export function sessionDates(data) {
   return out;
 }
 
+// Griglia del mese: array di righe, ogni riga 7 celle allineate Lun→Dom.
+// Cella = "YYYY-MM-DD" per i giorni del mese, null per il padding ai bordi.
+// month è 0-based (come Date.getMonth()).
+export function monthGrid(year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startCol = (new Date(year, month, 1).getDay() + 6) % 7; // Lun=0..Dom=6
+  const mm = String(month + 1).padStart(2, "0");
+  const cells = [];
+  for (let i = 0; i < startCol; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(`${year}-${mm}-${String(d).padStart(2, "0")}`);
+  while (cells.length % 7 !== 0) cells.push(null);
+  const weeks = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  return weeks;
+}
+
 // Dati per la striscia "prossimo esercizio" nell'overlay.
 // exercises: array degli esercizi del giorno; idx: indice di quello aperto.
 // Se non c'è un successivo (ultimo esercizio o idx fuori range) -> { last: true }.

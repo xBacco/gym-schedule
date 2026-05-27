@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex, nextExercisePreview } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
 import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, sessionVolume, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
-import { sessionDates } from "../session.js";
+import { sessionDates, monthGrid } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
 test("sessionDates: estrae le date da weeks[].dates, ordinate per data", () => {
@@ -19,6 +19,23 @@ test("sessionDates: estrae le date da weeks[].dates, ordinate per data", () => {
 test("sessionDates: ignora le settimane senza dates (storico vecchio)", () => {
   const d = { updatedAt: null, weeks: { "2025-W10": { label: "x", entries: { A: { "0": "v" } } } } };
   assert.deepEqual(sessionDates(d), []);
+});
+
+test("monthGrid: maggio 2026 (mese 0-based = 4) inizia di venerdì", () => {
+  const g = monthGrid(2026, 4); // 1 maggio 2026 è venerdì (Lun=0 -> col 4)
+  for (const w of g) assert.equal(w.length, 7);
+  assert.equal(g[0][3], null);
+  assert.equal(g[0][4], "2026-05-01");
+  const flat = g.flat().filter(Boolean);
+  assert.equal(flat.length, 31);
+  assert.equal(flat[0], "2026-05-01");
+  assert.equal(flat[30], "2026-05-31");
+});
+
+test("monthGrid: febbraio 2024 (bisestile) ha 29 giorni", () => {
+  const flat = monthGrid(2024, 1).flat().filter(Boolean);
+  assert.equal(flat.length, 29);
+  assert.equal(flat[28], "2024-02-29");
 });
 
 test("parseTargetTrack: 'NxR' con range", () => {
