@@ -158,7 +158,7 @@ h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:8px 0 0;}
 .t-stop{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);}
 
 /* settings dialog */
-dialog{border:none;border-radius:16px;padding:18px;max-width:340px;background:var(--surf);color:var(--ink);}
+dialog{border:none;border-radius:16px;padding:18px;max-width:340px;background:var(--surf);color:var(--ink);margin:auto;}
 dialog::backdrop{background:rgba(0,0,0,.6);}
 .settings h2{font-size:18px;font-weight:800;margin:0 0 10px;color:var(--acc);}
 .settings label{display:block;font-size:13px;font-weight:700;margin-bottom:4px;}
