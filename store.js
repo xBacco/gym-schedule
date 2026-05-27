@@ -127,6 +127,13 @@ export function platesPerSide(targetKg, { bar = 20, plates = [20, 15, 10, 5, 2.5
   return { perSide, leftover: Math.round(remaining * 100) / 100 };
 }
 
+// Peso del bilanciere da usare per un esercizio: exercise.bar se numero finito > 0,
+// altrimenti defaultBar. Niente coercizione da stringa (i dati del PLAN sono numeri).
+export function exerciseBar(exercise, defaultBar) {
+  const b = exercise && exercise.bar;
+  return typeof b === "number" && Number.isFinite(b) && b > 0 ? b : defaultBar;
+}
+
 // "20, 15, 10, 5, 2.5" -> [20,15,10,5,2.5]. Separatori: virgola o spazi.
 // La virgola-decimale all'italiana ("2,5") è gestita: una virgola seguita da
 // cifra diventa punto, mentre la virgola separatrice (seguita da spazio) resta.

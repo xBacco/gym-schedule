@@ -344,3 +344,23 @@ test("normalizeSet: failNote non-stringa (numero/undefined/null) normalizza a st
   assert.equal(normalizeSet({ failNote: undefined }).failNote, "");
   assert.equal(normalizeSet({ failNote: null }).failNote, "");
 });
+
+import { exerciseBar } from "../store.js";
+
+test("exerciseBar: usa exercise.bar quando è un numero finito > 0", () => {
+  assert.equal(exerciseBar({ name: "Curl EZ", bar: 10 }, 20), 10);
+  assert.equal(exerciseBar({ bar: 7.5 }, 20), 7.5);
+});
+
+test("exerciseBar: ricade sul default quando bar è assente/0/negativo/NaN", () => {
+  assert.equal(exerciseBar({ name: "Panca" }, 20), 20);
+  assert.equal(exerciseBar({ bar: 0 }, 20), 20);
+  assert.equal(exerciseBar({ bar: -5 }, 20), 20);
+  assert.equal(exerciseBar({ bar: NaN }, 20), 20);
+  assert.equal(exerciseBar({ bar: "10" }, 20), 20); // stringa non accettata
+});
+
+test("exerciseBar: exercise null/undefined -> default", () => {
+  assert.equal(exerciseBar(null, 20), 20);
+  assert.equal(exerciseBar(undefined, 25), 25);
+});
