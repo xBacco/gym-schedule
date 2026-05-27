@@ -283,6 +283,20 @@ export function chartGeometry(series, opts = {}) {
   return { points, polyline, yTicks, min: dataMin, max: dataMax };
 }
 
+// Tutte le sessioni datate: [{ date:"YYYY-MM-DD", weekKey, day }], ordinate per
+// data crescente. Ignora le settimane senza `dates` (storico pre-calendario).
+export function sessionDates(data) {
+  const out = [];
+  for (const [weekKey, week] of Object.entries(data?.weeks ?? {})) {
+    if (!week?.dates) continue;
+    for (const [day, date] of Object.entries(week.dates)) {
+      out.push({ date, weekKey, day });
+    }
+  }
+  out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return out;
+}
+
 // Dati per la striscia "prossimo esercizio" nell'overlay.
 // exercises: array degli esercizi del giorno; idx: indice di quello aperto.
 // Se non c'è un successivo (ultimo esercizio o idx fuori range) -> { last: true }.

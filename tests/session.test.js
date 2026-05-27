@@ -3,7 +3,23 @@ import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex, nextExercisePreview } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
 import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, sessionVolume, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
+import { sessionDates } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
+
+test("sessionDates: estrae le date da weeks[].dates, ordinate per data", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", 0, "x", "2026-05-25T08:00:00Z");
+  d = setEntry(d, "2026-W21", "B", 0, "y", "2026-05-20T08:00:00Z");
+  assert.deepEqual(sessionDates(d), [
+    { date: "2026-05-20", weekKey: "2026-W21", day: "B" },
+    { date: "2026-05-25", weekKey: "2026-W22", day: "A" },
+  ]);
+});
+
+test("sessionDates: ignora le settimane senza dates (storico vecchio)", () => {
+  const d = { updatedAt: null, weeks: { "2025-W10": { label: "x", entries: { A: { "0": "v" } } } } };
+  assert.deepEqual(sessionDates(d), []);
+});
 
 test("parseTargetTrack: 'NxR' con range", () => {
   assert.deepEqual(parseTargetTrack("4 × 6-8"), { sets: 4, reps: "6-8" });
