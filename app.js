@@ -1848,6 +1848,9 @@ function wireDrawer() {
   const handle = document.getElementById("drawerHandle");
   let startY = null, moved = false;
   handle.addEventListener("pointerdown", (e) => {
+    e.preventDefault(); // niente click di compatibilità: il tap apre il drawer,
+    // il pannello si espande e la maniglia sale; il ghost click cadrebbe sullo
+    // scrim/voce sottostante richiudendo subito il drawer appena aperto.
     startY = e.clientY; moved = false;
     handle.setPointerCapture(e.pointerId);
   });
