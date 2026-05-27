@@ -223,13 +223,14 @@ function weekTopKg(data, weekKey, day, exId, superset) {
 // Serie completa [{week, kg}] del top-set per settimana <= weekKey con un kg numerico,
 // ordine crescente. track: null = normale, "a"/"b" = traccia del superset.
 // Esclude warmup e serie non riuscite (come weekTopKg), ma su una sola traccia.
+// Calcola il top-set inline (non riusa weekTopKg) perché weekTopKg fonde entrambe le tracce superset.
 export function topSetSeries(data, day, exId, weekKey, track = null) {
   const keys = Object.keys(data?.weeks ?? {})
     .filter((k) => /^\d{4}-W\d{2}(\.\d+)?$/.test(k) && k <= weekKey).sort();
   const out = [];
   for (const k of keys) {
     const v = getEntry(data, k, day, exId);
-    const t = track ? normalizeSupersetEntry(v)[track] : normalizeEntry(v);
+    const t = entryTrack(v, track);
     let best = null;
     for (const s of t.sets) {
       if (s.warmup || s.failed) continue;
