@@ -254,6 +254,33 @@ export function exerciseTrend(data, day, exId, weekKey, n = 3, superset = false)
   return out;
 }
 
+// Geometria SVG del grafico progressione. series: [{week, kg}] in ordine crescente.
+// Scala Y su min/max dei dati con margine (NON parte da 0). Ritorna coordinate pronte.
+export function chartGeometry(series, opts = {}) {
+  const { width = 260, height = 150, padX = 34, padTop = 20, padBottom = 26, padRight = 8 } = opts;
+  if (!Array.isArray(series) || series.length === 0) {
+    return { points: [], polyline: "", yTicks: [], min: null, max: null };
+  }
+  const r2 = (x) => Math.round(x * 100) / 100;
+  const kgs = series.map((p) => p.kg);
+  const dataMin = Math.min(...kgs), dataMax = Math.max(...kgs);
+  const span = dataMax - dataMin;
+  const pad = span === 0 ? 1 : span * 0.15;
+  const lo = dataMin - pad, hi = dataMax + pad;
+  const plotW = width - padX - padRight;
+  const plotH = height - padTop - padBottom;
+  const n = series.length;
+  const xAt = (i) => (n === 1 ? padX + plotW / 2 : padX + (i * plotW) / (n - 1));
+  const yAt = (kg) => padTop + (1 - (kg - lo) / (hi - lo)) * plotH;
+  const points = series.map((p, i) => ({ x: r2(xAt(i)), y: r2(yAt(p.kg)), week: p.week, kg: p.kg }));
+  const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
+  const yTicks = [
+    { value: dataMax, y: r2(yAt(dataMax)) },
+    { value: dataMin, y: r2(yAt(dataMin)) },
+  ];
+  return { points, polyline, yTicks, min: dataMin, max: dataMax };
+}
+
 // Dati per la striscia "prossimo esercizio" nell'overlay.
 // exercises: array degli esercizi del giorno; idx: indice di quello aperto.
 // Se non c'è un successivo (ultimo esercizio o idx fuori range) -> { last: true }.

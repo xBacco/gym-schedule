@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex, nextExercisePreview } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
-import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, sessionVolume, exerciseTrend, topSetSeries } from "../session.js";
+import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, sessionVolume, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
 test("parseTargetTrack: 'NxR' con range", () => {
@@ -504,4 +504,35 @@ test("topSetSeries: traccia 'a'/'b' di un superset", () => {
 
 test("topSetSeries: nessuno storico -> array vuoto", () => {
   assert.deepEqual(topSetSeries(emptyData(), "A", "e0", "2026-W22"), []);
+});
+
+test("chartGeometry: serie vuota -> niente punti", () => {
+  assert.deepEqual(chartGeometry([]), { points: [], polyline: "", yTicks: [], min: null, max: null });
+});
+
+test("chartGeometry: punto singolo a metà altezza, centrato in x", () => {
+  const g = chartGeometry([{ week: "2026-W22", kg: 50 }]);
+  // default width 260, padX 34, margine destro 8 -> plotW 218 -> x centro = 34 + 109 = 143
+  // span 0 -> banda ±1 -> kg a metà -> y = 20 + 0.5*(150-20-26) = 72
+  assert.deepEqual(g.points, [{ x: 143, y: 72, week: "2026-W22", kg: 50 }]);
+  assert.equal(g.min, 50);
+  assert.equal(g.max, 50);
+});
+
+test("chartGeometry: due punti, il massimo sta più in alto (y minore)", () => {
+  const g = chartGeometry([{ week: "2026-W21", kg: 40 }, { week: "2026-W22", kg: 50 }]);
+  // dataMin 40, dataMax 50, span 10, pad 1.5 -> lo 38.5 hi 51.5; plotH 104
+  // x: 34 e 252 (34+218); y: 40 -> 112, 50 -> 32
+  assert.deepEqual(g.points, [
+    { x: 34, y: 112, week: "2026-W21", kg: 40 },
+    { x: 252, y: 32, week: "2026-W22", kg: 50 },
+  ]);
+  assert.equal(g.polyline, "34,112 252,32");
+  assert.deepEqual(g.yTicks, [{ value: 50, y: 32 }, { value: 40, y: 112 }]);
+});
+
+test("chartGeometry: valori uguali non dividono per zero", () => {
+  const g = chartGeometry([{ week: "2026-W21", kg: 50 }, { week: "2026-W22", kg: 50 }]);
+  assert.ok(g.points.every((p) => p.y === 72));
+  assert.equal(g.polyline, "34,72 252,72");
 });
