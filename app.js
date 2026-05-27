@@ -689,7 +689,6 @@ function setRow(i, set, prev, isCurrent, onRemove, onOpen, onEdit) {
   const v = document.createElement("span"); v.className = "v";
   const editable = set.done && !set.warmup && typeof onEdit === "function";
   if (editable) {
-    v.classList.add("vedit");
     const ri = document.createElement("input");
     ri.type = "number"; ri.className = "ein reps"; ri.inputMode = "numeric";
     ri.min = "0"; ri.step = "1"; ri.value = set.reps === "" || set.reps == null ? "" : String(set.reps);
@@ -717,8 +716,18 @@ function setRow(i, set, prev, isCurrent, onRemove, onOpen, onEdit) {
       if (newReps === String(set.reps ?? "") && newKg === String(set.kg ?? "")) return; // nessun cambiamento
       onEdit(newReps, newKg);
     };
-    ri.addEventListener("blur", commit);
-    ki.addEventListener("blur", commit);
+    // Commit differito: se il focus si sposta sull'altro input della stessa
+    // riga (reps<->kg), non committare ancora — evita che render() distrugga
+    // il campo prima che l'utente lo modifichi (tab da tastiera o tap su mobile).
+    const scheduleCommit = () => {
+      setTimeout(() => {
+        const a = document.activeElement;
+        if (a === ri || a === ki) return; // focus rimasto nella coppia
+        commit();
+      }, 0);
+    };
+    ri.addEventListener("blur", scheduleCommit);
+    ki.addEventListener("blur", scheduleCommit);
     const onEnter = (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } };
     ri.addEventListener("keydown", onEnter);
     ki.addEventListener("keydown", onEnter);
