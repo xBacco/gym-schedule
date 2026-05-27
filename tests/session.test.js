@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex } from "../session.js";
+import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex, nextExercisePreview } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
 import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, sessionVolume, exerciseTrend } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
@@ -435,4 +435,14 @@ test("isEntryComplete: la serie failed (done+failed) conta per il completamento"
     { reps: "6", kg: "72.5", done: true,  failed: true  }, // non riuscita ma done
   ] };
   assert.equal(isEntryComplete(entry, ex), true);
+});
+
+test("nextExercisePreview: ritorna nome+target del successivo", () => {
+  const ex = [{ name: "A", setsReps: "3 × 10" }, { name: "B", setsReps: "3 × 12" }];
+  assert.deepEqual(nextExercisePreview(ex, 0), { last: false, name: "B", target: "3 × 12" });
+});
+
+test("nextExercisePreview: ultimo esercizio -> { last: true }", () => {
+  const ex = [{ name: "A", setsReps: "3 × 10" }, { name: "B", setsReps: "3 × 12" }];
+  assert.deepEqual(nextExercisePreview(ex, 1), { last: true });
 });

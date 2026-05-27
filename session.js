@@ -231,3 +231,13 @@ export function exerciseTrend(data, day, idx, weekKey, n = 3, superset = false) 
   }
   return out;
 }
+
+// Dati per la striscia "prossimo esercizio" nell'overlay.
+// exercises: array degli esercizi del giorno; idx: indice di quello aperto.
+// Se non c'è un successivo (ultimo esercizio o idx fuori range) -> { last: true }.
+// Altrimenti -> { last: false, name, target } del successivo.
+export function nextExercisePreview(exercises, idx) {
+  const next = Array.isArray(exercises) ? exercises[idx + 1] : undefined;
+  if (!next) return { last: true };
+  return { last: false, name: next.name, target: next.setsReps };
+}
