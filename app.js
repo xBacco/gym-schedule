@@ -591,6 +591,7 @@ function openSetDialog(opts) {
 
 function wireSetDialog() {
   const dlg = document.getElementById("setDialog");
+  document.getElementById("setDlgApply").addEventListener("click", () => { setDlgAction = "apply"; dlg.close(); });
   document.getElementById("setDlgUndo").addEventListener("click", () => { setDlgAction = "undo"; dlg.close(); });
   document.getElementById("setDlgDelete").addEventListener("click", () => { setDlgAction = "delete"; dlg.close(); });
   document.getElementById("setDlgClose").addEventListener("click", () => { setDlgAction = "cancel"; dlg.close(); });
@@ -609,8 +610,9 @@ function wireSetDialog() {
     if (setDlgState) setDlgState.failNote = e.target.value;
   });
 
-  // tap sullo sfondo = chiudi applicando i valori correnti
-  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  // tap sullo sfondo / Escape = annulla senza salvare (le modifiche si salvano
+  // solo col pulsante "Conferma modifiche").
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) { setDlgAction = "cancel"; dlg.close(); } });
   dlg.addEventListener("cancel", (e) => { e.preventDefault(); setDlgAction = "cancel"; dlg.close(); });
   dlg.addEventListener("close", () => {
     if (!setDlgCbs) return;
@@ -618,7 +620,8 @@ function wireSetDialog() {
     const a = setDlgAction; setDlgAction = null;
     if (a === "undo") onUndo();
     else if (a === "delete") onDelete();
-    else if (a !== "cancel") onApply(setDlgState.reps, setDlgState.kg, setDlgState.feel, setDlgState.failed, setDlgState.failNote);
+    else if (a === "apply") onApply(setDlgState.reps, setDlgState.kg, setDlgState.feel, setDlgState.failed, setDlgState.failNote);
+    // qualsiasi altra chiusura (cancel/sfondo/Escape) = nessuna modifica
     setDlgCbs = null; setDlgState = null;
   });
 }
@@ -682,56 +685,12 @@ function buildNoteField(superset, idx) {
   return wrap;
 }
 
-function setRow(i, set, prev, isCurrent, onRemove, onOpen, onEdit) {
+function setRow(i, set, prev, isCurrent, onRemove, onOpen) {
   const row = document.createElement("div");
   row.className = "srow" + (isCurrent ? " cur" : "") + (set.warmup ? " warm" : "");
   const idx = document.createElement("span"); idx.className = "i"; idx.textContent = set.warmup ? "W" : String(i + 1);
   const v = document.createElement("span"); v.className = "v";
-  const editable = set.done && !set.warmup && typeof onEdit === "function";
-  if (editable) {
-    const ri = document.createElement("input");
-    ri.type = "number"; ri.className = "ein reps"; ri.inputMode = "numeric";
-    ri.min = "0"; ri.step = "1"; ri.value = set.reps === "" || set.reps == null ? "" : String(set.reps);
-    const x = document.createElement("span"); x.className = "x"; x.textContent = " × ";
-    const ki = document.createElement("input");
-    ki.type = "number"; ki.className = "ein kg"; ki.inputMode = "decimal";
-    ki.min = "0"; ki.step = "0.5"; ki.value = set.kg === "" || set.kg == null ? "" : String(set.kg);
-    const u = document.createElement("span"); u.className = "u"; u.textContent = " kg";
-    v.append(ri, x, ki, u);
-
-    const commit = () => {
-      const repsRaw = ri.value.trim();
-      const kgRaw = ki.value.trim();
-      const repsN = parseInt(repsRaw, 10);
-      const kgN = parseFloat(kgRaw.replace(",", "."));
-      const repsOk = repsRaw === "" || (Number.isInteger(repsN) && repsN >= 0);
-      const kgOk = kgRaw === "" || (Number.isFinite(kgN) && kgN >= 0);
-      if (!repsOk || !kgOk) { // ripristina, niente commit
-        ri.value = set.reps === "" || set.reps == null ? "" : String(set.reps);
-        ki.value = set.kg === "" || set.kg == null ? "" : String(set.kg);
-        return;
-      }
-      const newReps = repsRaw === "" ? "" : String(repsN);
-      const newKg = kgRaw === "" ? "" : String(kgN);
-      if (newReps === String(set.reps ?? "") && newKg === String(set.kg ?? "")) return; // nessun cambiamento
-      onEdit(newReps, newKg);
-    };
-    // Commit differito: se il focus si sposta sull'altro input della stessa
-    // riga (reps<->kg), non committare ancora — evita che render() distrugga
-    // il campo prima che l'utente lo modifichi (tab da tastiera o tap su mobile).
-    const scheduleCommit = () => {
-      setTimeout(() => {
-        const a = document.activeElement;
-        if (a === ri || a === ki) return; // focus rimasto nella coppia
-        commit();
-      }, 0);
-    };
-    ri.addEventListener("blur", scheduleCommit);
-    ki.addEventListener("blur", scheduleCommit);
-    const onEnter = (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } };
-    ri.addEventListener("keydown", onEnter);
-    ki.addEventListener("keydown", onEnter);
-  } else if (set.reps || set.kg) {
+  if (set.reps || set.kg) {
     v.append(document.createTextNode(set.reps || "—"));
     const x = document.createElement("span"); x.className = "x"; x.textContent = " × ";
     const u = document.createElement("span"); u.className = "u"; u.textContent = " kg";
@@ -796,7 +755,7 @@ function setRow(i, set, prev, isCurrent, onRemove, onOpen, onEdit) {
     const ed = document.createElement("span");
     ed.className = "editset";
     ed.textContent = "✎";
-    ed.title = "Modifica serie (feel, non riuscita, elimina)";
+    ed.title = "Modifica serie (reps, kg, sensazione, non riuscita, elimina)";
     ed.addEventListener("click", (e) => { e.stopPropagation(); onOpen(); });
     row.appendChild(ed);
   }
@@ -863,11 +822,7 @@ function renderFocusNormal(ex, idx, container, footer) {
         persist(idx); render();
       },
     }) : null;
-    const onEdit = set.done ? (reps, kg) => {
-      data = setEntry(data, currentWeek, currentDay, idx, withSet(v, i, { reps, kg }), new Date().toISOString());
-      persist(idx); render();
-    } : null;
-    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen, onEdit));
+    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen));
   }
   container.appendChild(setsBox);
 
@@ -1024,12 +979,7 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
       data = setEntry(data, currentWeek, currentDay, idx, withoutSupersetSet(getEntry(data, currentWeek, currentDay, idx), trackKey, i), new Date().toISOString());
       persist(idx); render();
     } : null;
-    const onEdit = set.done ? (reps, kg) => {
-      const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, idx), trackKey, i, { reps, kg });
-      data = setEntry(data, currentWeek, currentDay, idx, nv, new Date().toISOString());
-      persist(idx); render();
-    } : null;
-    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen, onEdit));
+    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen));
   }
   wrap.appendChild(setsBox);
 
