@@ -763,8 +763,8 @@ function svgEl(tag, attrs = {}) {
   return el;
 }
 function shortWeek(key) {
-  // "2026-W22" -> "W22"; "2026-W22.1" -> "W22"
-  const m = String(key).match(/W\d{2}/);
+  // "2026-W22" -> "W22"; "2026-W22.1" -> "W22.1"
+  const m = String(key).match(/W\d{2}(\.\d+)?/);
   return m ? m[0] : String(key);
 }
 
@@ -772,6 +772,7 @@ function shortWeek(key) {
 function renderChart(series) {
   const W = 260, H = 150;
   const g = chartGeometry(series, { width: W, height: H });
+  const baseline = H - 26; // 26 = padBottom di default in chartGeometry
   const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart-svg" });
   // gridlines + label asse Y
   for (const tick of g.yTicks) {
@@ -784,7 +785,7 @@ function renderChart(series) {
   if (g.points.length > 1) {
     const last = g.points[g.points.length - 1], first = g.points[0];
     svg.appendChild(svgEl("polyline", {
-      points: `${g.polyline} ${last.x},124 ${first.x},124`,
+      points: `${g.polyline} ${last.x},${baseline} ${first.x},${baseline}`,
       fill: "#E8A93C", opacity: 0.08,
     }));
     svg.appendChild(svgEl("polyline", {
