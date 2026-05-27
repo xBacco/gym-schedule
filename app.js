@@ -12,6 +12,7 @@ import {
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
+import { renderNutritionGuide } from "./nutrition.js";
 
 const OWNER = "xBacco";
 const REPO = "gym-schedule";
@@ -128,6 +129,12 @@ function showRestDoneBanner() {
   b.classList.remove("hidden");
   clearTimeout(showRestDoneBanner._t);
   showRestDoneBanner._t = setTimeout(() => b.classList.add("hidden"), 2500);
+}
+
+function hideRestDoneBanner() {
+  const b = document.getElementById("restDoneBanner");
+  clearTimeout(showRestDoneBanner._t);
+  if (b) b.classList.add("hidden");
 }
 
 // ---- Timer wiring ----
@@ -1324,6 +1331,7 @@ function wireTimerControls() {
   document.getElementById("tStop").addEventListener("click", () => {
     timer.stop();
     hideFeelAsk();
+    hideRestDoneBanner();
     document.getElementById("timerBar").classList.add("hidden");
     document.body.classList.remove("timer-on");
   });
