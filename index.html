@@ -30,6 +30,7 @@
       <button id="newWeekBtn" class="btn-soft">+ Sett.</button>
       <span id="status" class="status">—</span>
       <button id="nutritionBtn" class="btn-icon" aria-label="Alimentazione">🥗</button>
+      <button id="calendarBtn" class="btn-icon" aria-label="Calendario">📅</button>
       <button id="planEditBtn" class="btn-icon" aria-label="Modifica scheda">✎</button>
       <button id="settingsBtn" class="btn-icon" aria-label="Impostazioni">⚙</button>
     </div>
@@ -113,6 +114,24 @@
       <button data-day="C">C</button>
     </div>
     <div id="planBody" class="plan-body"></div>
+  </div>
+
+  <!-- Calendario allenamenti a schermo intero -->
+  <div id="calendarOverlay" class="focus-ov hidden" aria-hidden="true">
+    <header class="focus-top">
+      <button id="calendarBack" class="focus-back" aria-label="Chiudi calendario">←</button>
+      <div class="focus-id">
+        <div class="fn">Calendario</div>
+        <div id="calSub" class="fs">i tuoi allenamenti</div>
+      </div>
+    </header>
+    <div class="cal-nav">
+      <button id="calPrev" class="btn-soft" aria-label="Mese precedente">‹</button>
+      <div id="calTitle" class="cal-title"></div>
+      <button id="calNext" class="btn-soft" aria-label="Mese successivo">›</button>
+    </div>
+    <div id="calGrid" class="cal-grid"></div>
+    <div id="calDetail" class="cal-detail"></div>
   </div>
 
   <!-- Popup commento veloce -->
