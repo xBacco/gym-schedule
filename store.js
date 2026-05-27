@@ -27,6 +27,14 @@ export function setEntry(data, weekKey, day, exIndex, value, nowIso) {
   if (!next.weeks[weekKey]) next.weeks[weekKey] = { label: weekKey, entries: {} };
   if (!next.weeks[weekKey].entries[day]) next.weeks[weekKey].entries[day] = {};
   next.weeks[weekKey].entries[day][String(exIndex)] = value;
+  // Data reale della sessione (set-if-absent): resta quella della prima serie
+  // loggata per quel giorno-scheda. Campo additivo per il calendario.
+  if (nowIso) {
+    if (!next.weeks[weekKey].dates) next.weeks[weekKey].dates = {};
+    if (next.weeks[weekKey].dates[day] == null) {
+      next.weeks[weekKey].dates[day] = nowIso.slice(0, 10);
+    }
+  }
   next.updatedAt = nowIso ?? new Date().toISOString();
   return next;
 }

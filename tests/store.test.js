@@ -45,6 +45,17 @@ test("setEntry merges without clobbering sibling entries", () => {
 test("getEntry returns empty string when missing", () => {
   assert.equal(getEntry(emptyData(), "2026-W22", "A", 0), "");
 });
+
+test("setEntry registra la data della sessione (set-if-absent)", () => {
+  let d = setEntry(emptyData(), "2026-W22", "A", 0, "60kg", "2026-05-25T10:00:00Z");
+  assert.equal(d.weeks["2026-W22"].dates.A, "2026-05-25");
+  // un secondo log lo stesso giorno-scheda NON sovrascrive la prima data
+  d = setEntry(d, "2026-W22", "A", 1, "62kg", "2026-05-26T09:00:00Z");
+  assert.equal(d.weeks["2026-W22"].dates.A, "2026-05-25");
+  // giorno-scheda diverso -> data propria
+  d = setEntry(d, "2026-W22", "B", 0, "stacco", "2026-05-27T09:00:00Z");
+  assert.equal(d.weeks["2026-W22"].dates.B, "2026-05-27");
+});
 import { toBase64, fromBase64 } from "../store.js";
 
 test("toBase64/fromBase64 round-trip UTF-8 text", () => {
