@@ -10,6 +10,19 @@ export function isoWeekKey(date) {
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
+// Prima chiave settimana ISO libera a partire da `from` (default: oggi), avanzando
+// di 7 giorni finché non ne trova una assente in `weeks`. Ritorna sempre una chiave
+// nuova nel formato "YYYY-Www" (es. la settimana corrente, o la prossima se occupata).
+export function nextFreeWeekKey(weeks, from = new Date()) {
+  const d = new Date(from);
+  let key = isoWeekKey(d);
+  while (weeks && weeks[key]) {
+    d.setDate(d.getDate() + 7);
+    key = isoWeekKey(d);
+  }
+  return key;
+}
+
 export function emptyData() {
   return { updatedAt: null, weeks: {} };
 }

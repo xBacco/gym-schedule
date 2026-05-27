@@ -1,11 +1,30 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isoWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet, toggleComment } from "../store.js";
+import { isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet, toggleComment } from "../store.js";
 
 test("isoWeekKey returns ISO year-week", () => {
   assert.equal(isoWeekKey(new Date(2020, 0, 1)), "2020-W01"); // Wed 1 Jan 2020
   assert.equal(isoWeekKey(new Date(2021, 0, 1)), "2020-W53"); // Fri 1 Jan 2021 -> 2020 W53
   assert.equal(isoWeekKey(new Date(2026, 4, 25)), "2026-W22"); // Mon 25 May 2026
+});
+
+test("nextFreeWeekKey: settimana ISO di oggi se libera", () => {
+  assert.equal(nextFreeWeekKey({}, new Date(2026, 4, 25)), "2026-W22");
+});
+
+test("nextFreeWeekKey: avanza alla settimana successiva se occupata", () => {
+  const weeks = { "2026-W22": { label: "2026-W22", entries: {} } };
+  assert.equal(nextFreeWeekKey(weeks, new Date(2026, 4, 25)), "2026-W23");
+});
+
+test("nextFreeWeekKey: salta tutte le settimane consecutive occupate", () => {
+  const weeks = { "2026-W22": {}, "2026-W23": {}, "2026-W24": {} };
+  assert.equal(nextFreeWeekKey(weeks, new Date(2026, 4, 25)), "2026-W25");
+});
+
+test("nextFreeWeekKey: attraversa il confine d'anno", () => {
+  const weeks = { "2026-W53": {} };
+  assert.equal(nextFreeWeekKey(weeks, new Date(2026, 11, 28)), "2027-W01"); // Mon 28 Dic 2026 = 2026-W53
 });
 
 test("emptyData is the initial database shape", () => {

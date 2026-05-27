@@ -1,7 +1,7 @@
 import { PLAN } from "./plan.js";
 import { migrate, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan } from "./editor.js";
 import {
-  isoWeekKey, emptyData, ensureWeek, setEntry, getEntry,
+  isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
   GitHubStore, ConflictError, AuthError,
 } from "./store.js";
@@ -1782,13 +1782,12 @@ function changeDay(day) {
   render();
 }
 function newWeek() {
-  const label = prompt("Nome della nuova settimana:", "Settimana");
+  // Prima settimana ISO libera (corrente, o la prossima se già esiste): sempre nuova.
+  const key = nextFreeWeekKey(data.weeks);
+  const label = prompt("Nome della nuova settimana:", key);
   if (label === null) return;
-  const key = isoWeekKey(new Date());
-  let k = key, n = 2;
-  while (Object.keys(data.weeks).includes(k) && k !== currentWeek) k = `${key}.${n++}`;
-  data = ensureWeek(data, k, label || k);
-  changeWeek(k);
+  data = ensureWeek(data, key, label || key);
+  changeWeek(key);
   scheduleSave();
 }
 
