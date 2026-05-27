@@ -406,5 +406,7 @@ body.timer-on .focus-body{padding-bottom:160px;}
   margin-left: .5em;
   cursor: pointer;
   opacity: .7;
+  padding: 4px 6px;
+  font-size: 1.05em;
 }
 .srow .editset:active { opacity: 1; }
