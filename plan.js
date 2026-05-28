@@ -46,3 +46,7 @@ export const PLAN = [
     ],
   },
 ];
+
+export function seedPlan({ empty = false } = {}) {
+  return empty ? [] : PLAN;
+}

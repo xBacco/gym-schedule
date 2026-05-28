@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PLAN } from "../plan.js";
+import { PLAN, seedPlan } from "../plan.js";
 
 test("PLAN has 3 days A/B/C", () => {
   assert.equal(PLAN.length, 3);
@@ -43,4 +43,14 @@ test("no exercise has more than 3 sets (also per superset track)", () => {
       }
     }
   }
+});
+
+test("seedPlan({empty:true}) ritorna plan vuoto []", () => {
+  assert.deepEqual(seedPlan({ empty: true }), []);
+});
+
+test("seedPlan() default ritorna la variante 'Consigliata+'", () => {
+  const p = seedPlan();
+  assert.equal(p.length, 3);
+  assert.equal(p.find((d) => d.day === "C").exercises.length, 9);
 });

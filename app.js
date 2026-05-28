@@ -1,4 +1,4 @@
-import { PLAN } from "./plan.js";
+import { PLAN, seedPlan } from "./plan.js";
 import { migrate, backfillMuscles, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan } from "./editor.js";
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
@@ -2094,7 +2094,7 @@ async function boot() {
       profileStorage.set("version", dataVersion);
       profileStorage.set("dirty", false);
     } else if (!cached || remote.version > (profileStorage.get("version") || 0)) {
-      data = remote.data;
+      data = { ...remote.data, plan: remote.data.plan ?? seedPlan({ empty: true }) };
       dataVersion = remote.version;
       profileStorage.set("data", data);
       profileStorage.set("version", dataVersion);
