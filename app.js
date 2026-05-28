@@ -451,6 +451,40 @@ function getQuickComments() {
 }
 function setQuickComments(arr) { localStorage.setItem(QC_KEY, JSON.stringify(arr)); }
 
+// ---- Cronometro sessione: durata totale dell'allenamento, per (settimana, giorno).
+// Parte al primo recupero avviato del giorno, si ferma quando il giorno è completo.
+// Solo locale (un allenamento si fa su un dispositivo). ----
+const SESSION_KEY = "gymsched_session";
+const getSessionMap = () => { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "{}"); } catch (_) { return {}; } };
+const setSessionMap = (m) => localStorage.setItem(SESSION_KEY, JSON.stringify(m));
+const sessClockKey = () => `${currentWeek}-${currentDay}`;
+function startSessionIfAbsent() {
+  const m = getSessionMap(); const k = sessClockKey();
+  if (!m[k] || !m[k].start) { m[k] = { start: new Date().toISOString(), end: null }; setSessionMap(m); }
+}
+function endSessionClock() {
+  const m = getSessionMap(); const k = sessClockKey();
+  if (m[k] && m[k].start && !m[k].end) { m[k].end = new Date().toISOString(); setSessionMap(m); renderSessClock(); }
+}
+function fmtDuration(totalSec) {
+  let s = Math.max(0, Math.floor(totalSec));
+  const h = Math.floor(s / 3600); s %= 3600;
+  const m = Math.floor(s / 60); s %= 60;
+  const mm = String(m).padStart(h ? 2 : 1, "0");
+  return (h ? `${h}:${mm}` : `${mm}`) + `:${String(s).padStart(2, "0")}`;
+}
+function renderSessClock() {
+  const el = document.getElementById("sessClock");
+  if (!el) return;
+  const c = getSessionMap()[sessClockKey()];
+  if (!c || !c.start) { el.classList.add("hidden"); return; }
+  const startMs = Date.parse(c.start);
+  const endMs = c.end ? Date.parse(c.end) : Date.now();
+  el.textContent = (c.end ? "⏱ allenamento " : "⏱ in corso · ") + fmtDuration((endMs - startMs) / 1000);
+  el.classList.toggle("ended", !!c.end);
+  el.classList.remove("hidden");
+}
+
 // ---- Status indicator ----
 function setStatus(text, kind = "") {
   const el = document.getElementById("status");
@@ -536,6 +570,7 @@ const timer = new RestTimer({
 const wakeLock = new ScreenWakeLock();
 function startRest(seconds, label) {
   ensureAudio(); // unlock audio within the user gesture
+  startSessionIfAbsent(); // primo recupero del giorno → avvia il cronometro sessione
   wakeLock.enable();
   document.body.classList.add("timer-on");
   document.getElementById("timerBar").classList.remove("hidden");
@@ -1835,6 +1870,10 @@ function render() {
   renderList();
   renderVolRow();
   renderFocusOverlay();
+  // Giorno completo → ferma il cronometro (congela la durata totale).
+  const dp = dayPlan();
+  if (dp.exercises.length && dp.exercises.every((_, i) => isComplete(i))) endSessionClock();
+  renderSessClock();
 }
 
 // ---- Editing + saving ----
@@ -2419,6 +2458,9 @@ async function reconcileFromRemote() {
 }
 
 window.addEventListener("load", boot);
+
+// Aggiorna la durata della sessione ogni secondo (no-op finché il cronometro è nascosto).
+setInterval(renderSessClock, 1000);
 
 // PWA: registra il service worker e gestisce l'aggiornamento (best-effort).
 // `swUpdating` distingue l'aggiornamento voluto dall'utente (tap sul banner)
