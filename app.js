@@ -1989,6 +1989,9 @@ function wireDrawer() {
 }
 
 // ---- Boot ----
+function initStore() {
+  store = new GitHubStore({ owner: OWNER, repo: REPO, token: getToken() });
+}
 
 async function boot() {
   // 1. Verifica sessione.
