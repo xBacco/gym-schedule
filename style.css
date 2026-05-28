@@ -522,6 +522,10 @@ dialog#settingsDialog.settings-v2-host::backdrop{
   color:var(--acc);background:var(--surf2);border:1px solid #4a3a1e;border-radius:9px;padding:5px 11px;}
 .sessclock.ended{color:var(--dim);border-color:var(--line);}
 .sessclock.hidden{display:none;}
+.sc-x{margin-left:8px;display:inline-flex;align-items:center;justify-content:center;
+  min-width:24px;min-height:24px;padding:2px 4px;border:0;background:none;cursor:pointer;
+  color:inherit;font-size:13px;line-height:1;opacity:.75;}
+.sc-x:hover,.sc-x:focus-visible{opacity:1;}
 
 .restdone{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:70;
   background:var(--acc);color:var(--acc-ink);font-weight:800;font-size:18px;
