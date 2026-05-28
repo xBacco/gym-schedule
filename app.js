@@ -18,7 +18,7 @@ import {
   lastWorkingSet,
   isDumbbell, volumeMeta, exerciseVolume, setVolume,
 } from "./session.js";
-import { RestTimer, formatTime } from "./timer.js";
+import { RestTimer, formatTime, withoutSession } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
 import { renderNutritionGuide } from "./nutrition.js";
 import { createPusher } from "./sync.js";
@@ -485,6 +485,12 @@ function fmtDuration(totalSec) {
   const mm = String(m).padStart(h ? 2 : 1, "0");
   return (h ? `${h}:${mm}` : `${mm}`) + `:${String(s).padStart(2, "0")}`;
 }
+// Annulla il cronometro del giorno corrente (es. sessione avviata per sbaglio).
+// Rimuove SOLO la voce gymsched_session: le serie loggate (in `data`) restano intatte.
+function cancelSessionClock() {
+  setSessionMap(withoutSession(getSessionMap(), sessClockKey()));
+  renderSessClock();
+}
 function renderSessClock() {
   const el = document.getElementById("sessClock");
   if (!el) return;
@@ -492,7 +498,21 @@ function renderSessClock() {
   if (!c || !c.start) { el.classList.add("hidden"); return; }
   const startMs = Date.parse(c.start);
   const endMs = c.end ? Date.parse(c.end) : Date.now();
-  el.textContent = (c.end ? "⏱ allenamento " : "⏱ in corso · ") + fmtDuration((endMs - startMs) / 1000);
+  const txt = document.createElement("span");
+  txt.className = "sc-t";
+  txt.textContent = (c.end ? "⏱ allenamento " : "⏱ in corso · ") + fmtDuration((endMs - startMs) / 1000);
+  const x = document.createElement("button");
+  x.type = "button";
+  x.className = "sc-x";
+  x.textContent = "✕";
+  x.setAttribute("aria-label", "Annulla cronometro");
+  x.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (confirm("Annullare il cronometro di questo allenamento? Le serie loggate restano salvate.")) {
+      cancelSessionClock();
+    }
+  });
+  el.replaceChildren(txt, x);
   el.classList.toggle("ended", !!c.end);
   el.classList.remove("hidden");
 }
