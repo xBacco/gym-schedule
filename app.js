@@ -26,6 +26,7 @@ const OWNER = "xBacco";
 const REPO = "gym-schedule";
 const TOKEN_KEY = "gymsched_token";
 const PENDING_KEY = "gymsched_pending"; // local buffer of unsynced edits
+const SEED_URL = "https://xbacco.github.io/gym-schedule/data.json";
 
 // ---- App state ----
 let data = emptyData();
@@ -2092,6 +2093,7 @@ async function boot() {
     data = backfillMuscles(migrate(data), PLAN);
     render();
     setStatus("ok ✓", "ok");
+    await offerSeedIfEmpty();
   } catch (err) {
     if (err instanceof AuthError) {
       // Sessione invalidata: logout pulito.
@@ -2119,6 +2121,31 @@ async function boot() {
       reconcileFromRemote().catch(() => {});
     }
   });
+}
+
+async function offerSeedIfEmpty() {
+  if (!data || (data.weeks && Object.keys(data.weeks).length > 0)) return;
+  try {
+    const res = await fetch(SEED_URL, { cache: "no-store" });
+    if (!res.ok) return;
+    const seed = await res.json();
+    const wkKeys = Object.keys(seed.weeks || {}).sort();
+    if (wkKeys.length === 0) return;
+    const summary = document.getElementById("seedSummary");
+    summary.textContent = `Trovata scheda demo con ${wkKeys.length} settimane (${wkKeys[0]} → ${wkKeys[wkKeys.length-1]}).`;
+    const dlg = document.getElementById("seedDialog");
+    dlg.showModal();
+    await new Promise((r) => dlg.addEventListener("close", r, { once: true }));
+    if (dlg.returnValue === "import") {
+      data = backfillMuscles(migrate(seed), PLAN);
+      profileStorage.set("data", data);
+      profileStorage.set("dirty", true);
+      pusher.schedule();
+      render();
+    }
+  } catch {
+    // network error: ignora, l'utente parte vuoto
+  }
 }
 
 async function reconcileFromRemote() {

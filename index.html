@@ -62,6 +62,18 @@
   </section>
 
   <div id="app">
+    <dialog id="seedDialog">
+      <form method="dialog">
+        <h2>📦 Importa scheda demo?</h2>
+        <p id="seedSummary"></p>
+        <p>Vuoi partire da questa o da zero?</p>
+        <menu>
+          <button type="submit" value="empty">Parto da zero</button>
+          <button type="submit" value="import" autofocus>Importa</button>
+        </menu>
+      </form>
+    </dialog>
+
     <div class="wrap">
     <div class="kicker">DAY <b id="kickDay">A</b> · <span id="kickWeek">SETT. —</span></div>
     <h1 id="dayTitle">—</h1>
