@@ -1,39 +1,33 @@
 # gym-schedule
 
-Web app personale per la scheda di allenamento: log carico/reps per settimana,
-sincronizzazione PC↔telefono via `data.json` nel repo, timer di recupero automatico.
+Web app per la scheda di allenamento: log carico/reps per settimana, sync cross-device,
+timer di recupero, multi-utente con account email + password.
 
 ## Come funziona
 - Sito statico su **GitHub Pages**.
-- I dati vivono in `data.json`, scritti via **GitHub Contents API** con un token che
-  resta solo nel tuo browser.
+- Backend: **Supabase** (Postgres + Auth, free tier).
+- Ogni utente ha un account. I dati sono privati e isolati via Row Level Security.
+- Offline-first: in palestra l'app funziona senza segnale, sync al rientro.
 
-## Setup (una volta)
-
-### 1. Repo pubblico
-Il repo `xBacco/gym-schedule` deve essere **pubblico**.
-
-### 2. Crea un token fine-grained
-GitHub → Settings → Developer settings → **Fine-grained tokens** → *Generate new token*:
-- **Repository access:** Only select repositories → `gym-schedule`
-- **Permissions:** Repository permissions → **Contents: Read and write**
-- Genera e copia il token (`github_pat_…`).
-
-### 3. Attiva Pages
-Repo → Settings → **Pages** → Source: *Deploy from a branch* → `main` / `/ (root)`.
-L'URL sarà `https://xbacco.github.io/gym-schedule/`.
-
-### 4. Inserisci il token
-Apri l'app, tocca ⚙ e incolla il token. Resta salvato in quel browser. Ripeti su ogni
-dispositivo (PC e telefono).
+## Setup utente
+1. Apri https://xbacco.github.io/gym-schedule/
+2. *Registrati* con email + password (min 8 char).
+3. Conferma l'email tramite il link che ricevi.
+4. Login → editor scheda vuoto, costruisci la tua.
 
 ## Sviluppo locale
 
 ```bash
-# Test
-npm test
-
-# Anteprima locale (serve un server perché usa ES modules)
-python -m http.server 8000
-# poi apri http://localhost:8000
+npm test                    # 215+ test
+python -m http.server 8765  # server statico
+# poi apri http://localhost:8765
 ```
+
+I file `supabase-client.js` contengono URL + anon key del progetto Supabase
+(pubblici per design, RLS è il vero gate). Per uno sviluppo isolato crea un tuo
+progetto Supabase ed esegui lo schema in `docs/superpowers/specs/2026-05-28-multi-user-supabase-design.md`.
+
+## Architettura
+Vedi `docs/superpowers/specs/2026-05-28-multi-user-supabase-design.md` per lo spec
+completo e `docs/superpowers/plans/2026-05-28-multi-user-supabase.md` per il piano
+di implementazione.
