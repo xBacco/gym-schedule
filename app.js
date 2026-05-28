@@ -1149,28 +1149,52 @@ function wireSetDialog() {
 // { idx, superset:true, aIdx, bIdx } (il superset rate entrambe le tracce).
 let lastDone = null;
 
+// Mostra la striscia "com'è andata?" per l'ultima serie conclusa. Resta visibile
+// (anche sull'ultima serie dell'esercizio: NON si chiude più il focus prima di
+// poter valutare). Sui superset mostra DUE barre separate A e B, così si può dare
+// una sensazione diversa a ciascuna traccia. La selezione corrente è evidenziata.
 function showFeelAsk(info) {
   lastDone = info;
-  const n = info.superset ? info.aIdx : info.setIndex;
-  document.getElementById("feelAskN").textContent = String(n + 1);
-  const bar = buildRpeBar("", (feel) => {
+  const exId = exIdAt(info.idx);
+  const labelN = document.getElementById("feelAskN");
+  const host = document.getElementById("feelAskBar");
+
+  const paint = () => {
     if (!lastDone) return;
-    if (!feel) { hideFeelAsk(); return; }
-    const exId = exIdAt(lastDone.idx);
-    let v = getEntry(data, currentWeek, currentDay, exId);
-    let nv;
-    if (lastDone.superset) {
-      nv = withSupersetSet(v, "a", lastDone.aIdx, { feel });
-      nv = withSupersetSet(nv, "b", lastDone.bIdx, { feel });
+    const v = getEntry(data, currentWeek, currentDay, exId);
+    host.replaceChildren();
+    if (info.superset) {
+      labelN.textContent = String(info.aIdx + 1);
+      const e = normalizeSupersetEntry(v);
+      const mkTrack = (track, sIdx, name) => {
+        const wrap = document.createElement("div"); wrap.className = "fa-track";
+        const tl = document.createElement("span"); tl.className = "fa-tl"; tl.textContent = name;
+        const cur = (track === "a" ? e.a : e.b).sets[sIdx]?.feel ?? "";
+        const bar = buildRpeBar(cur, (feel) => {
+          const cv = getEntry(data, currentWeek, currentDay, exId);
+          data = setEntry(data, currentWeek, currentDay, exId, withSupersetSet(cv, track, sIdx, { feel }), new Date().toISOString());
+          persist(info.idx);
+          paint();   // riflette la selezione sulla barra
+          render();  // aggiorna i badge nella lista/overlay
+        });
+        wrap.append(tl, bar);
+        return wrap;
+      };
+      host.append(mkTrack("a", info.aIdx, "A"), mkTrack("b", info.bIdx, "B"));
     } else {
-      nv = withSet(v, lastDone.setIndex, { feel });
+      labelN.textContent = String(info.setIndex + 1);
+      const cur = normalizeEntry(v).sets[info.setIndex]?.feel ?? "";
+      const bar = buildRpeBar(cur, (feel) => {
+        const cv = getEntry(data, currentWeek, currentDay, exId);
+        data = setEntry(data, currentWeek, currentDay, exId, withSet(cv, info.setIndex, { feel }), new Date().toISOString());
+        persist(info.idx);
+        paint();
+        render();
+      });
+      host.append(bar);
     }
-    data = setEntry(data, currentWeek, currentDay, exId, nv, new Date().toISOString());
-    persist(lastDone.idx);
-    hideFeelAsk();
-    render();
-  });
-  document.getElementById("feelAskBar").replaceChildren(bar);
+  };
+  paint();
   document.getElementById("feelAsk").classList.remove("hidden");
 }
 
@@ -1437,11 +1461,9 @@ function renderFocusNormal(ex, idx, container, footer) {
       persist(idx);
       startRest(getRest(currentDay, exId, ex.restSeconds), ex.name);
       render();
-      if (isEntryComplete(getEntry(data, currentWeek, currentDay, exId), ex)) {
-        closeFocus(); // esercizio finito → torna alla lista (e libera la voce di history)
-      } else {
-        showFeelAsk({ idx, superset: false, setIndex: curIdx });
-      }
+      // Anche sull'ultima serie: mostra "com'è andata?" (prima si chiudeva il
+      // focus e non si poteva valutare). Si torna alla lista con il tasto ←.
+      showFeelAsk({ idx, superset: false, setIndex: curIdx });
     });
     footer.appendChild(cta);
   }
@@ -1619,11 +1641,9 @@ function renderFocusSuperset(ex, idx, container, footer) {
       persist(idx);
       startRest(getRest(currentDay, exId, ex.restSeconds), ex.name);
       render();
-      if (isEntryComplete(getEntry(data, currentWeek, currentDay, exId), ex)) {
-        closeFocus(); // superset finito → torna alla lista (e libera la voce di history)
-      } else {
-        showFeelAsk({ idx, superset: true, aIdx: a.curIdx, bIdx: b.curIdx });
-      }
+      // Due barre A/B separate (sensazione indipendente per traccia); resta
+      // aperto anche sull'ultima serie. Si torna alla lista con il tasto ←.
+      showFeelAsk({ idx, superset: true, aIdx: a.curIdx, bIdx: b.curIdx });
     });
     footer.appendChild(cta);
   }
