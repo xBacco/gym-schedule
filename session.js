@@ -131,6 +131,42 @@ export function bestKg(data, day, exId) {
   return best;
 }
 
+// Max kg working escludendo la settimana `weekKey` (per capire se è un nuovo PR).
+export function bestKgBefore(data, day, exId, weekKey, track = null) {
+  let best = null;
+  for (const k of Object.keys(data?.weeks ?? {})) {
+    if (k === weekKey) continue;
+    const t = entryTrack(getEntry(data, k, day, exId), track);
+    for (const s of t.sets) {
+      if (s.warmup || s.failed) continue;
+      const v = parseNum(s.kg);
+      if (v !== null && (best === null || v > best)) best = v;
+    }
+  }
+  return best;
+}
+
+// true se il top-set working di `weekKey` supera STRETTAMENTE lo storico precedente.
+export function isWeekRecord(data, day, exId, weekKey, track = null) {
+  const t = entryTrack(getEntry(data, weekKey, day, exId), track);
+  let top = null;
+  for (const s of t.sets) {
+    if (s.warmup || s.failed) continue;
+    const v = parseNum(s.kg);
+    if (v !== null && (top === null || v > top)) top = v;
+  }
+  if (top === null) return false;
+  const prev = bestKgBefore(data, day, exId, weekKey, track);
+  return prev === null || top > prev;
+}
+
+// Micro-helper per il badge live: kg numerico e maggiore stretto del massimo precedente.
+export function isSetRecord(prevBest, kg) {
+  const v = parseNum(kg);
+  if (v === null) return false;
+  return prevBest === null || v > prevBest;
+}
+
 // Delta carico (cur - prev) arrotondato a 2 decimali; null se uno non è numerico.
 export function progressionDelta(curKg, prevKg) {
   const c = parseFloat(String(curKg).replace(",", "."));

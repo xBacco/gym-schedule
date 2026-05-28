@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex, nextExercisePreview } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
-import { bestKg, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, lastWorkingSet, sessionVolume, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
+import { bestKg, bestKgBefore, isWeekRecord, isSetRecord, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, lastWorkingSet, sessionVolume, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
 import { sessionDates, monthGrid } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
@@ -626,4 +626,62 @@ test("chartGeometry: valori uguali non dividono per zero", () => {
 test("chartGeometry: yTicks arrotondati e a metà se valori uguali", () => {
   const g = chartGeometry([{ week: "2026-W22", kg: 60.5 }]);
   assert.deepEqual(g.yTicks, [{ value: 60.5, y: 72 }]);
+});
+
+// Helper: data con un esercizio "p1" normale, kg per settimana.
+function dataKg(perWeek) {
+  let d = emptyData();
+  for (const [wk, kgs] of Object.entries(perWeek)) {
+    const sets = kgs.map((kg) => ({ reps: "8", kg: String(kg), done: true }));
+    d = setEntry(d, wk, "A", "p1", { sets, note: "" });
+  }
+  return d;
+}
+
+test("bestKgBefore: massimo escludendo la settimana data", () => {
+  const d = dataKg({ "2026-W20": [50, 60], "2026-W21": [70], "2026-W22": [55] });
+  assert.equal(bestKgBefore(d, "A", "p1", "2026-W22"), 70);
+  assert.equal(bestKgBefore(d, "A", "p1", "2026-W21"), 60);
+});
+
+test("bestKgBefore: null se nessuna altra settimana ha dati", () => {
+  const d = dataKg({ "2026-W22": [55] });
+  assert.equal(bestKgBefore(d, "A", "p1", "2026-W22"), null);
+});
+
+test("bestKgBefore: ignora warmup e failed", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W20", "A", "p1", { sets: [
+    { reps: "8", kg: "100", done: true, warmup: true },
+    { reps: "8", kg: "90", done: true, failed: true },
+    { reps: "8", kg: "60", done: true },
+  ], note: "" });
+  assert.equal(bestKgBefore(d, "A", "p1", "2026-W22"), 60);
+});
+
+test("isWeekRecord: true se la settimana batte strettamente lo storico", () => {
+  const d = dataKg({ "2026-W20": [60], "2026-W22": [65] });
+  assert.equal(isWeekRecord(d, "A", "p1", "2026-W22"), true);
+});
+
+test("isWeekRecord: false se pareggia il massimo (non stretto)", () => {
+  const d = dataKg({ "2026-W20": [60], "2026-W22": [60] });
+  assert.equal(isWeekRecord(d, "A", "p1", "2026-W22"), false);
+});
+
+test("isWeekRecord: true al primo dato in assoluto", () => {
+  const d = dataKg({ "2026-W22": [40] });
+  assert.equal(isWeekRecord(d, "A", "p1", "2026-W22"), true);
+});
+
+test("isWeekRecord: false se la settimana non ha kg working", () => {
+  const d = dataKg({ "2026-W20": [60] });
+  assert.equal(isWeekRecord(d, "A", "p1", "2026-W22"), false);
+});
+
+test("isSetRecord: numerico vs null e maggiore stretto", () => {
+  assert.equal(isSetRecord(null, "40"), true);
+  assert.equal(isSetRecord(60, "65"), true);
+  assert.equal(isSetRecord(60, "60"), false);
+  assert.equal(isSetRecord(60, ""), false);
 });
