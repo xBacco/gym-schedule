@@ -86,6 +86,32 @@ export function migrate(data, seedPlan) {
   return out;
 }
 
+// Migrazione schema 2 -> 3: backfill di muscle/muscleB su data.plan esistente,
+// abbinando per (day, name) al seed. Idempotente (guard schema >= 3), non muta
+// l'input. Va invocata DOPO migrate (che crea data.plan). Esercizi non abbinati
+// (rinominati/custom) restano senza muscle -> bucket "Altro" nel breakdown.
+export function backfillMuscles(data, seedPlan) {
+  if (data && data.schema >= 3) return data;
+  const out = structuredClone(data || { updatedAt: null, weeks: {} });
+  const seedIdx = new Map();
+  for (const d of seedPlan) {
+    for (const e of d.exercises) seedIdx.set(`${d.day} ${e.name}`, { muscle: e.muscle, muscleB: e.muscleB });
+  }
+  if (Array.isArray(out.plan)) {
+    for (const d of out.plan) {
+      for (const e of d.exercises) {
+        if (e.muscle != null) continue;
+        const seed = seedIdx.get(`${d.day} ${e.name}`);
+        if (!seed) continue;
+        if (seed.muscle != null) e.muscle = seed.muscle;
+        if (seed.muscleB != null) e.muscleB = seed.muscleB;
+      }
+    }
+  }
+  out.schema = 3;
+  return out;
+}
+
 // Merge dopo un conflitto di salvataggio: il ramo conflitto riparte dal remoto e
 // ri-applica i log pendenti, ma gli edit strutturali della scheda NON sono nel
 // buffer pending → andrebbero persi. Questo conserva il `plan` locale (intento più

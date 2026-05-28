@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { genId, addExercise, removeExercise, reorderExercise, updateExercise, migrate, keepLocalPlan } from "../editor.js";
+import { genId, addExercise, removeExercise, reorderExercise, updateExercise, migrate, backfillMuscles, keepLocalPlan } from "../editor.js";
 
 const samplePlan = () => [
   { day: "A", title: "A", exercises: [
@@ -156,4 +156,51 @@ test("keepLocalPlan: non muta merged (ritorna un nuovo oggetto)", () => {
   const out = keepLocalPlan(merged, samplePlan());
   assert.notEqual(out, merged, "nuovo oggetto");
   assert.equal(JSON.stringify(merged), snapshot, "merged invariato");
+});
+
+const seedWithMuscles = () => [
+  { day: "A", title: "A", exercises: [
+    { name: "Panca", setsReps: "3 × 8", muscle: "Petto", superset: false },
+    { name: "Curl+Push", setsReps: "3 × 10 / 3 × 10", muscle: "Bicipiti", muscleB: "Tricipiti", superset: true },
+  ] },
+];
+
+test("backfillMuscles: copia muscle/muscleB dal seed per (day,name)", () => {
+  const data = { schema: 2, weeks: {}, plan: [
+    { day: "A", title: "A", exercises: [
+      { id: "x1", name: "Panca", setsReps: "3 × 8", superset: false },
+      { id: "x2", name: "Curl+Push", setsReps: "3 × 10 / 3 × 10", superset: true },
+    ] },
+  ] };
+  const out = backfillMuscles(data, seedWithMuscles());
+  assert.equal(out.schema, 3);
+  assert.equal(out.plan[0].exercises[0].muscle, "Petto");
+  assert.equal(out.plan[0].exercises[1].muscle, "Bicipiti");
+  assert.equal(out.plan[0].exercises[1].muscleB, "Tricipiti");
+});
+
+test("backfillMuscles: idempotente (schema >= 3 -> no-op)", () => {
+  const data = { schema: 3, weeks: {}, plan: [
+    { day: "A", title: "A", exercises: [{ id: "x1", name: "Panca", superset: false }] },
+  ] };
+  const out = backfillMuscles(data, seedWithMuscles());
+  assert.equal(out.plan[0].exercises[0].muscle, undefined);
+});
+
+test("backfillMuscles: esercizio rinominato non abbinato resta senza muscle", () => {
+  const data = { schema: 2, weeks: {}, plan: [
+    { day: "A", title: "A", exercises: [{ id: "x1", name: "Panca custom", superset: false }] },
+  ] };
+  const out = backfillMuscles(data, seedWithMuscles());
+  assert.equal(out.schema, 3);
+  assert.equal(out.plan[0].exercises[0].muscle, undefined);
+});
+
+test("backfillMuscles: non muta l'input", () => {
+  const data = { schema: 2, weeks: {}, plan: [
+    { day: "A", title: "A", exercises: [{ id: "x1", name: "Panca", superset: false }] },
+  ] };
+  backfillMuscles(data, seedWithMuscles());
+  assert.equal(data.schema, 2);
+  assert.equal(data.plan[0].exercises[0].muscle, undefined);
 });
