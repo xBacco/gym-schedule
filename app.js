@@ -1878,6 +1878,10 @@ function wireSettings() {
   });
 
   dlg.addEventListener("close", () => {
+    // Cleanup eventuale transform residuo da swipe
+    dlg.style.transform = "";
+    dlg.style.opacity = "";
+    dlg.classList.remove("swiping");
     if (dlg.returnValue === "save") {
       localStorage.setItem(BAR_KEY, String(parseFloat(document.getElementById("barInput").value) || 20));
       localStorage.setItem(PLATES_KEY, document.getElementById("platesInput").value);
@@ -1887,6 +1891,62 @@ function wireSettings() {
       render(); // ridipinge il calcolatore col nuovo set
     }
   });
+
+  // X in alto a destra: chiude come "Chiudi" (returnValue vuoto, niente save).
+  document.getElementById("settingsClose").addEventListener("click", () => dlg.close());
+
+  // Swipe laterale per chiudere: trascina orizzontalmente >100px sull'area
+  // non-interattiva (no input/textarea/select/button/label). Segue il dito con
+  // translateX + fade, snap-back se sotto soglia, chiusura animata se sopra.
+  const SWIPE_PX = 100;
+  let sx = null, sy = null, locked = false; // locked=true → gesto già qualificato horiz
+  const isControl = (el) => el && el.closest("input,textarea,select,button,label");
+  const resetSwipe = () => {
+    sx = sy = null; locked = false;
+    dlg.classList.remove("swiping");
+    dlg.style.transform = "";
+    dlg.style.opacity = "";
+  };
+  dlg.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (isControl(e.target)) { resetSwipe(); return; }
+    sx = e.clientX; sy = e.clientY; locked = false;
+  });
+  dlg.addEventListener("pointermove", (e) => {
+    if (sx === null) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (!locked) {
+      // qualifica gesto: serve un minimo di movimento orizzontale dominante
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      if (Math.abs(dx) <= Math.abs(dy)) { resetSwipe(); return; } // scroll verticale → abort
+      locked = true;
+      dlg.classList.add("swiping");
+    }
+    dlg.style.transform = `translateX(${dx}px)`;
+    dlg.style.opacity = String(Math.max(0.4, 1 - Math.abs(dx) / 400));
+  });
+  const onRelease = () => {
+    if (!locked) { resetSwipe(); return; }
+    const m = /translateX\((-?\d+(?:\.\d+)?)px\)/.exec(dlg.style.transform);
+    const dx = m ? parseFloat(m[1]) : 0;
+    if (Math.abs(dx) > SWIPE_PX) {
+      // Vola fuori e chiudi (transition CSS gestisce l'animazione).
+      dlg.classList.remove("swiping");
+      const sign = dx < 0 ? -1 : 1;
+      dlg.style.transform = `translateX(${sign * (window.innerWidth || 400)}px)`;
+      dlg.style.opacity = "0";
+      setTimeout(() => { dlg.close(); }, 180);
+      sx = sy = null; locked = false;
+    } else {
+      // snap-back: togli .swiping, lascia la transition riportare a 0.
+      dlg.classList.remove("swiping");
+      dlg.style.transform = "";
+      dlg.style.opacity = "";
+      sx = sy = null; locked = false;
+    }
+  };
+  dlg.addEventListener("pointerup", onRelease);
+  dlg.addEventListener("pointercancel", () => resetSwipe());
 }
 
 // ---- Timer controls ----

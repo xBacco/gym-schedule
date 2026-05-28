@@ -169,6 +169,11 @@ input.num::-webkit-outer-spin-button,input.num::-webkit-inner-spin-button{-webki
 dialog{border:none;border-radius:16px;padding:18px;max-width:340px;background:var(--surf);color:var(--ink);margin:auto;}
 dialog::backdrop{background:rgba(0,0,0,.6);}
 .settings h2{font-size:18px;font-weight:800;margin:0 0 10px;color:var(--acc);}
+.settings .modal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.settings .modal-h .t{font-size:18px;font-weight:800;color:var(--acc);}
+.settings .modal-h .x{background:transparent;border:none;color:var(--dim);font-size:20px;cursor:pointer;line-height:1;padding:4px 8px;min-width:36px;min-height:36px;}
+#settingsDialog{transition:transform .18s ease, opacity .18s ease;}
+#settingsDialog.swiping{transition:none;}
 .settings label{display:block;font-size:13px;font-weight:700;margin-bottom:4px;}
 .settings input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;font-family:inherit;background:var(--field);color:var(--ink);}
 .hint{font-size:12px;color:var(--dim);margin:6px 0 12px;}
