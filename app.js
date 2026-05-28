@@ -2004,6 +2004,7 @@ async function boot() {
     await offerSeedIfEmpty();
   });
   document.getElementById("btnImportLegacy").addEventListener("click", rescueLegacyLocalStorage);
+  document.getElementById("btnRecoverCloud").addEventListener("click", recoverLogsFromOldCloud);
 
   wireTimerControls();
   wireSetDialog();
@@ -2214,6 +2215,61 @@ async function rescueLegacyLocalStorage() {
   pusher.schedule();
   render();
   alert(`Importate ${wkKeys.length} settimane (${wkRange}) e ${pendingList.length} log in coda.\nSincronizzazione cloud in corso…`);
+}
+
+// Recovery dei log storici dal vecchio cloud (data.json su GitHub Pages, sorgente
+// di verità pre-cut-over a Supabase). Fa una merge non distruttiva: pickEntry tiene
+// l'entry con più set non vuoti, quindi i set già loggati su Supabase NON vengono
+// sovrascritti, mentre i log mancanti vengono ripristinati da data.json.
+async function recoverLogsFromOldCloud() {
+  let seed;
+  try {
+    const res = await fetch(SEED_URL, { cache: "no-store" });
+    if (!res.ok) {
+      alert(`Errore HTTP ${res.status} scaricando data.json.\nURL: ${SEED_URL}`);
+      return;
+    }
+    seed = await res.json();
+  } catch (err) {
+    alert(`Errore di rete scaricando data.json:\n${err?.message ?? err}\n\nURL: ${SEED_URL}`);
+    return;
+  }
+  const seedWeeks = Object.keys(seed?.weeks ?? {}).sort();
+  if (seedWeeks.length === 0) {
+    alert("data.json non contiene settimane. Nulla da recuperare.");
+    return;
+  }
+  let seedSets = 0;
+  for (const wk of seedWeeks) {
+    const ent = seed.weeks[wk]?.entries ?? {};
+    for (const day of Object.keys(ent)) {
+      for (const ex of Object.keys(ent[day] ?? {})) {
+        seedSets += (ent[day][ex].sets ?? []).length;
+      }
+    }
+  }
+  const curWeeks = Object.keys(data?.weeks ?? {}).length;
+  const range = seedWeeks.length === 1 ? seedWeeks[0] : `${seedWeeks[0]} → ${seedWeeks[seedWeeks.length - 1]}`;
+  const ok = confirm(
+    `Trovati nel vecchio cloud (data.json):\n` +
+    `  • ${seedWeeks.length} settimane (${range})\n` +
+    `  • ${seedSets} set totali loggati\n\n` +
+    `Verranno UNITI ai dati attuali (${curWeeks} settimane su Supabase). ` +
+    `I set già presenti non vengono toccati; quelli mancanti vengono ripristinati.\n\n` +
+    `Procedere?`
+  );
+  if (!ok) return;
+  const merged = mergeBlobs(data ?? emptyData(), seed);
+  data = backfillMuscles(migrate(merged), PLAN);
+  profileStorage.set("data", data);
+  profileStorage.set("dirty", true);
+  pusher.schedule();
+  render();
+  alert(
+    `Recupero completato.\n` +
+    `Settimane totali ora: ${Object.keys(data.weeks ?? {}).length}\n` +
+    `Sincronizzazione cloud in corso…`
+  );
 }
 
 async function reconcileFromRemote() {
