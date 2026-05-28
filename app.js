@@ -1793,6 +1793,7 @@ function renderVolRow() {
 }
 
 function render() {
+  renderWeekSelect();
   renderHeader();
   renderProgress();
   renderList();
