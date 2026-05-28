@@ -98,9 +98,12 @@
     <dialog id="settingsDialog">
       <form method="dialog" class="settings">
         <h2>Impostazioni</h2>
-        <label for="tokenInput">Token GitHub (fine-grained, solo questo repo)</label>
-        <input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off">
-        <p class="hint">Il token resta solo in questo browser. Vedi il README per crearlo.</p>
+        <section class="settings-section">
+          <h3>Account</h3>
+          <p>Loggato come <strong id="accountEmail">…</strong></p>
+          <button type="button" id="btnLogout">Esci</button>
+          <button type="button" id="btnImportDemo">Importa scheda demo</button>
+        </section>
         <label for="barInput">Bilanciere (kg)</label>
         <input id="barInput" type="number" inputmode="decimal" step="0.5" min="0" placeholder="20">
         <label for="platesInput">Dischi per lato (kg)</label>
@@ -120,8 +123,7 @@
           <p class="hint">A schermo bloccato o app chiusa la notifica potrebbe non arrivare (limite del browser).</p>
         </fieldset>
         <menu>
-          <button id="tokenSave" value="save">Salva token</button>
-          <button id="tokenClear" value="clear" class="btn-soft">Rimuovi</button>
+          <button value="save">Salva</button>
           <button value="cancel" class="btn-soft">Chiudi</button>
         </menu>
       </form>

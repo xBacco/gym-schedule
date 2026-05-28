@@ -1850,7 +1850,6 @@ function wireSettings() {
   }
 
   openSettings = () => {
-    document.getElementById("tokenInput").value = getToken() || "";
     document.getElementById("barInput").value = getBar();
     document.getElementById("platesInput").value = getPlateSet().join(", ");
     renderQcList();
@@ -1884,18 +1883,12 @@ function wireSettings() {
 
   dlg.addEventListener("close", () => {
     if (dlg.returnValue === "save") {
-      setToken(document.getElementById("tokenInput").value.trim() || null);
       localStorage.setItem(BAR_KEY, String(parseFloat(document.getElementById("barInput").value) || 20));
       localStorage.setItem(PLATES_KEY, document.getElementById("platesInput").value);
-      initStore();
       profileStorage.set("data", data);
       profileStorage.set("dirty", true);
       pusher.schedule();
       render(); // ridipinge il calcolatore col nuovo set
-    } else if (dlg.returnValue === "clear") {
-      setToken(null);
-      initStore();
-      setStatus("sola lettura", "pending");
     }
   });
 }
@@ -2002,6 +1995,23 @@ async function boot() {
 
   // Wire UI event listeners (richiedono DOM visibile).
   wireSettings();
+
+  // Account section bindings (session è garantita non-null qui).
+  document.getElementById("accountEmail").textContent = session.user.email;
+  document.getElementById("btnLogout").addEventListener("click", async () => {
+    if (!confirm("Esci dall'account? I dati locali verranno cancellati (restano salvati nel cloud).")) return;
+    await pusher?.flush().catch(() => {});
+    profileStorage?.clear();
+    await signOut(supabase);
+    location.reload();
+  });
+  document.getElementById("btnImportDemo").addEventListener("click", async () => {
+    if (!confirm("Sovrascrivere i dati attuali con la scheda demo?")) return;
+    // forza il dialog di import
+    data = { weeks: {}, updatedAt: null }; // simula stato vuoto solo per la durata dell'offer
+    await offerSeedIfEmpty();
+  });
+
   wireTimerControls();
   wireSetDialog();
   document.getElementById("weekSelect").addEventListener("change", (e) => changeWeek(e.target.value));
