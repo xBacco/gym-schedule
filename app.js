@@ -1744,7 +1744,7 @@ async function saveToCloud() {
       try {
         const localPlan = data.plan; // edit strutturali della scheda: non sono nel buffer pending
         const remote = await store.load();
-        data = keepLocalPlan(backfillMuscles(migrate(applyPending(remote.data), PLAN), PLAN), localPlan);
+        data = backfillMuscles(keepLocalPlan(migrate(applyPending(remote.data), PLAN), localPlan), PLAN);
         sha = remote.sha;
         sha = await store.save(data, sha, `log: ${currentWeek} (merge)`);
         setPending([]);
