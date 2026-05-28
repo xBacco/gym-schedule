@@ -184,6 +184,81 @@ export function fromBase64(b64) {
   return new TextDecoder().decode(bytes);
 }
 
+// ---- Blob merge per reconcile multi-device (funzione pura) ----
+
+function countNonEmptySets(sets) {
+  if (!Array.isArray(sets)) return 0;
+  return sets.filter((s) => (s?.reps ?? "") !== "" || (s?.kg ?? "") !== "").length;
+}
+
+function pickEntry(localEntry, remoteEntry, localUpdatedAt, remoteUpdatedAt) {
+  if (!localEntry) return remoteEntry;
+  if (!remoteEntry) return localEntry;
+  const lSets = countNonEmptySets(localEntry.sets);
+  const rSets = countNonEmptySets(remoteEntry.sets);
+  if (lSets > rSets) return localEntry;
+  if (rSets > lSets) return remoteEntry;
+  // Pareggio: vince updatedAt top-level più recente.
+  return (remoteUpdatedAt ?? "") > (localUpdatedAt ?? "") ? remoteEntry : localEntry;
+}
+
+function mergeWeekEntries(localWeek, remoteWeek, localUpdatedAt, remoteUpdatedAt) {
+  const days = new Set([
+    ...Object.keys(localWeek?.entries ?? {}),
+    ...Object.keys(remoteWeek?.entries ?? {}),
+  ]);
+  const out = {};
+  for (const day of days) {
+    const lDay = localWeek?.entries?.[day] ?? {};
+    const rDay = remoteWeek?.entries?.[day] ?? {};
+    const exIds = new Set([...Object.keys(lDay), ...Object.keys(rDay)]);
+    out[day] = {};
+    for (const ex of exIds) {
+      out[day][ex] = pickEntry(lDay[ex], rDay[ex], localUpdatedAt, remoteUpdatedAt);
+    }
+  }
+  return out;
+}
+
+function mergeWeekDates(localDates, remoteDates) {
+  // Union set-if-absent: local vince in caso di collisione.
+  const out = { ...(remoteDates ?? {}) };
+  for (const [day, dt] of Object.entries(localDates ?? {})) {
+    if (dt) out[day] = dt;
+  }
+  return out;
+}
+
+export function mergeBlobs(local, remote) {
+  const safeLocal = local ?? emptyData();
+  const safeRemote = remote ?? emptyData();
+  const lUpd = safeLocal.updatedAt;
+  const rUpd = safeRemote.updatedAt;
+
+  // Plan: vince local se non vuoto E differente; altrimenti remote.
+  const localPlanFilled = Array.isArray(safeLocal.plan) && safeLocal.plan.length > 0;
+  const plan = localPlanFilled ? safeLocal.plan : (safeRemote.plan ?? []);
+
+  // Weeks: union per chiave settimana.
+  const wkKeys = new Set([
+    ...Object.keys(safeLocal.weeks ?? {}),
+    ...Object.keys(safeRemote.weeks ?? {}),
+  ]);
+  const weeks = {};
+  for (const wk of wkKeys) {
+    const lw = safeLocal.weeks?.[wk];
+    const rw = safeRemote.weeks?.[wk];
+    weeks[wk] = {
+      label: lw?.label ?? rw?.label ?? wk,
+      entries: mergeWeekEntries(lw, rw, lUpd, rUpd),
+      dates: mergeWeekDates(lw?.dates, rw?.dates),
+    };
+  }
+
+  const updatedAt = (lUpd ?? "") > (rUpd ?? "") ? lUpd : rUpd;
+  return { ...safeRemote, ...safeLocal, plan, weeks, updatedAt };
+}
+
 // ---- GitHub Contents API persistence ----
 
 export class ConflictError extends Error {
