@@ -95,10 +95,10 @@
     <div id="list"></div>
     <div id="volRow"></div>
 
-    <dialog id="settingsDialog" class="settings-light">
+    <dialog id="settingsDialog" class="settings-v2-host">
       <form method="dialog" class="settings settings-v2">
         <header class="sv-head">
-          <span class="sv-title">⚙ Impostazioni</span>
+          <span class="sv-title"><span class="sv-title-ic">⚙</span> Impostazioni</span>
           <button id="settingsClose" class="sv-x" type="button" aria-label="Chiudi">✕</button>
         </header>
 
@@ -111,7 +111,7 @@
             <div class="sv-email" id="accountEmail">…</div>
             <div class="sv-row-2">
               <button type="button" id="btnImportDemo" class="sv-mini">📥 Scheda demo</button>
-              <button type="button" id="btnForceUpdate" class="sv-mini">🔄 Aggiorna app</button>
+              <button type="button" id="btnForceUpdate" class="sv-mini">🔄 Aggiorna</button>
             </div>
           </section>
 
@@ -124,7 +124,7 @@
               </label>
               <label class="sv-field">
                 <span>Dischi / lato</span>
-                <input id="platesInput" type="text" inputmode="decimal" placeholder="20, 15, 10, 5, 2.5">
+                <input id="platesInput" type="text" inputmode="decimal" placeholder="20, 15, 10, 5">
               </label>
             </div>
           </section>
@@ -139,15 +139,26 @@
           </section>
 
           <section class="sv-card sv-toggle-card">
-            <label class="sv-toggle"><span>🔔 Notifica a fine recupero</span><input type="checkbox" id="notifyToggle"></label>
+            <label class="sv-toggle">
+              <span class="sv-toggle-ic">🔔</span>
+              <span class="sv-toggle-lbl">Notifica a fine recupero</span>
+              <span class="sv-switch">
+                <input type="checkbox" id="notifyToggle">
+                <span class="sv-switch-track"></span>
+              </span>
+            </label>
           </section>
 
           <details class="sv-card sv-details">
-            <summary><span class="sv-card-t">🛟 Recupero dati</span><span class="sv-chev">›</span></summary>
+            <summary>
+              <span class="sv-toggle-ic">🛟</span>
+              <span class="sv-toggle-lbl">Recupero dati</span>
+              <span class="sv-chev">›</span>
+            </summary>
             <div class="sv-recovery">
               <button type="button" id="btnRecoverCloud" class="sv-block">☁️ Recupera log dal vecchio cloud</button>
               <button type="button" id="btnImportLegacy" class="sv-block">🆘 Importa dati locali (vecchio formato)</button>
-              <p class="sv-hint">Usa solo se vedi la scheda vuota dopo l'aggiornamento Supabase. "Recupera cloud" unisce i log storici da data.json senza cancellare i nuovi. "Dati locali" recupera serie non sincronizzate da questo browser.</p>
+              <p class="sv-hint">Usa solo se vedi la scheda vuota dopo l'aggiornamento Supabase. "Recupera cloud" unisce i log storici da data.json senza cancellare i nuovi.</p>
             </div>
           </details>
         </div>

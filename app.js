@@ -1850,6 +1850,10 @@ function wireSettings() {
     document.getElementById("platesInput").value = getPlateSet().join(", ");
     renderQcList();
     document.getElementById("notifyToggle").checked = notifyOn();
+    // Blocca lo scroll della pagina sotto mentre il dialog è aperto:
+    // su mobile il <dialog> nativo non sempre impedisce il rubber-band.
+    document.documentElement.classList.add("modal-open");
+    document.body.classList.add("modal-open");
     dlg.showModal();
   };
 
@@ -1882,6 +1886,9 @@ function wireSettings() {
     dlg.style.transform = "";
     dlg.style.opacity = "";
     dlg.classList.remove("swiping");
+    // Sblocca scroll pagina (vedi openSettings).
+    document.documentElement.classList.remove("modal-open");
+    document.body.classList.remove("modal-open");
     if (dlg.returnValue === "save") {
       localStorage.setItem(BAR_KEY, String(parseFloat(document.getElementById("barInput").value) || 20));
       localStorage.setItem(PLATES_KEY, document.getElementById("platesInput").value);
