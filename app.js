@@ -2066,6 +2066,7 @@ async function boot() {
   });
   document.getElementById("btnImportLegacy").addEventListener("click", rescueLegacyLocalStorage);
   document.getElementById("btnRecoverCloud").addEventListener("click", recoverLogsFromOldCloud);
+  document.getElementById("btnForceUpdate").addEventListener("click", forceAppUpdate);
 
   wireTimerControls();
   wireSetDialog();
@@ -2278,6 +2279,28 @@ async function rescueLegacyLocalStorage() {
   alert(`Importate ${wkKeys.length} settimane (${wkRange}) e ${pendingList.length} log in coda.\nSincronizzazione cloud in corso…`);
 }
 
+// Forza aggiornamento app: cancella tutte le cache del SW, deregistra il SW e
+// ricarica. Escape hatch per quando il banner "nuova versione" non compare
+// (es. browser HTTP cache serve sw.js stale). Distruttivo solo per la app-shell:
+// i dati utente vivono in localStorage namespacizzato + Supabase, intoccati.
+async function forceAppUpdate() {
+  if (!confirm("Forza l'aggiornamento dell'app?\n\nCancellerà la cache locale dell'app (NON i tuoi dati di allenamento, che sono su Supabase) e ricaricherà la pagina per scaricare la versione più recente.")) return;
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) await r.unregister();
+    }
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      for (const k of keys) await caches.delete(k);
+    }
+  } catch (err) {
+    alert("Errore durante il reset cache: " + (err?.message ?? err) + "\nProvo a ricaricare comunque.");
+  }
+  // Ricarica forzando bypass cache HTTP (best-effort, dipende dal browser).
+  location.reload();
+}
+
 // Recovery dei log storici dal vecchio cloud (data.json su GitHub Pages, sorgente
 // di verità pre-cut-over a Supabase). Fa una merge non distruttiva: pickEntry tiene
 // l'entry con più set non vuoti, quindi i set già loggati su Supabase NON vengono
@@ -2380,9 +2403,19 @@ if ("serviceWorker" in navigator) {
     window.location.reload();
   });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").then((reg) => {
+    // updateViaCache:'none' → fetch del file sw.js NON usa il cache HTTP del
+    // browser. Senza questo, GitHub Pages può servire un sw.js stale (Cache-
+    // Control: max-age) e reg.update() non rileva mai la nuova versione → il
+    // banner di aggiornamento non appare. Il fetch degli asset (in install)
+    // resta separato: usa il proprio `cache:'reload'` (vedi sw.js).
+    navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((reg) => {
       swReg = reg;
       reg.update().catch(() => {});
+      // Poll ogni 60s mentre la tab è visibile: così se l'utente tiene aperta
+      // l'app durante il giorno il banner spunta senza dover ricaricare.
+      setInterval(() => {
+        if (document.visibilityState === "visible") reg.update().catch(() => {});
+      }, 60_000);
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") reg.update().catch(() => {});
       });
@@ -2393,6 +2426,10 @@ if ("serviceWorker" in navigator) {
           if (nw.state === "installed" && navigator.serviceWorker.controller) showUpdateBanner(reg);
         });
       });
+      // Se c'è già un SW "waiting" alla registrazione (es. installato prima,
+      // ma updatefound già scattato in una run precedente del tab), mostra
+      // subito il banner: senza questo, l'utente non ne vede mai notizia.
+      if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg);
     }).catch(() => { /* SW non disponibile */ });
   });
 }
