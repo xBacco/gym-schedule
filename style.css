@@ -503,3 +503,12 @@ body.timer-on .drawer,body.timer-on .drawer-scrim{display:none;}
   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
 }
 .rec-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.volcard { cursor: pointer; }
+.vcaret { margin-left: 8px; opacity: .6; font-size: .8rem; }
+.muscbreak { padding: 8px 12px 4px; display: flex; flex-direction: column; gap: 6px; }
+.mb-row { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
+.mb-nm { flex: 0 0 76px; color: var(--ink); }
+.mb-barwrap { flex: 1 1 auto; height: 8px; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+.mb-bar { height: 100%; background: var(--acc); border-radius: 999px; }
+.mb-kg { flex: 0 0 auto; color: var(--ink); opacity: .8; min-width: 56px; text-align: right; }

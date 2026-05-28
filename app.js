@@ -9,7 +9,7 @@ import {
   parseTarget, activeSetIndex, isEntryComplete, bestKg, isWeekRecord, isSetRecord, progressionDelta,
   withSet, withoutSet, withSupersetSet, withoutSupersetSet, withNote, previousNote,
   previousSetInSession, previousWeekSet,
-  sessionVolume, exerciseTrend, nextExercisePreview,
+  sessionVolume, volumeByMuscle, exerciseTrend, nextExercisePreview,
   topSetSeries, chartGeometry,
   sessionDates, monthGrid,
   lastWorkingSet,
@@ -725,10 +725,16 @@ function buildRepeatChips(inSession, prevWeek, onPick) {
 
 function fmtKg(n) { return Math.round(n).toLocaleString("it-IT"); }
 
+let volExpanded = false;
+
 // Riga volume di sessione con delta % vs stessa giornata della settimana precedente.
-function buildVolumeRow(vol, prevVol) {
+// Tappabile: espande/chiude il breakdown per gruppo muscolare.
+function buildVolumeRow(vol, prevVol, byMuscle) {
+  const wrap = document.createElement("div");
   const row = document.createElement("div");
   row.className = "volcard";
+  row.setAttribute("role", "button");
+  row.tabIndex = 0;
   const l = document.createElement("span"); l.className = "vl"; l.textContent = "Volume sessione";
   const right = document.createElement("div"); right.className = "vright";
   const v = document.createElement("span"); v.className = "vv"; v.textContent = `${fmtKg(vol)} kg`;
@@ -743,8 +749,36 @@ function buildVolumeRow(vol, prevVol) {
     sub.appendChild(document.createTextNode(` · sett. scorsa ${fmtKg(prevVol)} kg`));
     right.appendChild(sub);
   }
+  const car = document.createElement("span"); car.className = "vcaret"; car.textContent = volExpanded ? "▴" : "▾";
+  right.appendChild(car);
   row.append(l, right);
-  return row;
+  row.addEventListener("click", () => { volExpanded = !volExpanded; renderVolRow(); });
+  wrap.appendChild(row);
+  if (volExpanded) wrap.appendChild(buildMuscleBreakdown(byMuscle));
+  return wrap;
+}
+
+// Pannello barre orizzontali per gruppo muscolare (settimana corrente).
+function buildMuscleBreakdown(byMuscle) {
+  const box = document.createElement("div");
+  box.className = "muscbreak";
+  if (!byMuscle || !byMuscle.length) {
+    const e = document.createElement("div"); e.className = "empty"; e.textContent = "Nessun volume registrato.";
+    box.appendChild(e);
+    return box;
+  }
+  const max = byMuscle[0].volume || 1;
+  for (const { muscle, volume } of byMuscle) {
+    const r = document.createElement("div"); r.className = "mb-row";
+    const nm = document.createElement("span"); nm.className = "mb-nm"; nm.textContent = muscle;
+    const barwrap = document.createElement("div"); barwrap.className = "mb-barwrap";
+    const bar = document.createElement("div"); bar.className = "mb-bar"; bar.style.width = `${Math.round((volume / max) * 100)}%`;
+    barwrap.appendChild(bar);
+    const kg = document.createElement("span"); kg.className = "mb-kg"; kg.textContent = `${fmtKg(volume)} kg`;
+    r.append(nm, barwrap, kg);
+    box.appendChild(r);
+  }
+  return box;
 }
 
 // Riga mini-trend: "W20 67.5 · W21 70 · W22 72.5" (ultima evidenziata). null se vuoto.
@@ -1751,7 +1785,8 @@ function renderVolRow() {
   root.textContent = "";
   const vol = sessionVolume(data, currentWeek, currentDay, dayPlan());
   const prevVol = sessionVolume(data, prevWeekKey(), currentDay, dayPlan());
-  root.appendChild(buildVolumeRow(vol, prevVol));
+  const byMuscle = volumeByMuscle(data, currentWeek, currentDay, dayPlan());
+  root.appendChild(buildVolumeRow(vol, prevVol, byMuscle));
 }
 
 function render() {
