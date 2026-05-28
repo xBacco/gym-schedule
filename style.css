@@ -191,6 +191,147 @@ dialog::backdrop{background:rgba(0,0,0,.6);}
 .qc-add input{flex:1;width:auto;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);}
 .qc-add button{background:var(--acc);color:var(--acc-ink);border:none;border-radius:10px;padding:0 16px;font-weight:800;cursor:pointer;}
 
+/* === Settings dialog v2 — sfondo chiaro, layout single-page === */
+/* Override del dialog quando ha la classe .settings-light: card bianca compatta
+   che si distribuisce verticalmente con header sticky / body fluido / footer sticky,
+   pensata per stare in una sola schermata mobile (recupero dati in <details>). */
+dialog#settingsDialog.settings-light{
+  background:#ffffff; color:#0F172A;
+  padding:0; border:none; border-radius:18px;
+  max-width:380px; width:calc(100vw - 24px);
+  max-height:calc(100dvh - 32px);
+  overflow:hidden;
+  box-shadow:0 18px 60px rgba(15,23,42,.18), 0 2px 6px rgba(15,23,42,.06);
+}
+dialog#settingsDialog.settings-light::backdrop{
+  background:rgba(15,23,42,.45); backdrop-filter:blur(4px);
+}
+.settings-v2{
+  display:flex; flex-direction:column;
+  max-height:calc(100dvh - 32px);
+}
+.sv-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px 12px; border-bottom:1px solid #F1F1EE; background:#fff;
+}
+.sv-title{ font-size:16px; font-weight:800; letter-spacing:-.01em; color:#0F172A; }
+.sv-x{
+  background:#F1F4F8; border:none; color:#475569;
+  width:34px; height:34px; border-radius:10px;
+  font-size:15px; line-height:1; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.sv-x:active{ background:#E2E8F0; }
+.sv-body{
+  padding:10px 12px; overflow-y:auto;
+  display:flex; flex-direction:column; gap:8px;
+  min-height:0; -webkit-overflow-scrolling:touch;
+}
+.sv-card{
+  background:#FAFAF7; border:1px solid #ECECE5; border-radius:12px;
+  padding:10px 12px;
+}
+.sv-card-h{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.sv-card-t{
+  font-family:"JetBrains Mono",monospace;
+  font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+  color:#7B7A6F; font-weight:700;
+}
+.sv-email{
+  font-size:13px; font-weight:700; color:#0F172A;
+  margin:6px 0 8px; word-break:break-all; line-height:1.25;
+}
+.sv-row-2{ display:flex; gap:6px; }
+.sv-mini{
+  flex:1; background:#ffffff; border:1px solid #E5E7EB;
+  border-radius:9px; padding:8px 10px;
+  font:600 12px "Inter",system-ui,sans-serif; color:#0F172A;
+  cursor:pointer;
+}
+.sv-mini:active{ background:#F1F4F8; }
+.sv-pill{
+  border-radius:9px; padding:7px 12px;
+  font:700 12px "Inter",system-ui,sans-serif;
+  border:1px solid transparent; cursor:pointer; line-height:1.2;
+}
+.sv-pill-ghost{ background:transparent; color:#475569; border-color:#E5E7EB; }
+.sv-pill-ghost:active{ background:#F1F4F8; }
+.sv-pill-acc{ background:#E8A93C; color:#1A1308; border-color:#E8A93C; }
+.sv-pill-acc:active{ background:#D69821; }
+.sv-grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+.sv-field{ display:flex; flex-direction:column; gap:3px; }
+.sv-field > span{
+  font-family:"JetBrains Mono",monospace;
+  font-size:9px; letter-spacing:.12em; text-transform:uppercase;
+  color:#7B7A6F; font-weight:700;
+}
+.settings-v2 .sv-field input{
+  width:100%; background:#ffffff; border:1px solid #E5E7EB;
+  border-radius:9px; padding:8px 10px;
+  font:600 13px "Inter",system-ui,sans-serif; color:#0F172A;
+}
+.settings-v2 .sv-field input:focus{
+  outline:none; border-color:#E8A93C; box-shadow:0 0 0 3px rgba(232,169,60,.18);
+}
+.sv-qclist{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 8px; min-height:0; }
+.sv-qclist:empty{ display:none; }
+.sv-qclist .qc{
+  display:inline-flex; align-items:center; gap:6px;
+  background:#ffffff; border:1px solid #E5E7EB; border-radius:999px;
+  padding:5px 10px; margin:0;
+}
+.sv-qclist .qc .txt{ flex:none; font-size:12px; color:#0F172A; font-weight:600; }
+.sv-qclist .qc .del{ color:#94A3B8; font-size:12px; cursor:pointer; padding:0 2px; }
+.settings-v2 .sv-add{ display:flex; gap:6px; margin-top:0; }
+.settings-v2 .sv-add input{
+  flex:1; background:#ffffff; border:1px solid #E5E7EB; border-radius:9px;
+  padding:8px 10px; font:500 13px "Inter",system-ui,sans-serif; color:#0F172A; width:auto;
+}
+.settings-v2 .sv-add input:focus{
+  outline:none; border-color:#E8A93C; box-shadow:0 0 0 3px rgba(232,169,60,.18);
+}
+.settings-v2 .sv-add button{
+  background:#E8A93C; color:#1A1308; border:none; border-radius:9px;
+  width:36px; padding:0; font-size:18px; font-weight:800; cursor:pointer;
+}
+.sv-toggle-card{ padding:0; }
+.sv-toggle{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 12px; cursor:pointer;
+}
+.sv-toggle > span{ font-size:13px; font-weight:600; color:#0F172A; }
+.sv-toggle input[type=checkbox]{
+  width:20px; height:20px; accent-color:#E8A93C; margin:0; cursor:pointer;
+}
+.sv-details{ padding:0; }
+.sv-details > summary{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 12px; cursor:pointer; list-style:none;
+}
+.sv-details > summary::-webkit-details-marker{ display:none; }
+.sv-details .sv-chev{
+  color:#94A3B8; transition:transform .15s;
+  font-size:18px; font-weight:700; line-height:1;
+}
+.sv-details[open] .sv-chev{ transform:rotate(90deg); }
+.sv-recovery{
+  padding:0 12px 12px; display:flex; flex-direction:column; gap:6px;
+}
+.sv-block{
+  width:100%; background:#ffffff; border:1px solid #E5E7EB; border-radius:9px;
+  padding:9px 11px; text-align:left;
+  font:600 12.5px "Inter",system-ui,sans-serif; color:#0F172A; cursor:pointer;
+}
+.sv-block:active{ background:#F1F4F8; }
+.sv-hint{
+  font-size:11px; color:#6B7280; line-height:1.4; margin:4px 0 0;
+}
+.sv-foot{
+  display:flex; gap:8px; padding:10px 12px;
+  border-top:1px solid #F1F1EE; background:#fff;
+}
+.sv-foot .sv-pill{ flex:1; padding:10px 12px; font-size:13px; }
+
 /* Tag "com'è andata" (RPE light) */
 .rpebar{display:flex;gap:8px;margin:12px 0 2px;}
 .rpebar .rb{flex:1;background:transparent;border:1px solid var(--line);border-radius:11px;padding:10px 0;

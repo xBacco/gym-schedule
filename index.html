@@ -95,44 +95,67 @@
     <div id="list"></div>
     <div id="volRow"></div>
 
-    <dialog id="settingsDialog">
-      <form method="dialog" class="settings">
-        <div class="modal-h">
-          <span class="t">Impostazioni</span>
-          <button id="settingsClose" class="x" type="button" aria-label="Chiudi">✕</button>
+    <dialog id="settingsDialog" class="settings-light">
+      <form method="dialog" class="settings settings-v2">
+        <header class="sv-head">
+          <span class="sv-title">⚙ Impostazioni</span>
+          <button id="settingsClose" class="sv-x" type="button" aria-label="Chiudi">✕</button>
+        </header>
+
+        <div class="sv-body">
+          <section class="sv-card">
+            <div class="sv-card-h">
+              <span class="sv-card-t">Account</span>
+              <button type="button" id="btnLogout" class="sv-pill sv-pill-ghost">Esci</button>
+            </div>
+            <div class="sv-email" id="accountEmail">…</div>
+            <div class="sv-row-2">
+              <button type="button" id="btnImportDemo" class="sv-mini">📥 Scheda demo</button>
+              <button type="button" id="btnForceUpdate" class="sv-mini">🔄 Aggiorna app</button>
+            </div>
+          </section>
+
+          <section class="sv-card">
+            <div class="sv-card-t">Attrezzatura</div>
+            <div class="sv-grid-2">
+              <label class="sv-field">
+                <span>Bilanciere (kg)</span>
+                <input id="barInput" type="number" inputmode="decimal" step="0.5" min="0" placeholder="20">
+              </label>
+              <label class="sv-field">
+                <span>Dischi / lato</span>
+                <input id="platesInput" type="text" inputmode="decimal" placeholder="20, 15, 10, 5, 2.5">
+              </label>
+            </div>
+          </section>
+
+          <section class="sv-card">
+            <div class="sv-card-t">Commenti veloci</div>
+            <div id="qcList" class="sv-qclist"></div>
+            <div class="sv-add qc-add">
+              <input id="qcInput" type="text" placeholder="nuovo commento…" autocomplete="off">
+              <button type="button" id="qcAdd">+</button>
+            </div>
+          </section>
+
+          <section class="sv-card sv-toggle-card">
+            <label class="sv-toggle"><span>🔔 Notifica a fine recupero</span><input type="checkbox" id="notifyToggle"></label>
+          </section>
+
+          <details class="sv-card sv-details">
+            <summary><span class="sv-card-t">🛟 Recupero dati</span><span class="sv-chev">›</span></summary>
+            <div class="sv-recovery">
+              <button type="button" id="btnRecoverCloud" class="sv-block">☁️ Recupera log dal vecchio cloud</button>
+              <button type="button" id="btnImportLegacy" class="sv-block">🆘 Importa dati locali (vecchio formato)</button>
+              <p class="sv-hint">Usa solo se vedi la scheda vuota dopo l'aggiornamento Supabase. "Recupera cloud" unisce i log storici da data.json senza cancellare i nuovi. "Dati locali" recupera serie non sincronizzate da questo browser.</p>
+            </div>
+          </details>
         </div>
-        <section class="settings-section">
-          <h3>Account</h3>
-          <p>Loggato come <strong id="accountEmail">…</strong></p>
-          <button type="button" id="btnLogout">Esci</button>
-          <button type="button" id="btnImportLegacy">🆘 Importa dati locali (vecchio formato)</button>
-          <button type="button" id="btnRecoverCloud">☁️ Recupera log dal vecchio cloud</button>
-          <button type="button" id="btnImportDemo">Importa scheda demo</button>
-          <button type="button" id="btnForceUpdate">🔄 Forza aggiornamento app</button>
-          <p class="hint">Se hai usato l'app prima dell'aggiornamento e vedi la scheda vuota: prova prima "☁️ Recupera log dal vecchio cloud" (unisce i log storici da data.json senza cancellare i nuovi). "🆘 Importa dati locali" recupera invece sets non sincronizzati da questo browser. "🔄 Forza aggiornamento" cancella la cache del Service Worker e ricarica per recuperare la versione più nuova quando il banner non appare.</p>
-        </section>
-        <label for="barInput">Bilanciere (kg)</label>
-        <input id="barInput" type="number" inputmode="decimal" step="0.5" min="0" placeholder="20">
-        <label for="platesInput">Dischi per lato (kg)</label>
-        <input id="platesInput" type="text" inputmode="decimal" placeholder="20, 15, 10, 5, 2.5, 1.25">
-        <p class="hint">Usati dal calcolatore dischi. Separa i dischi con virgola o spazio; i decimali vanno bene col punto o con la virgola (es. 2.5 o 2,5).</p>
-        <fieldset class="setblock">
-          <legend>Commenti veloci</legend>
-          <div id="qcList"></div>
-          <div class="qc-add">
-            <input id="qcInput" type="text" placeholder="nuovo commento…" autocomplete="off">
-            <button type="button" id="qcAdd">+</button>
-          </div>
-        </fieldset>
-        <fieldset class="setblock">
-          <legend>Avvisi recupero</legend>
-          <label class="notifyrow"><input type="checkbox" id="notifyToggle"> Notifica a fine recupero</label>
-          <p class="hint">A schermo bloccato o app chiusa la notifica potrebbe non arrivare (limite del browser).</p>
-        </fieldset>
-        <menu>
-          <button value="save">Salva</button>
-          <button value="cancel" class="btn-soft">Chiudi</button>
-        </menu>
+
+        <footer class="sv-foot">
+          <button value="cancel" class="sv-pill sv-pill-ghost">Annulla</button>
+          <button value="save" class="sv-pill sv-pill-acc">Salva</button>
+        </footer>
       </form>
     </dialog>
   </div>
