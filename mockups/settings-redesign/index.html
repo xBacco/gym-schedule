@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Settings · 3 mockup</title>
+<style>
+:root{
+  --bg:#100E0A; --surf:#181511; --surf2:#1E1A14; --line:#2A2620;
+  --ink:#EFEBE3; --dim:#938B7B; --faint:#6F685B;
+  --acc:#E8A93C; --acc-ink:#241803; --field:#221D14;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;overflow:hidden;}
+
+/* ============ LANDING ============ */
+.land{position:fixed;inset:0;display:flex;flex-direction:column;padding:24px 20px;background:var(--bg);overflow:auto;}
+.land h1{font-size:24px;font-weight:800;color:var(--acc);margin-bottom:6px;letter-spacing:-.02em;}
+.land .sub{font-size:13px;color:var(--dim);margin-bottom:24px;}
+.land .pick{display:flex;flex-direction:column;gap:14px;}
+.land .opt{background:var(--surf);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:left;color:var(--ink);cursor:pointer;}
+.land .opt:active{transform:scale(.985);}
+.land .opt h3{font-size:17px;font-weight:800;margin-bottom:6px;color:var(--ink);}
+.land .opt h3 .badge{display:inline-block;background:var(--acc);color:var(--acc-ink);font-size:10px;font-weight:800;padding:2px 7px;border-radius:8px;margin-right:8px;vertical-align:middle;letter-spacing:.04em;}
+.land .opt p{font-size:13px;color:var(--dim);line-height:1.45;}
+.land .opt ul{margin-top:8px;padding-left:16px;font-size:12px;color:var(--faint);}
+.land .opt ul li{margin-top:2px;}
+.land .foot{margin-top:auto;padding-top:24px;font-size:11px;color:var(--faint);text-align:center;}
+
+/* ============ COMMON CONTENT ============ */
+.dummy-page{position:fixed;inset:0;background:linear-gradient(180deg,#1a1610 0%,#0d0b07 100%);
+  display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:13px;}
+.dummy-page::before{content:"⚙ tocca qui per riaprire l'impostazioni";letter-spacing:.02em;}
+.section-h{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;color:var(--acc);
+  text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-bottom:8px;}
+.row{background:var(--surf2);border:1px solid var(--line);border-radius:14px;padding:14px;}
+.row + .row{margin-top:10px;}
+.row .lbl{font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600;}
+.row .val{font-size:15px;color:var(--ink);font-weight:600;}
+.row.btn{display:flex;align-items:center;gap:12px;padding:14px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;}
+.row.btn .ico{font-size:20px;width:28px;text-align:center;}
+.row.btn:active{background:var(--field);}
+.row.btn .arr{margin-left:auto;color:var(--faint);}
+.row.btn.danger{color:#E0843F;}
+.input-row{display:flex;align-items:center;gap:10px;}
+.input-row input[type=number],.input-row input[type=text]{flex:1;background:var(--field);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;color:var(--ink);font-size:14px;font-family:inherit;}
+.toggle{position:relative;width:42px;height:24px;background:var(--field);border-radius:14px;border:1px solid var(--line);flex-shrink:0;
+  transition:background .15s;}
+.toggle::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:var(--dim);top:2px;left:2px;transition:left .15s,background .15s;}
+.toggle.on{background:var(--acc);}
+.toggle.on::after{left:21px;background:var(--acc-ink);}
+.toggle-row{display:flex;align-items:center;gap:12px;}
+.toggle-row .t{flex:1;}
+.toggle-row .t .lbl{font-size:14px;color:var(--ink);font-weight:600;margin-bottom:2px;}
+.toggle-row .t .sub{font-size:12px;color:var(--dim);}
+.hint{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.4;}
+.email{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink);word-break:break-all;}
+.save-cta{display:block;width:100%;background:var(--acc);color:var(--acc-ink);border:none;border-radius:13px;
+  padding:14px;font-size:15px;font-weight:800;font-family:inherit;letter-spacing:.01em;cursor:pointer;}
+.save-cta:active{opacity:.85;}
+
+/* ============ V1: BOTTOM SHEET ============ */
+.v1-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;opacity:0;pointer-events:none;transition:opacity .22s ease;}
+.v1-scrim.on{opacity:1;pointer-events:auto;}
+.v1-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surf);border-radius:22px 22px 0 0;z-index:60;
+  max-height:88vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 -12px 40px rgba(0,0,0,.35);}
+.v1-sheet.on{transform:translateY(0);}
+.v1-sheet.dragging{transition:none;}
+.v1-handle{padding:8px 0 4px;display:flex;justify-content:center;cursor:grab;touch-action:none;}
+.v1-handle::before{content:"";width:38px;height:4px;background:var(--faint);border-radius:2px;opacity:.7;}
+.v1-head{display:flex;align-items:center;padding:6px 18px 12px;border-bottom:1px solid var(--line);}
+.v1-head .ttl{flex:1;font-size:18px;font-weight:800;color:var(--acc);letter-spacing:-.01em;}
+.v1-head .x{background:transparent;border:none;width:34px;height:34px;border-radius:50%;color:var(--dim);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;background:var(--surf2);}
+.v1-body{flex:1;overflow:auto;padding:16px 18px;}
+.v1-body .grp{margin-bottom:22px;}
+.v1-foot{padding:12px 18px 22px;border-top:1px solid var(--line);background:var(--surf);padding-bottom:max(22px,env(safe-area-inset-bottom));}
+
+/* ============ V2: FULLSCREEN (consistente con la app) ============ */
+.v2-ov{position:fixed;inset:0;background:var(--bg);z-index:60;display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .24s ease;}
+.v2-ov.on{transform:translateX(0);}
+.v2-top{display:flex;align-items:center;padding:14px 12px;gap:8px;border-bottom:1px solid var(--line);
+  background:var(--surf);padding-top:max(14px,env(safe-area-inset-top));}
+.v2-top .back{width:40px;height:40px;border-radius:11px;background:transparent;border:none;color:var(--ink);font-size:22px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;}
+.v2-top .back:active{background:var(--surf2);}
+.v2-top .ttl{flex:1;font-size:17px;font-weight:800;color:var(--ink);}
+.v2-top .ttl .sub{display:block;font-size:11px;color:var(--dim);font-weight:400;margin-top:1px;font-family:"JetBrains Mono",monospace;letter-spacing:.06em;text-transform:uppercase;}
+.v2-top .save-mini{background:var(--acc);color:var(--acc-ink);border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:800;
+  font-family:inherit;cursor:pointer;}
+.v2-body{flex:1;overflow:auto;padding:18px 16px 30px;}
+.v2-body .grp{margin-bottom:24px;}
+.v2-body .grp .grp-head{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;padding:0 4px;}
+.v2-body .grp .grp-head .ico{font-size:14px;}
+
+/* ============ V3: GLASS CARD (centrato) ============ */
+.v3-scrim{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s ease;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+.v3-scrim.on{opacity:1;pointer-events:auto;}
+.v3-card{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.92);opacity:0;z-index:60;
+  width:min(92vw,400px);max-height:86vh;background:linear-gradient(180deg,#211c14 0%,#171310 100%);
+  border:1px solid var(--line);border-radius:22px;display:flex;flex-direction:column;
+  transition:transform .22s cubic-bezier(.34,1.4,.6,1),opacity .18s;pointer-events:none;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(232,169,60,.08);}
+.v3-card.on{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto;}
+.v3-tabs{display:flex;padding:14px 14px 0;gap:6px;border-bottom:1px solid var(--line);position:relative;}
+.v3-tabs .x{position:absolute;top:10px;right:10px;background:var(--surf2);border:none;color:var(--dim);width:30px;height:30px;
+  border-radius:50%;font-size:14px;cursor:pointer;}
+.v3-tabs .tab{flex:1;background:transparent;border:none;color:var(--dim);padding:14px 6px 12px;font-size:12px;font-weight:700;
+  cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;text-transform:uppercase;letter-spacing:.05em;
+  max-width:33%;}
+.v3-tabs .tab.on{color:var(--acc);border-bottom-color:var(--acc);}
+.v3-tabs .tab:first-child{margin-left:0;}
+.v3-tabs .tab:last-child{margin-right:38px;}
+.v3-body{flex:1;overflow:auto;padding:18px 18px 14px;position:relative;touch-action:pan-y;}
+.v3-panel{display:none;animation:fade .22s;}
+.v3-panel.on{display:block;}
+@keyframes fade{from{opacity:0;transform:translateX(8px);}to{opacity:1;transform:translateX(0);}}
+.v3-foot{padding:8px 18px 18px;border-top:1px solid var(--line);padding-bottom:max(18px,env(safe-area-inset-bottom));}
+.v3-swipe-hint{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--faint);
+  letter-spacing:.05em;pointer-events:none;font-family:"JetBrains Mono",monospace;}
+
+/* picker dischi-mini */
+.chip{display:inline-block;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:5px 10px;
+  font-size:12px;font-family:"JetBrains Mono",monospace;color:var(--ink);margin:3px 4px 3px 0;}
+
+/* small input field for quick-comment add */
+.qc-add{display:flex;gap:8px;margin-top:8px;}
+.qc-add input{flex:1;background:var(--field);border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+  color:var(--ink);font-size:13px;font-family:inherit;}
+.qc-add button{background:var(--acc);color:var(--acc-ink);border:none;border-radius:10px;padding:0 14px;font-weight:800;cursor:pointer;font-family:inherit;}
+.qc-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.qc-list .qc-tag{display:inline-flex;align-items:center;gap:6px;background:var(--field);border:1px solid var(--line);border-radius:18px;
+  padding:5px 10px;font-size:12px;color:var(--ink);}
+.qc-list .qc-tag .rm{color:var(--dim);cursor:pointer;}
+
+/* big "open" button on dummy page (so testing is easy) */
+.reopen{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--acc);color:var(--acc-ink);border:none;
+  border-radius:14px;padding:14px 22px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;
+  box-shadow:0 6px 18px rgba(232,169,60,.3);}
+.reopen-back{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;background:var(--surf2);color:var(--ink);border:1px solid var(--line);
+  border-radius:11px;width:42px;height:42px;font-size:18px;cursor:pointer;z-index:70;}
+
+.hidden{display:none !important;}
+
+/* feedback "salvato" toast */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);background:var(--acc);color:var(--acc-ink);
+  padding:12px 22px;border-radius:12px;font-weight:800;font-size:14px;z-index:200;opacity:0;pointer-events:none;
+  transition:transform .2s,opacity .2s;}
+.toast.on{opacity:1;transform:translate(-50%,-50%) scale(1);}
+</style>
+</head>
+<body>
+
+<!-- ============ LANDING ============ -->
+<div id="landing" class="land">
+  <h1>Settings · mockup</h1>
+  <div class="sub">3 redesign del popup Impostazioni. Tap su una variante per provarla (apre/chiude/swipe live). Torna qui col bottone ← in alto.</div>
+  <div class="pick">
+    <button class="opt" data-go="v1">
+      <h3><span class="badge">V1</span>Bottom Sheet</h3>
+      <p>Foglio che sale dal basso, drag-handle in cima. Dismiss con swipe-giù o X. Salva sticky in fondo.</p>
+      <ul>
+        <li>· iOS/Android nativo</li>
+        <li>· una mano sola</li>
+        <li>· il contenuto è uno solo lungo</li>
+      </ul>
+    </button>
+    <button class="opt" data-go="v2">
+      <h3><span class="badge">V2</span>Schermata intera</h3>
+      <p>Coerente con focus/calendario/nutrition. ← back in header, Salva nell'header, sezioni come card con icone.</p>
+      <ul>
+        <li>· massima leggibilità</li>
+        <li>· spazio per ogni sezione</li>
+        <li>· tieni la stessa estetica della app</li>
+      </ul>
+    </button>
+    <button class="opt" data-go="v3">
+      <h3><span class="badge">V3</span>Card con tab</h3>
+      <p>Card centrata con 3 tab in cima (Account · Allenamento · Avvisi). Swipe orizzontale tra tab. X chiude.</p>
+      <ul>
+        <li>· compatta, niente scroll lungo</li>
+        <li>· glass-blur dietro</li>
+        <li>· animazione "pop in"</li>
+      </ul>
+    </button>
+  </div>
+  <div class="foot">— vista mobile mock-up · dati non vengono salvati —</div>
+</div>
+
+<!-- ============ DUMMY PAGE per testare riapertura ============ -->
+<div id="dummy" class="dummy-page hidden"></div>
+<button id="reopenBtn" class="reopen hidden">⚙ Apri Impostazioni</button>
+<button id="backToLanding" class="reopen-back hidden" aria-label="Torna ai mockup">←</button>
+
+<!-- ============ V1: BOTTOM SHEET ============ -->
+<div id="v1Scrim" class="v1-scrim"></div>
+<aside id="v1Sheet" class="v1-sheet" aria-hidden="true">
+  <div class="v1-handle" id="v1Handle"></div>
+  <div class="v1-head">
+    <div class="ttl">Impostazioni</div>
+    <button class="x" data-close="v1" aria-label="Chiudi">✕</button>
+  </div>
+  <div class="v1-body">
+    <div class="grp">
+      <div class="section-h">Account</div>
+      <div class="row">
+        <div class="lbl">Loggato come</div>
+        <div class="email">amministrazione@74srl.it</div>
+      </div>
+      <div class="row btn"><span class="ico">🚪</span><span>Esci</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">☁️</span><span>Recupera log dal vecchio cloud</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">🆘</span><span>Importa dati locali</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">📥</span><span>Importa scheda demo</span><span class="arr">›</span></div>
+      <div class="row btn danger"><span class="ico">🔄</span><span>Forza aggiornamento app</span><span class="arr">›</span></div>
+    </div>
+    <div class="grp">
+      <div class="section-h">Allenamento</div>
+      <div class="row">
+        <div class="lbl">Bilanciere (kg)</div>
+        <div class="input-row"><input type="number" inputmode="decimal" step="0.5" value="20"></div>
+      </div>
+      <div class="row">
+        <div class="lbl">Dischi disponibili per lato (kg)</div>
+        <div class="input-row"><input type="text" inputmode="decimal" value="20, 15, 10, 5, 2.5, 1.25"></div>
+        <div class="hint">Separati da virgola. Decimali col punto o la virgola.</div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="section-h">Commenti veloci</div>
+      <div class="row">
+        <div class="qc-list">
+          <span class="qc-tag">forma buona <span class="rm">✕</span></span>
+          <span class="qc-tag">peso troppo <span class="rm">✕</span></span>
+          <span class="qc-tag">presa scivola <span class="rm">✕</span></span>
+        </div>
+        <div class="qc-add"><input placeholder="nuovo commento…"><button>+</button></div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="section-h">Avvisi recupero</div>
+      <div class="row">
+        <div class="toggle-row">
+          <div class="t">
+            <div class="lbl">Notifica a fine recupero</div>
+            <div class="sub">A schermo bloccato la notifica può non arrivare.</div>
+          </div>
+          <div class="toggle on" id="v1Toggle"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="v1-foot">
+    <button class="save-cta" data-save="v1">Salva</button>
+  </div>
+</aside>
+
+<!-- ============ V2: FULLSCREEN ============ -->
+<section id="v2Ov" class="v2-ov" aria-hidden="true">
+  <header class="v2-top">
+    <button class="back" data-close="v2" aria-label="Indietro">←</button>
+    <div class="ttl">Impostazioni <span class="sub">profilo · app</span></div>
+    <button class="save-mini" data-save="v2">Salva</button>
+  </header>
+  <div class="v2-body">
+    <div class="grp">
+      <div class="grp-head"><span class="ico">👤</span><div class="section-h">Account</div></div>
+      <div class="row">
+        <div class="lbl">Loggato come</div>
+        <div class="email">amministrazione@74srl.it</div>
+      </div>
+      <div class="row btn"><span class="ico">🚪</span><span>Esci</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">☁️</span><span>Recupera log dal vecchio cloud</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">🆘</span><span>Importa dati locali (vecchio formato)</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">📥</span><span>Importa scheda demo</span><span class="arr">›</span></div>
+      <div class="row btn danger"><span class="ico">🔄</span><span>Forza aggiornamento app</span><span class="arr">›</span></div>
+    </div>
+    <div class="grp">
+      <div class="grp-head"><span class="ico">🏋️</span><div class="section-h">Calcolatore dischi</div></div>
+      <div class="row">
+        <div class="lbl">Bilanciere (kg)</div>
+        <div class="input-row"><input type="number" inputmode="decimal" step="0.5" value="20"></div>
+      </div>
+      <div class="row">
+        <div class="lbl">Dischi per lato</div>
+        <div class="input-row"><input type="text" inputmode="decimal" value="20, 15, 10, 5, 2.5, 1.25"></div>
+        <div class="hint">Separati da virgola. Es. 20, 15, 10, 5, 2.5.</div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="grp-head"><span class="ico">💬</span><div class="section-h">Commenti veloci</div></div>
+      <div class="row">
+        <div class="qc-list">
+          <span class="qc-tag">forma buona <span class="rm">✕</span></span>
+          <span class="qc-tag">peso troppo <span class="rm">✕</span></span>
+          <span class="qc-tag">presa scivola <span class="rm">✕</span></span>
+        </div>
+        <div class="qc-add"><input placeholder="nuovo commento…"><button>+</button></div>
+      </div>
+    </div>
+    <div class="grp">
+      <div class="grp-head"><span class="ico">🔔</span><div class="section-h">Avvisi recupero</div></div>
+      <div class="row">
+        <div class="toggle-row">
+          <div class="t">
+            <div class="lbl">Notifica a fine recupero</div>
+            <div class="sub">A schermo bloccato la notifica può non arrivare.</div>
+          </div>
+          <div class="toggle on" id="v2Toggle"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ V3: CARD CON TAB ============ -->
+<div id="v3Scrim" class="v3-scrim"></div>
+<div id="v3Card" class="v3-card" aria-hidden="true">
+  <div class="v3-tabs">
+    <button class="tab on" data-tab="0">Account</button>
+    <button class="tab" data-tab="1">Allenamento</button>
+    <button class="tab" data-tab="2">Avvisi</button>
+    <button class="x" data-close="v3" aria-label="Chiudi">✕</button>
+  </div>
+  <div class="v3-body" id="v3Body">
+    <div class="v3-panel on" data-panel="0">
+      <div class="row">
+        <div class="lbl">Loggato come</div>
+        <div class="email">amministrazione@74srl.it</div>
+      </div>
+      <div class="row btn"><span class="ico">🚪</span><span>Esci</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">☁️</span><span>Recupera log dal vecchio cloud</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">🆘</span><span>Importa dati locali</span><span class="arr">›</span></div>
+      <div class="row btn"><span class="ico">📥</span><span>Importa scheda demo</span><span class="arr">›</span></div>
+      <div class="row btn danger"><span class="ico">🔄</span><span>Forza aggiornamento app</span><span class="arr">›</span></div>
+    </div>
+    <div class="v3-panel" data-panel="1">
+      <div class="row">
+        <div class="lbl">Bilanciere (kg)</div>
+        <div class="input-row"><input type="number" inputmode="decimal" step="0.5" value="20"></div>
+      </div>
+      <div class="row">
+        <div class="lbl">Dischi per lato</div>
+        <div class="input-row"><input type="text" inputmode="decimal" value="20, 15, 10, 5, 2.5, 1.25"></div>
+        <div class="hint">Separati da virgola, decimali col . o ,.</div>
+      </div>
+      <div class="row">
+        <div class="lbl">Commenti veloci</div>
+        <div class="qc-list">
+          <span class="qc-tag">forma buona <span class="rm">✕</span></span>
+          <span class="qc-tag">peso troppo <span class="rm">✕</span></span>
+        </div>
+        <div class="qc-add"><input placeholder="nuovo commento…"><button>+</button></div>
+      </div>
+    </div>
+    <div class="v3-panel" data-panel="2">
+      <div class="row">
+        <div class="toggle-row">
+          <div class="t">
+            <div class="lbl">Notifica a fine recupero</div>
+            <div class="sub">A schermo bloccato la notifica può non arrivare. iOS può limitare se l'app è chiusa.</div>
+          </div>
+          <div class="toggle on" id="v3Toggle"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lbl">Suono fine timer</div>
+        <div class="toggle-row">
+          <div class="t"><div class="lbl">Beep automatico</div><div class="sub">Suona quando il recupero finisce.</div></div>
+          <div class="toggle on" id="v3Toggle2"></div>
+        </div>
+      </div>
+    </div>
+    <div class="v3-swipe-hint">← swipe tra tab →</div>
+  </div>
+  <div class="v3-foot">
+    <button class="save-cta" data-save="v3">Salva</button>
+  </div>
+</div>
+
+<!-- toast feedback -->
+<div id="toast" class="toast">✓ Salvato</div>
+
+<script>
+(() => {
+  // ============ ROUTING ============
+  const landing = document.getElementById("landing");
+  const dummy   = document.getElementById("dummy");
+  const reopen  = document.getElementById("reopenBtn");
+  const backBtn = document.getElementById("backToLanding");
+  let active = null; // "v1" | "v2" | "v3"
+
+  function showLanding() {
+    landing.classList.remove("hidden");
+    dummy.classList.add("hidden");
+    reopen.classList.add("hidden");
+    backBtn.classList.add("hidden");
+    closeAll();
+    active = null;
+  }
+  function showDummy(variant) {
+    landing.classList.add("hidden");
+    dummy.classList.remove("hidden");
+    reopen.classList.remove("hidden");
+    backBtn.classList.remove("hidden");
+    active = variant;
+    openVariant(variant);
+  }
+  function openVariant(v) {
+    if (v === "v1") {
+      v1Sheet.classList.add("on");
+      v1Scrim.classList.add("on");
+      v1Sheet.setAttribute("aria-hidden","false");
+    } else if (v === "v2") {
+      v2Ov.classList.add("on");
+      v2Ov.setAttribute("aria-hidden","false");
+    } else if (v === "v3") {
+      v3Card.classList.add("on");
+      v3Scrim.classList.add("on");
+      v3Card.setAttribute("aria-hidden","false");
+    }
+  }
+  function closeAll() {
+    v1Sheet.classList.remove("on");
+    v1Scrim.classList.remove("on");
+    v1Sheet.style.transform = "";
+    v1Sheet.setAttribute("aria-hidden","true");
+    v2Ov.classList.remove("on");
+    v2Ov.setAttribute("aria-hidden","true");
+    v3Card.classList.remove("on");
+    v3Scrim.classList.remove("on");
+    v3Card.setAttribute("aria-hidden","true");
+  }
+
+  document.querySelectorAll("[data-go]").forEach((el) => {
+    el.addEventListener("click", () => showDummy(el.dataset.go));
+  });
+  reopen.addEventListener("click", () => active && openVariant(active));
+  backBtn.addEventListener("click", showLanding);
+
+  // ============ CLOSE BUTTONS ============
+  document.querySelectorAll("[data-close]").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeAll();
+    });
+  });
+
+  // V1 scrim tap to close
+  document.getElementById("v1Scrim").addEventListener("click", closeAll);
+  // V3 scrim tap to close
+  document.getElementById("v3Scrim").addEventListener("click", closeAll);
+
+  // ============ SAVE BUTTONS ============
+  const toast = document.getElementById("toast");
+  let toastTimer = null;
+  document.querySelectorAll("[data-save]").forEach((el) => {
+    el.addEventListener("click", () => {
+      toast.classList.add("on");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("on"), 900);
+      setTimeout(closeAll, 350);
+    });
+  });
+
+  // ============ TOGGLES ============
+  ["v1Toggle","v2Toggle","v3Toggle","v3Toggle2"].forEach((id) => {
+    const t = document.getElementById(id);
+    if (t) t.addEventListener("click", () => t.classList.toggle("on"));
+  });
+
+  // ============ V1: SWIPE-DOWN ON HANDLE ============
+  const v1Sheet = document.getElementById("v1Sheet");
+  const v1Scrim = document.getElementById("v1Scrim");
+  const v1Handle = document.getElementById("v1Handle");
+  let v1Sy = null;
+  v1Handle.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    v1Sy = e.clientY;
+    v1Sheet.classList.add("dragging");
+    v1Handle.setPointerCapture(e.pointerId);
+  });
+  v1Handle.addEventListener("pointermove", (e) => {
+    if (v1Sy === null) return;
+    const dy = Math.max(0, e.clientY - v1Sy);
+    v1Sheet.style.transform = `translateY(${dy}px)`;
+    v1Scrim.style.opacity = String(Math.max(0.1, 1 - dy / 400));
+  });
+  const v1End = () => {
+    if (v1Sy === null) return;
+    v1Sheet.classList.remove("dragging");
+    const m = /translateY\((\d+(?:\.\d+)?)px\)/.exec(v1Sheet.style.transform);
+    const dy = m ? parseFloat(m[1]) : 0;
+    if (dy > 100) {
+      closeAll();
+      v1Sheet.style.transform = "";
+      v1Scrim.style.opacity = "";
+    } else {
+      v1Sheet.style.transform = "";
+      v1Scrim.style.opacity = "";
+    }
+    v1Sy = null;
+  };
+  v1Handle.addEventListener("pointerup", v1End);
+  v1Handle.addEventListener("pointercancel", v1End);
+
+  // ============ V3: TAB + SWIPE ORIZZONTALE ============
+  const v3Body = document.getElementById("v3Body");
+  const v3Tabs = document.querySelectorAll(".v3-tabs .tab");
+  let v3Cur = 0;
+  function setTab(i) {
+    v3Cur = i;
+    v3Tabs.forEach((t, j) => t.classList.toggle("on", j === i));
+    document.querySelectorAll(".v3-panel").forEach((p, j) => p.classList.toggle("on", j === i));
+  }
+  v3Tabs.forEach((t) => t.addEventListener("click", () => setTab(parseInt(t.dataset.tab, 10))));
+
+  let v3Sx = null, v3Sy = null, v3Locked = false;
+  v3Body.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("input,button,textarea,select,.toggle,.rm")) return;
+    v3Sx = e.clientX; v3Sy = e.clientY; v3Locked = false;
+  });
+  v3Body.addEventListener("pointermove", (e) => {
+    if (v3Sx === null) return;
+    const dx = e.clientX - v3Sx, dy = e.clientY - v3Sy;
+    if (!v3Locked) {
+      if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;
+      if (Math.abs(dx) <= Math.abs(dy)) { v3Sx = null; return; }
+      v3Locked = true;
+    }
+  });
+  const v3End = (e) => {
+    if (v3Sx === null) return;
+    const dx = (e.clientX || 0) - v3Sx;
+    if (v3Locked && Math.abs(dx) > 60) {
+      const nxt = dx < 0 ? Math.min(2, v3Cur + 1) : Math.max(0, v3Cur - 1);
+      if (nxt !== v3Cur) setTab(nxt);
+    }
+    v3Sx = null; v3Sy = null; v3Locked = false;
+  };
+  v3Body.addEventListener("pointerup", v3End);
+  v3Body.addEventListener("pointercancel", v3End);
+})();
+</script>
+
+</body>
+</html>
