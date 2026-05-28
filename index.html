@@ -176,6 +176,18 @@
     <label class="editlabel" for="exBar">Bilanciere kg (vuoto = default)</label>
     <input id="exBar" type="number" inputmode="decimal" class="ex-inp" placeholder="" min="0" step="0.5">
     <label class="notifyrow"><input type="checkbox" id="exSuperset"> Superset (serie×reps: <code>A / B</code>)</label>
+    <label class="editlabel" for="exMuscle">Gruppo muscolare</label>
+    <select id="exMuscle" class="ex-inp">
+      <option value="">— nessuno —</option>
+      <option>Petto</option><option>Dorso</option><option>Spalle</option><option>Bicipiti</option>
+      <option>Tricipiti</option><option>Gambe</option><option>Polpacci</option><option>Core</option>
+    </select>
+    <label class="editlabel" for="exMuscleB" id="exMuscleBLabel">Gruppo traccia B</label>
+    <select id="exMuscleB" class="ex-inp">
+      <option value="">— nessuno —</option>
+      <option>Petto</option><option>Dorso</option><option>Spalle</option><option>Bicipiti</option>
+      <option>Tricipiti</option><option>Gambe</option><option>Polpacci</option><option>Core</option>
+    </select>
     <button id="exDlgSave" type="button" class="confirm">✓ Salva</button>
   </dialog>
 

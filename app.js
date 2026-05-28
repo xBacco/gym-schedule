@@ -279,6 +279,12 @@ function buildPlanRow(ex, i, count) {
   return row;
 }
 
+// Mostra/nasconde la select del muscolo della traccia B (solo per i superset).
+function toggleMuscleB(on) {
+  document.getElementById("exMuscleB").style.display = on ? "" : "none";
+  document.getElementById("exMuscleBLabel").style.display = on ? "" : "none";
+}
+
 // day: giorno; id: id esercizio da modificare, oppure null per aggiungerne uno nuovo.
 let exDlgDay = "A";
 let exDlgId = null;
@@ -294,6 +300,9 @@ function openExDialog(day, id) {
   document.getElementById("exRestSeconds").value = ex ? ex.restSeconds : "";
   document.getElementById("exBar").value = ex && ex.bar != null ? ex.bar : "";
   document.getElementById("exSuperset").checked = !!(ex && ex.superset);
+  document.getElementById("exMuscle").value = ex && ex.muscle != null ? ex.muscle : "";
+  document.getElementById("exMuscleB").value = ex && ex.muscleB != null ? ex.muscleB : "";
+  toggleMuscleB(!!(ex && ex.superset));
   dlg.showModal();
 }
 
@@ -310,6 +319,10 @@ function readExDialog() {
     superset,
   };
   if (barRaw !== "") { const b = parseFloat(barRaw.replace(",", ".")); if (Number.isFinite(b) && b > 0) ex.bar = b; }
+  const muscle = document.getElementById("exMuscle").value;
+  if (muscle) ex.muscle = muscle;
+  const muscleB = document.getElementById("exMuscleB").value;
+  if (superset && muscleB) ex.muscleB = muscleB;
   return ex;
 }
 
@@ -1945,6 +1958,7 @@ async function boot() {
     b.addEventListener("click", () => { planEditDay = b.dataset.day; renderPlanEditor(); });
   }
   document.getElementById("exDlgSave").addEventListener("click", saveExDialog);
+  document.getElementById("exSuperset").addEventListener("change", (e) => toggleMuscleB(e.target.checked));
   document.getElementById("exDlgClose").addEventListener("click", () => document.getElementById("exDialog").close());
   document.getElementById("exDialog").addEventListener("click", (e) => { if (e.target.id === "exDialog") e.target.close(); });
   document.getElementById("qcClose").addEventListener("click", () => document.getElementById("qcDialog").close());
