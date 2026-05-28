@@ -90,3 +90,27 @@ test("SupabaseStore.save su version=0 fa insert iniziale", async () => {
   const newVersion = await store.save(blob, 0);
   assert.equal(newVersion, 1);
 });
+
+test("SupabaseStore.save lancia ConflictError su PGRST116 (zero rows)", async () => {
+  const client = mockClient({
+    saves: [{ data: null, error: { code: "PGRST116", message: "0 rows" } }],
+  });
+  const store = new SupabaseStore(client);
+  await assert.rejects(() => store.save({ weeks: {} }, 5), ConflictError);
+});
+
+test("SupabaseStore.save lancia AuthError su 401", async () => {
+  const client = mockClient({
+    saves: [{ data: null, error: { status: 401, message: "Unauthorized" } }],
+  });
+  const store = new SupabaseStore(client);
+  await assert.rejects(() => store.save({ weeks: {} }, 5), AuthError);
+});
+
+test("SupabaseStore.save propaga Error generico su altri fallimenti", async () => {
+  const client = mockClient({
+    saves: [{ data: null, error: { code: "PGRST500", message: "boom" } }],
+  });
+  const store = new SupabaseStore(client);
+  await assert.rejects(() => store.save({ weeks: {} }, 5), /Supabase save failed/);
+});
