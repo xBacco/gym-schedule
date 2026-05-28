@@ -15,7 +15,54 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
-  <div class="wrap">
+  <section id="auth-screen" hidden>
+    <div class="auth-card">
+      <h1>🏋 scheda-palestra</h1>
+      <nav class="auth-tabs">
+        <button type="button" data-tab="login" class="auth-tab is-active">Accedi</button>
+        <button type="button" data-tab="signup" class="auth-tab">Registrati</button>
+      </nav>
+
+      <form id="authForm" class="auth-form">
+        <label>
+          Email
+          <input id="authEmail" type="email" autocomplete="email" required>
+        </label>
+        <label>
+          Password
+          <input id="authPassword" type="password" autocomplete="current-password" minlength="8" required>
+        </label>
+        <button type="submit" id="authSubmit">Entra</button>
+        <p id="authError" class="auth-error" hidden></p>
+        <p id="authInfo" class="auth-info" hidden></p>
+        <button type="button" id="authForgot" class="auth-link">Password dimenticata?</button>
+      </form>
+
+      <form id="resetForm" class="auth-form" hidden>
+        <p>Inserisci la tua email: ti mando un link per reimpostare la password.</p>
+        <label>
+          Email
+          <input id="resetEmail" type="email" required>
+        </label>
+        <button type="submit">Invia link</button>
+        <button type="button" id="resetBack" class="auth-link">↩ Torna al login</button>
+        <p id="resetMsg" class="auth-info" hidden></p>
+      </form>
+
+      <form id="newPasswordForm" class="auth-form" hidden>
+        <p>Imposta una nuova password.</p>
+        <label>
+          Nuova password
+          <input id="newPassword" type="password" minlength="8" required>
+        </label>
+        <button type="submit">Aggiorna</button>
+        <p id="newPasswordMsg" class="auth-info" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <div id="app">
+    <div class="wrap">
     <div class="kicker">DAY <b id="kickDay">A</b> · <span id="kickWeek">SETT. —</span></div>
     <h1 id="dayTitle">—</h1>
 
@@ -238,6 +285,7 @@
       <button id="tPlus" class="t-btn">+10</button>
       <button id="tStop" class="t-btn t-stop">✕</button>
     </div>
+  </div>
   </div>
 
   <script type="module" src="./app.js"></script>
