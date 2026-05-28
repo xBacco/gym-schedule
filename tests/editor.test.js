@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { genId, addExercise, removeExercise, reorderExercise, updateExercise, migrate, backfillMuscles, patchPlanV4, keepLocalPlan } from "../editor.js";
+import { genId, addExercise, removeExercise, reorderExercise, updateExercise, migrate, backfillMuscles, patchPlanV4, patchPlanV5, keepLocalPlan } from "../editor.js";
 
 const samplePlan = () => [
   { day: "A", title: "A", exercises: [
@@ -249,4 +249,45 @@ test("patchPlanV4: non muta l'input", () => {
   patchPlanV4(data);
   assert.equal(data.schema, 3);
   assert.equal(data.plan[0].exercises[0].name, "Curl EZ + Skullcrusher");
+});
+
+// ── patchPlanV5: unità a tempo "sec" sui plank (traccia B dei superset) ──
+
+const planV5Sample = () => ({ schema: 4, weeks: {}, plan: [
+  { day: "A", title: "A", exercises: [
+    { id: "a1", name: "Crunch a terra + Plank", setsReps: "3 × 15-20 / 3 × max", recText: "60 sec", restSeconds: 60, superset: true, muscle: "Core", muscleB: "Core" },
+  ] },
+  { day: "C", title: "C", exercises: [
+    { id: "c1", name: "Crunch inverso + Plank laterale", setsReps: "3 × 15 / 3 × max/lato", recText: "60 sec", restSeconds: 60, superset: true, muscle: "Core", muscleB: "Core" },
+  ] },
+] });
+
+test("patchPlanV5: imposta unitB:'sec' sui plank (traccia B) e porta schema a 5", () => {
+  const out = patchPlanV5(planV5Sample());
+  assert.equal(out.schema, 5);
+  assert.equal(out.plan.find((d) => d.day === "A").exercises[0].unitB, "sec");
+  assert.equal(out.plan.find((d) => d.day === "C").exercises[0].unitB, "sec");
+  assert.equal(out.plan.find((d) => d.day === "A").exercises[0].id, "a1"); // id stabile
+});
+
+test("patchPlanV5: idempotente (schema >= 5 -> no-op)", () => {
+  const once = patchPlanV5(planV5Sample());
+  const twice = patchPlanV5(once);
+  assert.equal(twice.plan.find((d) => d.day === "A").exercises[0].unitB, "sec");
+});
+
+test("patchPlanV5: un esercizio rinominato dall'utente non viene toccato", () => {
+  const data = { schema: 4, weeks: {}, plan: [
+    { day: "A", title: "A", exercises: [{ id: "a1", name: "Plank custom", setsReps: "3 × max", superset: false }] },
+  ] };
+  const out = patchPlanV5(data);
+  assert.equal(out.plan[0].exercises[0].unitB, undefined);
+  assert.equal(out.plan[0].exercises[0].unit, undefined);
+});
+
+test("patchPlanV5: non muta l'input", () => {
+  const data = planV5Sample();
+  patchPlanV5(data);
+  assert.equal(data.schema, 4);
+  assert.equal(data.plan.find((d) => d.day === "A").exercises[0].unitB, undefined);
 });

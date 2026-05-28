@@ -394,6 +394,13 @@ dialog#settingsDialog.settings-v2-host::backdrop{
 .volcard .vsub{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--dim);}
 .volcard .vsub .acc{color:var(--acc);}
 .volcard .vsub .neg{color:#FFB37F;}
+/* Volume per-serie (dentro la riga serie) + volume per-esercizio/traccia/superset */
+.srow .svol{font-size:11px;color:var(--faint);}
+.exvol{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  font-family:"JetBrains Mono",monospace;margin-top:8px;padding:6px 11px;
+  background:var(--surf2);border:1px solid var(--line);border-radius:9px;}
+.exvol-l{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+.exvol-v{font-size:13px;font-weight:700;color:var(--ink);}
 .trend{display:flex;gap:12px;flex-wrap:wrap;font-family:"JetBrains Mono",monospace;font-size:11px;
   color:var(--dim);margin:8px 0 2px;}
 .trend .tw{color:var(--faint);}

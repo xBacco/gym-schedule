@@ -4,6 +4,7 @@ import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeE
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
 import { bestKg, bestKgBefore, isWeekRecord, isSetRecord, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, lastWorkingSet, sessionVolume, volumeByMuscle, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
 import { sessionDates, monthGrid } from "../session.js";
+import { isDumbbell, volumeMeta, exerciseVolume, setVolume } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
 test("sessionDates: estrae le date da weeks[].dates, ordinate per data", () => {
@@ -755,4 +756,97 @@ test("volumeByMuscle: accumula stesso muscolo da esercizi diversi", () => {
     { id: "p2", muscle: "Petto", superset: false },
   ] };
   assert.deepEqual(volumeByMuscle(d, "2026-W22", "A", dayPlan), [{ muscle: "Petto", volume: 800 }]);
+});
+
+// ── Volume manubri ×2 (punto 6) + unità a tempo "sec" (punto 12b) ──
+
+test("isDumbbell: riconosce 'manubri'/'manubrio' nel nome", () => {
+  assert.equal(isDumbbell("Lento avanti manubri"), true);
+  assert.equal(isDumbbell("Pullover con manubrio"), true);
+  assert.equal(isDumbbell("Curl manubri + French press"), true);
+  assert.equal(isDumbbell("Panca piana bilanciere"), false);
+  assert.equal(isDumbbell(""), false);
+  assert.equal(isDumbbell(null), false);
+});
+
+test("volumeMeta: i manubri raddoppiano il fattore, il bilanciere no", () => {
+  assert.deepEqual(volumeMeta({ name: "Lento avanti manubri" }, null), { factor: 2, unit: "reps" });
+  assert.deepEqual(volumeMeta({ name: "Panca piana bilanciere" }, null), { factor: 1, unit: "reps" });
+});
+
+test("volumeMeta: superset valuta i manubri per singola traccia (nome A / nome B)", () => {
+  const ex = { name: "Curl manubri + French press", superset: true };
+  assert.deepEqual(volumeMeta(ex, "a"), { factor: 2, unit: "reps" }); // Curl manubri
+  assert.deepEqual(volumeMeta(ex, "b"), { factor: 1, unit: "reps" }); // French press
+});
+
+test("volumeMeta: unit 'sec' per traccia (unit -> normale/A, unitB -> B)", () => {
+  const ss = { name: "Crunch a terra + Plank", superset: true, unitB: "sec" };
+  assert.equal(volumeMeta(ss, "a").unit, "reps");
+  assert.equal(volumeMeta(ss, "b").unit, "sec");
+  assert.equal(volumeMeta({ name: "Plank", unit: "sec" }, null).unit, "sec");
+});
+
+test("setVolume: serie a manubri conta entrambi i lati (reps*kg*2)", () => {
+  assert.equal(setVolume({ reps: "10", kg: "20", done: true }, { factor: 2, unit: "reps" }), 400);
+  assert.equal(setVolume({ reps: "10", kg: "20", done: true }, { factor: 1, unit: "reps" }), 200);
+});
+
+test("setVolume: serie a tempo (sec) e serie non-done/warmup/failed -> 0", () => {
+  assert.equal(setVolume({ reps: "45", kg: "", done: true }, { factor: 1, unit: "sec" }), 0);
+  assert.equal(setVolume({ reps: "10", kg: "20", done: false }, { factor: 1, unit: "reps" }), 0);
+  assert.equal(setVolume({ reps: "10", kg: "20", done: true, warmup: true }, { factor: 1, unit: "reps" }), 0);
+  assert.equal(setVolume({ reps: "10", kg: "20", done: true, failed: true }, { factor: 1, unit: "reps" }), 0);
+});
+
+test("exerciseVolume: normale a manubri raddoppia", () => {
+  const ex = { id: "db", name: "Lento avanti manubri", setsReps: "3 × 10" };
+  const entry = { sets: [{ reps: "10", kg: "20", done: true }, { reps: "10", kg: "20", done: true }] };
+  assert.equal(exerciseVolume(entry, ex), 800); // 2 serie × (10*20*2)
+});
+
+test("exerciseVolume: superset somma A(manubri ×2) + B(bilanciere ×1)", () => {
+  const ex = { id: "ss", name: "Curl manubri + French press", setsReps: "3 × 10 / 3 × 10", superset: true };
+  const entry = {
+    a: { sets: [{ reps: "10", kg: "15", done: true }] }, // 10*15*2 = 300
+    b: { sets: [{ reps: "10", kg: "20", done: true }] }, // 10*20*1 = 200
+  };
+  assert.equal(exerciseVolume(entry, ex), 500);
+});
+
+test("exerciseVolume: traccia a tempo (sec) esclusa dal volume kg", () => {
+  const ex = { id: "pl", name: "Crunch a terra + Plank", setsReps: "3 × 15 / 3 × max", superset: true, unitB: "sec" };
+  const entry = {
+    a: { sets: [{ reps: "15", kg: "0", done: true }] }, // 15*0 = 0
+    b: { sets: [{ reps: "45", kg: "", done: true }] },  // sec -> escluso
+  };
+  assert.equal(exerciseVolume(entry, ex), 0);
+});
+
+test("sessionVolume: applica ×2 ai manubri e somma per il giorno", () => {
+  const dayPlan = { exercises: [
+    { id: "db", name: "Lento avanti manubri", setsReps: "3 × 10" },
+    { id: "bb", name: "Panca", setsReps: "3 × 8" },
+  ] };
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "db", { sets: [{ reps: "10", kg: "20", done: true }] }); // 10*20*2 = 400
+  d = setEntry(d, "2026-W22", "A", "bb", { sets: [{ reps: "8", kg: "70", done: true }] });  // 8*70 = 560
+  assert.equal(sessionVolume(d, "2026-W22", "A", dayPlan), 960);
+});
+
+test("volumeByMuscle: manubri ×2 nel breakdown, traccia sec a 0", () => {
+  const dayPlan = { exercises: [
+    { id: "db", name: "Lento avanti manubri", setsReps: "3 × 10", muscle: "Spalle" },
+    { id: "pl", name: "Crunch a terra + Plank", setsReps: "3 × 15 / 3 × max", superset: true, muscle: "Core", muscleB: "Core", unitB: "sec" },
+  ] };
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "db", { sets: [{ reps: "10", kg: "20", done: true }] }); // 400 Spalle
+  d = setEntry(d, "2026-W22", "A", "pl", {
+    a: { sets: [{ reps: "15", kg: "5", done: true }] }, // 75 Core
+    b: { sets: [{ reps: "45", kg: "", done: true }] },  // sec -> 0
+  });
+  assert.deepEqual(volumeByMuscle(d, "2026-W22", "A", dayPlan), [
+    { muscle: "Spalle", volume: 400 },
+    { muscle: "Core", volume: 75 },
+  ]);
 });

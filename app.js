@@ -1,5 +1,5 @@
 import { PLAN, seedPlan } from "./plan.js";
-import { migrate, backfillMuscles, patchPlanV4, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan } from "./editor.js";
+import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan } from "./editor.js";
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
@@ -16,6 +16,7 @@ import {
   topSetSeries, chartGeometry,
   sessionDates, monthGrid,
   lastWorkingSet,
+  isDumbbell, volumeMeta, exerciseVolume, setVolume,
 } from "./session.js";
 import { RestTimer, formatTime } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -273,7 +274,10 @@ function buildPlanRow(ex, i, count) {
   const nm = document.createElement("div"); nm.className = "pe-name"; nm.textContent = ex.name;
   if (ex.superset) { const b = document.createElement("span"); b.className = "pe-badge"; b.textContent = "SUPERSET"; nm.appendChild(b); }
   const sub = document.createElement("div"); sub.className = "pe-sub";
-  sub.textContent = `${ex.setsReps} · ${ex.recText}` + (ex.bar ? ` · bilanciere ${ex.bar}kg` : "");
+  sub.textContent = `${ex.setsReps} · ${ex.recText}`
+    + (ex.bar ? ` · bilanciere ${ex.bar}kg` : "")
+    + (isDumbbell(ex.name) ? " · vol ×2" : "")
+    + (ex.unit === "sec" || ex.unitB === "sec" ? " · a tempo" : "");
   meta.append(nm, sub);
   const edit = document.createElement("button"); edit.type = "button"; edit.className = "pe-ic"; edit.textContent = "✎";
   edit.addEventListener("click", () => openExDialog(planEditDay, ex.id));
@@ -284,10 +288,12 @@ function buildPlanRow(ex, i, count) {
   return row;
 }
 
-// Mostra/nasconde la select del muscolo della traccia B (solo per i superset).
+// Mostra/nasconde i campi della traccia B (muscolo + unità): solo per i superset.
 function toggleMuscleB(on) {
   document.getElementById("exMuscleB").style.display = on ? "" : "none";
   document.getElementById("exMuscleBLabel").style.display = on ? "" : "none";
+  document.getElementById("exUnitB").style.display = on ? "" : "none";
+  document.getElementById("exUnitBLabel").style.display = on ? "" : "none";
 }
 
 // day: giorno; id: id esercizio da modificare, oppure null per aggiungerne uno nuovo.
@@ -307,6 +313,8 @@ function openExDialog(day, id) {
   document.getElementById("exSuperset").checked = !!(ex && ex.superset);
   document.getElementById("exMuscle").value = ex && ex.muscle != null ? ex.muscle : "";
   document.getElementById("exMuscleB").value = ex && ex.muscleB != null ? ex.muscleB : "";
+  document.getElementById("exUnit").value = ex && ex.unit === "sec" ? "sec" : "reps";
+  document.getElementById("exUnitB").value = ex && ex.unitB === "sec" ? "sec" : "reps";
   toggleMuscleB(!!(ex && ex.superset));
   dlg.showModal();
 }
@@ -328,6 +336,10 @@ function readExDialog() {
   if (muscle) ex.muscle = muscle;
   const muscleB = document.getElementById("exMuscleB").value;
   if (superset && muscleB) ex.muscleB = muscleB;
+  // Unità a tempo: "sec" salvato esplicito, "reps" -> undefined così updateExercise
+  // (merge) ripulisce una eventuale unit precedente quando si torna a ripetizioni.
+  ex.unit = document.getElementById("exUnit").value === "sec" ? "sec" : undefined;
+  ex.unitB = (superset && document.getElementById("exUnitB").value === "sec") ? "sec" : undefined;
   return ex;
 }
 
@@ -853,7 +865,8 @@ function buildTrendRow(trend, weekKey) {
 
 // Costruisce il blocco di editing per una serie. `state` = {kg, reps} mutato in place.
 // prev = {reps, kg} della volta scorsa per quella serie (o null). Ritorna l'elemento.
-function buildEditBlock(label, state, prev, bar = getBar()) {
+function buildEditBlock(label, state, prev, bar = getBar(), unit = "reps") {
+  const isSec = unit === "sec"; // esercizio a tempo (plank): niente kg, si registrano i secondi
   const block = document.createElement("div");
   block.className = "editblock";
 
@@ -861,56 +874,61 @@ function buildEditBlock(label, state, prev, bar = getBar()) {
   lab.className = "editlabel"; lab.textContent = label;
   block.appendChild(lab);
 
-  const stepper = document.createElement("div");
-  stepper.className = "stepper";
-  const minus = document.createElement("span"); minus.className = "mb"; minus.textContent = "−0.5";
-  const valWrap = document.createElement("span"); valWrap.className = "val";
-  const num = document.createElement("input"); num.className = "num";
-  num.type = "text"; num.setAttribute("inputmode", "decimal"); num.size = 4;
-  num.autocomplete = "off"; num.placeholder = "—"; num.setAttribute("aria-label", "Peso in kg");
-  const unit = document.createElement("span"); unit.className = "u"; unit.textContent = " kg";
-  valWrap.append(num, unit);
-  const plus = document.createElement("span"); plus.className = "mb"; plus.textContent = "+0.5";
-  stepper.append(minus, valWrap, plus);
-  block.appendChild(stepper);
+  // Stepper carico (solo per esercizi a ripetizioni). Per quelli a tempo il kg
+  // non ha senso e resterebbe escluso dal volume, quindi lo si nasconde.
+  let renderKg = () => {};
+  if (!isSec) {
+    const stepper = document.createElement("div");
+    stepper.className = "stepper";
+    const minus = document.createElement("span"); minus.className = "mb"; minus.textContent = "−0.5";
+    const valWrap = document.createElement("span"); valWrap.className = "val";
+    const num = document.createElement("input"); num.className = "num";
+    num.type = "text"; num.setAttribute("inputmode", "decimal"); num.size = 4;
+    num.autocomplete = "off"; num.placeholder = "—"; num.setAttribute("aria-label", "Peso in kg");
+    const unitEl = document.createElement("span"); unitEl.className = "u"; unitEl.textContent = " kg";
+    valWrap.append(num, unitEl);
+    const plus = document.createElement("span"); plus.className = "mb"; plus.textContent = "+0.5";
+    stepper.append(minus, valWrap, plus);
+    block.appendChild(stepper);
 
-  const platesLine = document.createElement("div");
-  platesLine.className = "plates";
-  block.appendChild(platesLine);
-  const renderPlates = () => {
-    const n = parseFloat(String(state.kg).replace(",", "."));
-    if (!Number.isFinite(n) || n <= 0) { platesLine.textContent = ""; return; }
-    const { perSide, leftover } = platesPerSide(n, { bar, plates: getPlateSet() });
-    if (!perSide.length) { platesLine.textContent = `per lato: — (≤ bilanciere ${bar} kg)`; return; }
-    platesLine.textContent = `per lato: ${perSide.join(" + ")}` + (leftover > 0 ? `  (+${leftover} scoperto)` : "");
-  };
+    const platesLine = document.createElement("div");
+    platesLine.className = "plates";
+    block.appendChild(platesLine);
+    const renderPlates = () => {
+      const n = parseFloat(String(state.kg).replace(",", "."));
+      if (!Number.isFinite(n) || n <= 0) { platesLine.textContent = ""; return; }
+      const { perSide, leftover } = platesPerSide(n, { bar, plates: getPlateSet() });
+      if (!perSide.length) { platesLine.textContent = `per lato: — (≤ bilanciere ${bar} kg)`; return; }
+      platesLine.textContent = `per lato: ${perSide.join(" + ")}` + (leftover > 0 ? `  (+${leftover} scoperto)` : "");
+    };
 
-  const renderKg = ({ writeInput = true } = {}) => {
-    const n = parseFloat(String(state.kg).replace(",", "."));
-    if (writeInput) num.value = Number.isFinite(n) ? String(n) : "";
-    renderPlates();
-  };
-  const stepKg = (delta) => {
-    const n = parseFloat(String(state.kg).replace(",", "."));
-    const base = Number.isFinite(n) ? n : 0;
-    state.kg = String(Math.max(0, Math.round((base + delta) * 100) / 100));
+    renderKg = ({ writeInput = true } = {}) => {
+      const n = parseFloat(String(state.kg).replace(",", "."));
+      if (writeInput) num.value = Number.isFinite(n) ? String(n) : "";
+      renderPlates();
+    };
+    const stepKg = (delta) => {
+      const n = parseFloat(String(state.kg).replace(",", "."));
+      const base = Number.isFinite(n) ? n : 0;
+      state.kg = String(Math.max(0, Math.round((base + delta) * 100) / 100));
+      renderKg();
+    };
+    num.addEventListener("focus", () => num.select());
+    num.addEventListener("input", () => {
+      const raw = num.value.replace(",", ".").trim();
+      if (raw === "") { state.kg = ""; renderPlates(); return; }
+      const n = parseFloat(raw);
+      if (Number.isFinite(n) && n >= 0) { state.kg = String(Math.round(n * 100) / 100); renderPlates(); }
+    });
     renderKg();
-  };
-  num.addEventListener("focus", () => num.select());
-  num.addEventListener("input", () => {
-    const raw = num.value.replace(",", ".").trim();
-    if (raw === "") { state.kg = ""; renderPlates(); return; }
-    const n = parseFloat(raw);
-    if (Number.isFinite(n) && n >= 0) { state.kg = String(Math.round(n * 100) / 100); renderPlates(); }
-  });
-  renderKg();
-  bindHold(minus, () => stepKg(-0.5));
-  bindHold(plus, () => stepKg(0.5));
+    bindHold(minus, () => stepKg(-0.5));
+    bindHold(plus, () => stepKg(0.5));
 
-  if (prev && (prev.kg || prev.reps)) {
-    const pf = document.createElement("div");
-    pf.className = "prefill"; pf.textContent = "↳ precompilato dalla volta scorsa · aggiusta col +/−";
-    block.appendChild(pf);
+    if (prev && (prev.kg || prev.reps)) {
+      const pf = document.createElement("div");
+      pf.className = "prefill"; pf.textContent = "↳ precompilato dalla volta scorsa · aggiusta col +/−";
+      block.appendChild(pf);
+    }
   }
 
   const reprow = document.createElement("div");
@@ -921,8 +939,8 @@ function buildEditBlock(label, state, prev, bar = getBar()) {
   const rc = document.createElement("div"); rc.className = "rc";
   const rv = document.createElement("input"); rv.className = "rv";
   rv.type = "text"; rv.setAttribute("inputmode", "numeric"); rv.size = 3;
-  rv.autocomplete = "off"; rv.placeholder = "—"; rv.setAttribute("aria-label", "Ripetizioni");
-  const rl = document.createElement("div"); rl.className = "l"; rl.textContent = "Ripetizioni";
+  rv.autocomplete = "off"; rv.placeholder = "—"; rv.setAttribute("aria-label", isSec ? "Secondi" : "Ripetizioni");
+  const rl = document.createElement("div"); rl.className = "l"; rl.textContent = isSec ? "Secondi" : "Ripetizioni";
   rc.append(rv, rl);
   const rinc = document.createElement("span"); rinc.className = "rmb"; rinc.textContent = "+";
   repstep.append(rdec, rc, rinc);
@@ -943,19 +961,32 @@ function buildEditBlock(label, state, prev, bar = getBar()) {
     if (Number.isFinite(n) && n >= 0) state.reps = String(n);
   });
   renderReps();
-  bindHold(rdec, () => stepReps(-1));
-  bindHold(rinc, () => stepReps(1));
+  const step = isSec ? 5 : 1; // i secondi salgono a passi di 5
+  bindHold(rdec, () => stepReps(-step));
+  bindHold(rinc, () => stepReps(step));
 
   const chip = document.createElement("div");
   chip.className = "chip prevbest";
   const cv = document.createElement("div"); cv.className = "rv";
-  cv.textContent = prev && (prev.reps || prev.kg) ? `${prev.reps || "—"}×${prev.kg || "—"}` : "—";
+  cv.textContent = isSec
+    ? (prev && prev.reps ? `${prev.reps} sec` : "—")
+    : (prev && (prev.reps || prev.kg) ? `${prev.reps || "—"}×${prev.kg || "—"}` : "—");
   const cl = document.createElement("div"); cl.className = "l"; cl.textContent = "la volta scorsa";
   chip.append(cv, cl);
   reprow.appendChild(chip);
   block.appendChild(reprow);
 
   return { block, refresh: () => { renderKg(); renderReps(); } };
+}
+
+// Riga compatta col volume di un esercizio/traccia/superset (punto 6).
+function buildVolLine(label, kg) {
+  const d = document.createElement("div");
+  d.className = "exvol";
+  const l = document.createElement("span"); l.className = "exvol-l"; l.textContent = label;
+  const v = document.createElement("span"); v.className = "exvol-v"; v.textContent = `${fmtKg(kg)} kg`;
+  d.append(l, v);
+  return d;
 }
 
 // Stepper compatto per il popup serie: muta state[field] in place.
@@ -1139,10 +1170,10 @@ function openSetDialog(opts) {
   };
   repaintRpe();
 
-  document.getElementById("setDlgEdit").replaceChildren(
-    buildMiniStepper("reps", setDlgState, "reps", 1),
-    buildMiniStepper("kg", setDlgState, "kg", 0.5),
-  );
+  const editors = opts.unit === "sec"
+    ? [buildMiniStepper("secondi", setDlgState, "reps", 5)]
+    : [buildMiniStepper("reps", setDlgState, "reps", 1), buildMiniStepper("kg", setDlgState, "kg", 0.5)];
+  document.getElementById("setDlgEdit").replaceChildren(...editors);
 
   // Sync fail toggle UI
   const failBtn = document.getElementById("setDlgFail");
@@ -1280,12 +1311,17 @@ function buildNoteField(superset, idx) {
   return wrap;
 }
 
-function setRow(i, set, prev, isCurrent, onRemove, onOpen) {
+function setRow(i, set, prev, isCurrent, onRemove, onOpen, meta = { factor: 1, unit: "reps" }) {
+  const isSec = meta.unit === "sec";
   const row = document.createElement("div");
   row.className = "srow" + (isCurrent ? " cur" : "") + (set.warmup ? " warm" : "");
   const idx = document.createElement("span"); idx.className = "i"; idx.textContent = set.warmup ? "W" : String(i + 1);
   const v = document.createElement("span"); v.className = "v";
-  if (set.reps || set.kg) {
+  if (isSec) {
+    v.append(document.createTextNode(set.reps || "—"));
+    const u = document.createElement("span"); u.className = "u"; u.textContent = " sec";
+    v.append(u);
+  } else if (set.reps || set.kg) {
     v.append(document.createTextNode(set.reps || "—"));
     const x = document.createElement("span"); x.className = "x"; x.textContent = " × ";
     const u = document.createElement("span"); u.className = "u"; u.textContent = " kg";
@@ -1293,6 +1329,12 @@ function setRow(i, set, prev, isCurrent, onRemove, onOpen) {
   } else {
     const x = document.createElement("span"); x.className = "x"; x.textContent = " × ";
     v.append(document.createTextNode("—"), x, document.createTextNode("—"));
+  }
+  // Volume della singola serie (con ×2 manubri); escluso per le serie a tempo.
+  const sv = setVolume(set, meta);
+  if (sv > 0) {
+    const vol = document.createElement("span"); vol.className = "svol"; vol.textContent = ` · ${fmtKg(sv)} kg`;
+    v.appendChild(vol);
   }
   row.append(idx, v);
 
@@ -1371,6 +1413,7 @@ function renderFocusNormal(ex, idx, container, footer) {
   const v = getEntry(data, currentWeek, currentDay, exId);
   const entry = normalizeEntry(v);
   const tgt = parseTarget(ex.setsReps, false);
+  const meta = volumeMeta(ex, null); // { factor (×2 manubri), unit (reps|sec) }
   const prev = prefillSets(data, currentWeek, currentDay, exId); // [{reps,kg,done:false}]
   const curIdx = activeSetIndex(entry.sets);
 
@@ -1403,8 +1446,8 @@ function renderFocusNormal(ex, idx, container, footer) {
       persist(idx); render();
     } : null;
     const onOpen = set.done ? () => openSetDialog({
-      title: `Serie ${i + 1} · ${set.reps || "—"} × ${set.kg || "—"} kg`,
-      reps: set.reps, kg: set.kg, feel: set.feel,
+      title: meta.unit === "sec" ? `Serie ${i + 1} · ${set.reps || "—"} sec` : `Serie ${i + 1} · ${set.reps || "—"} × ${set.kg || "—"} kg`,
+      reps: set.reps, kg: set.kg, feel: set.feel, unit: meta.unit,
       failed: set.failed, failNote: set.failNote, done: set.done,
       onApply: (reps, kg, feel, failed, failNote) => {
         data = setEntry(data, currentWeek, currentDay, exId, withSet(v, i, { reps, kg, feel, failed, failNote, ...(failed ? { done: true } : {}) }), new Date().toISOString());
@@ -1419,12 +1462,13 @@ function renderFocusNormal(ex, idx, container, footer) {
         persist(idx); render();
       },
     }) : null;
-    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen));
+    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen, meta));
   }
   container.appendChild(setsBox);
 
   if (!allDone) {
-    const edit = buildEditBlock(`Serie ${curIdx + 1} — carico · step 0.5 kg`, draft, prev[curIdx] || null, exerciseBar(ex, getBar()));
+    const editLabel = meta.unit === "sec" ? `Serie ${curIdx + 1} — secondi` : `Serie ${curIdx + 1} — carico · step 0.5 kg`;
+    const edit = buildEditBlock(editLabel, draft, prev[curIdx] || null, exerciseBar(ex, getBar()), meta.unit);
     container.appendChild(edit.block);
 
     let qcEl;
@@ -1455,7 +1499,7 @@ function renderFocusNormal(ex, idx, container, footer) {
         title: `Serie ${curIdx + 1} — non riuscita`,
         reps: draft.reps || curSet.reps || "",
         kg: draft.kg || curSet.kg || "",
-        feel: curSet.feel || "",
+        feel: curSet.feel || "", unit: meta.unit,
         failed: curSet.failed || false,
         failNote: curSet.failNote || "",
         done: false,
@@ -1518,6 +1562,8 @@ function renderFocusNormal(ex, idx, container, footer) {
     });
     footer.appendChild(cta);
   }
+  const exVol = exerciseVolume(v, ex);
+  if (exVol > 0) container.appendChild(buildVolLine(meta.factor === 2 ? "Volume esercizio · ×2 manubri" : "Volume esercizio", exVol));
   container.appendChild(buildNoteField(false, idx));
 }
 
@@ -1525,7 +1571,7 @@ function renderFocusNormal(ex, idx, container, footer) {
 let draftA = { kg: "", reps: "", comments: [] };
 let draftB = { kg: "", reps: "", comments: [] };
 
-function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, idx, bar = getBar()) {
+function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, idx, bar = getBar(), meta = { factor: 1, unit: "reps" }) {
   const exId = exIdAt(idx);
   const wrap = document.createElement("div");
   wrap.className = "track";
@@ -1554,8 +1600,8 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
   for (let i = 0; i < total; i++) {
     const set = trackEntry.sets[i] || { reps: "", kg: "", done: false };
     const onOpen = set.done ? () => openSetDialog({
-      title: `${trackKey.toUpperCase()} · Serie ${i + 1} · ${set.reps || "—"} × ${set.kg || "—"} kg`,
-      reps: set.reps, kg: set.kg, feel: set.feel,
+      title: meta.unit === "sec" ? `${trackKey.toUpperCase()} · Serie ${i + 1} · ${set.reps || "—"} sec` : `${trackKey.toUpperCase()} · Serie ${i + 1} · ${set.reps || "—"} × ${set.kg || "—"} kg`,
+      reps: set.reps, kg: set.kg, feel: set.feel, unit: meta.unit,
       failed: set.failed, failNote: set.failNote, done: set.done,
       onApply: (reps, kg, feel, failed, failNote) => {
         const nv = withSupersetSet(getEntry(data, currentWeek, currentDay, exId), trackKey, i, { reps, kg, feel, failed, failNote, ...(failed ? { done: true } : {}) });
@@ -1577,7 +1623,7 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
       data = setEntry(data, currentWeek, currentDay, exId, withoutSupersetSet(getEntry(data, currentWeek, currentDay, exId), trackKey, i), new Date().toISOString());
       persist(idx); render();
     } : null;
-    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen));
+    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen, meta));
   }
   wrap.appendChild(setsBox);
 
@@ -1593,7 +1639,8 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
   wrap.appendChild(dots);
 
   if (!allDone) {
-    const edit = buildEditBlock(`Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`, state, prevSets[curIdx] || null, bar);
+    const editLabel = meta.unit === "sec" ? `Serie ${curIdx + 1} ${trackKey.toUpperCase()} — secondi` : `Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`;
+    const edit = buildEditBlock(editLabel, state, prevSets[curIdx] || null, bar, meta.unit);
     wrap.appendChild(edit.block);
 
     let qcEl;
@@ -1622,7 +1669,7 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
         title: `${trackKey.toUpperCase()} · Serie ${curIdx + 1} — non riuscita`,
         reps: state.reps || curSet.reps || "",
         kg: state.kg || curSet.kg || "",
-        feel: curSet.feel || "",
+        feel: curSet.feel || "", unit: meta.unit,
         failed: curSet.failed || false,
         failNote: curSet.failNote || "",
         done: false,
@@ -1668,8 +1715,9 @@ function renderFocusSuperset(ex, idx, container, footer) {
   if (trendRow) container.appendChild(trendRow);
 
   const ssBar = exerciseBar(ex, getBar());
-  const a = trackBlock("a", nameA.trim(), e.a, tgt.a, prev.a, draftA, idx, ssBar);
-  const b = trackBlock("b", nameB.trim(), e.b, tgt.b, prev.b, draftB, idx, ssBar);
+  const metaA = volumeMeta(ex, "a"), metaB = volumeMeta(ex, "b");
+  const a = trackBlock("a", nameA.trim(), e.a, tgt.a, prev.a, draftA, idx, ssBar, metaA);
+  const b = trackBlock("b", nameB.trim(), e.b, tgt.b, prev.b, draftB, idx, ssBar, metaB);
   // si mostra solo la traccia del tab attivo (blocco totale: una per volta)
   container.appendChild(supersetTab === "a" ? a.wrap : b.wrap);
 
@@ -1698,6 +1746,12 @@ function renderFocusSuperset(ex, idx, container, footer) {
     });
     footer.appendChild(cta);
   }
+  // Volume per traccia + totale superset (con ×2 manubri; tracce a tempo escluse).
+  const volA = e.a.sets.reduce((s, x) => s + setVolume(x, metaA), 0);
+  const volB = e.b.sets.reduce((s, x) => s + setVolume(x, metaB), 0);
+  if (volA > 0) container.appendChild(buildVolLine(`Volume A${metaA.factor === 2 ? " · ×2 manubri" : ""}`, volA));
+  if (volB > 0) container.appendChild(buildVolLine(`Volume B${metaB.factor === 2 ? " · ×2 manubri" : ""}`, volB));
+  if (volA + volB > 0) container.appendChild(buildVolLine("Totale superset", volA + volB));
   container.appendChild(buildNoteField(true, idx));
 }
 
@@ -2238,7 +2292,7 @@ async function boot() {
       profileStorage.set("version", dataVersion);
     }
     // Backfill schema sui dati appena letti (riusa logica esistente).
-    data = patchPlanV4(backfillMuscles(migrate(data), PLAN));
+    data = patchPlanV5(patchPlanV4(backfillMuscles(migrate(data), PLAN)));
     render();
     setStatus("ok ✓", "ok");
     await offerSeedIfEmpty();
@@ -2285,7 +2339,7 @@ async function offerSeedIfEmpty() {
     dlg.showModal();
     await new Promise((r) => dlg.addEventListener("close", r, { once: true }));
     if (dlg.returnValue === "import") {
-      data = patchPlanV4(backfillMuscles(migrate(seed), PLAN));
+      data = patchPlanV5(patchPlanV4(backfillMuscles(migrate(seed), PLAN)));
       profileStorage.set("data", data);
       profileStorage.set("dirty", true);
       pusher.schedule();
@@ -2353,7 +2407,7 @@ async function rescueLegacyLocalStorage() {
   for (const e of pendingList) {
     try { withPending = setEntry(withPending, e.weekKey, e.day, e.idx, e.value, new Date().toISOString()); } catch {}
   }
-  data = patchPlanV4(backfillMuscles(migrate(withPending, PLAN), PLAN));
+  data = patchPlanV5(patchPlanV4(backfillMuscles(migrate(withPending, PLAN), PLAN)));
   profileStorage.set("data", data);
   profileStorage.set("dirty", true);
   pusher.schedule();
@@ -2426,7 +2480,7 @@ async function recoverLogsFromOldCloud() {
   );
   if (!ok) return;
   const merged = mergeBlobs(data ?? emptyData(), seed);
-  data = patchPlanV4(backfillMuscles(migrate(merged), PLAN));
+  data = patchPlanV5(patchPlanV4(backfillMuscles(migrate(merged), PLAN)));
   profileStorage.set("data", data);
   profileStorage.set("dirty", true);
   pusher.schedule();

@@ -234,29 +234,52 @@ function parseNum(x) {
   return Number.isFinite(v) ? v : null;
 }
 
-function trackVolume(track) {
+// Riconosce gli esercizi a manubri/manubrio: il carico è per lato, quindi il
+// volume conta entrambe le mani (×2). Match sul nome, case-insensitive.
+export function isDumbbell(name) {
+  return /manubr/i.test(String(name ?? ""));
+}
+
+// Fattore volume (1 o 2) e unità ("reps"|"sec") di una traccia di un esercizio.
+// track: null/"a" = traccia normale/A ; "b" = traccia B del superset. I manubri
+// si valutano per singola traccia: nei superset il nome è "A + B".
+export function volumeMeta(ex, track) {
+  const name = String(ex?.name ?? "");
+  const [nameA, nameB] = name.includes(" + ") ? name.split(" + ") : [name, name];
+  const trackName = track === "b" ? nameB : nameA;
+  const unit = (track === "b" ? ex?.unitB : ex?.unit) === "sec" ? "sec" : "reps";
+  return { factor: isDumbbell(trackName) ? 2 : 1, unit };
+}
+
+// Volume di una singola serie (reps*kg*fattore). 0 se a tempo (sec), non done,
+// warmup o failed, o senza valori numerici.
+export function setVolume(set, { factor = 1, unit = "reps" } = {}) {
+  if (unit === "sec" || !set?.done || set.warmup || set.failed) return 0;
+  const r = parseNum(set.reps), k = parseNum(set.kg);
+  return (r !== null && k !== null) ? r * k * factor : 0;
+}
+
+function trackVolume(track, meta = {}) {
   let v = 0;
-  for (const s of track.sets) {
-    if (!s.done || s.warmup || s.failed) continue;
-    const r = parseNum(s.reps), k = parseNum(s.kg);
-    if (r !== null && k !== null) v += r * k;
-  }
+  for (const s of track.sets) v += setVolume(s, meta);
   return v;
 }
 
-// Volume totale (Σ reps*kg sulle serie done) del giorno; somma entrambe le tracce superset.
+// Volume totale di un esercizio: somma le serie working (superset = A + B), con
+// ×2 manubri e tracce a tempo (sec) escluse dal volume in kg.
+export function exerciseVolume(entry, ex) {
+  if (ex?.superset) {
+    const e = normalizeSupersetEntry(entry);
+    return trackVolume(e.a, volumeMeta(ex, "a")) + trackVolume(e.b, volumeMeta(ex, "b"));
+  }
+  return trackVolume(normalizeEntry(entry), volumeMeta(ex, null));
+}
+
+// Volume totale del giorno (Σ exerciseVolume).
 export function sessionVolume(data, weekKey, day, dayPlan) {
   const exs = dayPlan?.exercises ?? [];
   let total = 0;
-  for (let i = 0; i < exs.length; i++) {
-    const v = getEntry(data, weekKey, day, exs[i].id);
-    if (exs[i]?.superset) {
-      const e = normalizeSupersetEntry(v);
-      total += trackVolume(e.a) + trackVolume(e.b);
-    } else {
-      total += trackVolume(normalizeEntry(v));
-    }
-  }
+  for (const ex of exs) total += exerciseVolume(getEntry(data, weekKey, day, ex.id), ex);
   return total;
 }
 
@@ -275,10 +298,10 @@ export function volumeByMuscle(data, weekKey, day, dayPlan) {
     const v = getEntry(data, weekKey, day, ex.id);
     if (ex?.superset) {
       const e = normalizeSupersetEntry(v);
-      add(ex.muscle, trackVolume(e.a));
-      add(ex.muscleB, trackVolume(e.b));
+      add(ex.muscle, trackVolume(e.a, volumeMeta(ex, "a")));
+      add(ex.muscleB, trackVolume(e.b, volumeMeta(ex, "b")));
     } else {
-      add(ex?.muscle, trackVolume(normalizeEntry(v)));
+      add(ex?.muscle, trackVolume(normalizeEntry(v), volumeMeta(ex, null)));
     }
   }
   return [...map.entries()]

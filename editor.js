@@ -142,6 +142,31 @@ export function patchPlanV4(data) {
   return out;
 }
 
+// Migrazione schema 4 -> 5: gli esercizi a tempo (plank) usano unit:"sec" così
+// l'interfaccia mostra "Secondi" e il volume in kg li esclude (punto 12b). Patch
+// idempotenti per (day, name) su data.plan: i due superset con plank in traccia B
+// ricevono unitB:"sec". Match per nome esatto: se l'utente ha già rinominato,
+// salta. Guard su schema >= 5. Non muta l'input.
+const PLAN_V5_PATCHES = [
+  { day: "A", name: "Crunch a terra + Plank", patch: { unitB: "sec" } },
+  { day: "C", name: "Crunch inverso + Plank laterale", patch: { unitB: "sec" } },
+];
+export function patchPlanV5(data) {
+  if (data && data.schema >= 5) return data;
+  const out = structuredClone(data || { updatedAt: null, weeks: {} });
+  if (Array.isArray(out.plan)) {
+    for (const { day, name, patch } of PLAN_V5_PATCHES) {
+      const d = out.plan.find((x) => x.day === day);
+      if (!d) continue;
+      const ex = d.exercises.find((e) => e.name === name);
+      if (!ex) continue;
+      Object.assign(ex, patch);
+    }
+  }
+  out.schema = 5;
+  return out;
+}
+
 // Merge dopo un conflitto di salvataggio: il ramo conflitto riparte dal remoto e
 // ri-applica i log pendenti, ma gli edit strutturali della scheda NON sono nel
 // buffer pending → andrebbero persi. Questo conserva il `plan` locale (intento più
