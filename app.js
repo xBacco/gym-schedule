@@ -1943,6 +1943,7 @@ function wireDrawer() {
 
 // ---- Boot ----
 async function boot() {
+  localStorage.removeItem("gymsched_token"); // migration cleanup: legacy GitHub PAT
   // 1. Verifica sessione.
   const { data: sessionData } = await supabase.auth.getSession();
   session = sessionData.session;
