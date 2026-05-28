@@ -88,3 +88,13 @@ export class RestTimer {
     }
   }
 }
+
+// Ritorna una nuova mappa-sessione (gymsched_session) senza `key`, senza mutare
+// l'input. Robusta a `map` null/non-oggetto (ritorna {}).
+export function withoutSession(map, key) {
+  const out = {};
+  if (map && typeof map === "object") {
+    for (const k of Object.keys(map)) if (k !== key) out[k] = map[k];
+  }
+  return out;
+}
