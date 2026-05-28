@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex, nextExercisePreview } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
-import { bestKg, bestKgBefore, isWeekRecord, isSetRecord, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, lastWorkingSet, sessionVolume, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
+import { bestKg, bestKgBefore, isWeekRecord, isSetRecord, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, lastWorkingSet, sessionVolume, volumeByMuscle, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
 import { sessionDates, monthGrid } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
@@ -696,4 +696,52 @@ test("isSetRecord: pareggio non è record -> false", () => {
 });
 test("isSetRecord: kg non numerico -> false", () => {
   assert.equal(isSetRecord(60, ""), false);
+});
+
+test("volumeByMuscle: somma per gruppo, ordina desc, esclude i zero", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "p1", { sets: [{ reps: "10", kg: "50", done: true }], note: "" }); // 500
+  d = setEntry(d, "2026-W22", "A", "p2", { sets: [{ reps: "10", kg: "20", done: true }], note: "" }); // 200
+  const dayPlan = { day: "A", exercises: [
+    { id: "p1", muscle: "Petto", superset: false },
+    { id: "p2", muscle: "Spalle", superset: false },
+  ] };
+  assert.deepEqual(volumeByMuscle(d, "2026-W22", "A", dayPlan), [
+    { muscle: "Petto", volume: 500 },
+    { muscle: "Spalle", volume: 200 },
+  ]);
+});
+
+test("volumeByMuscle: superset attribuisce A->muscle, B->muscleB", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "s1", {
+    a: { sets: [{ reps: "10", kg: "30", done: true }], note: "" }, // 300 -> Tricipiti
+    b: { sets: [{ reps: "10", kg: "10", done: true }], note: "" }, // 100 -> Bicipiti
+    note: "",
+  });
+  const dayPlan = { day: "A", exercises: [
+    { id: "s1", muscle: "Tricipiti", muscleB: "Bicipiti", superset: true },
+  ] };
+  assert.deepEqual(volumeByMuscle(d, "2026-W22", "A", dayPlan), [
+    { muscle: "Tricipiti", volume: 300 },
+    { muscle: "Bicipiti", volume: 100 },
+  ]);
+});
+
+test("volumeByMuscle: muscolo mancante finisce in 'Altro'", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "p1", { sets: [{ reps: "10", kg: "40", done: true }], note: "" });
+  const dayPlan = { day: "A", exercises: [{ id: "p1", superset: false }] };
+  assert.deepEqual(volumeByMuscle(d, "2026-W22", "A", dayPlan), [{ muscle: "Altro", volume: 400 }]);
+});
+
+test("volumeByMuscle: accumula stesso muscolo da esercizi diversi", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "p1", { sets: [{ reps: "10", kg: "50", done: true }], note: "" }); // 500
+  d = setEntry(d, "2026-W22", "A", "p2", { sets: [{ reps: "10", kg: "30", done: true }], note: "" }); // 300
+  const dayPlan = { day: "A", exercises: [
+    { id: "p1", muscle: "Petto", superset: false },
+    { id: "p2", muscle: "Petto", superset: false },
+  ] };
+  assert.deepEqual(volumeByMuscle(d, "2026-W22", "A", dayPlan), [{ muscle: "Petto", volume: 800 }]);
 });

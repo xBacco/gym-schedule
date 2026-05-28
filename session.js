@@ -259,6 +259,32 @@ export function sessionVolume(data, weekKey, day, dayPlan) {
   return total;
 }
 
+// Volume settimanale per gruppo muscolare: [{muscle, volume}] ordinato desc.
+// Traccia normale/A -> ex.muscle, traccia B del superset -> ex.muscleB. Muscolo
+// assente -> "Altro". Riusa trackVolume (serie done, no warmup/failed).
+export function volumeByMuscle(data, weekKey, day, dayPlan) {
+  const exs = dayPlan?.exercises ?? [];
+  const map = new Map();
+  const add = (muscle, vol) => {
+    if (vol <= 0) return;
+    const key = muscle && String(muscle).trim() ? String(muscle) : "Altro";
+    map.set(key, (map.get(key) ?? 0) + vol);
+  };
+  for (const ex of exs) {
+    const v = getEntry(data, weekKey, day, ex.id);
+    if (ex?.superset) {
+      const e = normalizeSupersetEntry(v);
+      add(ex.muscle, trackVolume(e.a));
+      add(ex.muscleB, trackVolume(e.b));
+    } else {
+      add(ex?.muscle, trackVolume(normalizeEntry(v)));
+    }
+  }
+  return [...map.entries()]
+    .map(([muscle, volume]) => ({ muscle, volume }))
+    .sort((a, b) => b.volume - a.volume);
+}
+
 // Top-set (kg max) di una settimana per quell'esercizio; null se nessun kg numerico.
 function weekTopKg(data, weekKey, day, exId, superset) {
   const v = getEntry(data, weekKey, day, exId);
