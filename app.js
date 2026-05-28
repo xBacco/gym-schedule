@@ -1,5 +1,5 @@
 import { PLAN } from "./plan.js";
-import { migrate, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan } from "./editor.js";
+import { migrate, backfillMuscles, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan } from "./editor.js";
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
@@ -1744,7 +1744,7 @@ async function saveToCloud() {
       try {
         const localPlan = data.plan; // edit strutturali della scheda: non sono nel buffer pending
         const remote = await store.load();
-        data = keepLocalPlan(migrate(applyPending(remote.data), PLAN), localPlan);
+        data = keepLocalPlan(backfillMuscles(migrate(applyPending(remote.data), PLAN), PLAN), localPlan);
         sha = remote.sha;
         sha = await store.save(data, sha, `log: ${currentWeek} (merge)`);
         setPending([]);
@@ -1991,6 +1991,8 @@ async function boot() {
   }
   // Migrazione schema 1->2 (indice->id) dopo applyPending, su entrambi i rami.
   data = migrate(data, PLAN);
+  // Migrazione schema 2->3: backfill dei gruppi muscolari sul plan esistente.
+  data = backfillMuscles(data, PLAN);
   data = ensureWeek(data, currentWeek);
   openIndex = null;
   renderWeekSelect();
