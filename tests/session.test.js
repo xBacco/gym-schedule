@@ -659,6 +659,12 @@ test("bestKgBefore: ignora warmup e failed", () => {
   assert.equal(bestKgBefore(d, "A", "p1", "2026-W22"), 60);
 });
 
+test("bestKgBefore: ignora le settimane successive a weekKey", () => {
+  const d = dataKg({ "2026-W20": [50], "2026-W22": [100] });
+  // Da W21 in poi W22 esiste ma è dopo: non deve essere conteggiata.
+  assert.equal(bestKgBefore(d, "A", "p1", "2026-W21"), 50);
+});
+
 test("isWeekRecord: true se la settimana batte strettamente lo storico", () => {
   const d = dataKg({ "2026-W20": [60], "2026-W22": [65] });
   assert.equal(isWeekRecord(d, "A", "p1", "2026-W22"), true);
@@ -679,9 +685,15 @@ test("isWeekRecord: false se la settimana non ha kg working", () => {
   assert.equal(isWeekRecord(d, "A", "p1", "2026-W22"), false);
 });
 
-test("isSetRecord: numerico vs null e maggiore stretto", () => {
+test("isSetRecord: prevBest null e kg numerico -> true", () => {
   assert.equal(isSetRecord(null, "40"), true);
+});
+test("isSetRecord: kg maggiore stretto del prevBest -> true", () => {
   assert.equal(isSetRecord(60, "65"), true);
+});
+test("isSetRecord: pareggio non è record -> false", () => {
   assert.equal(isSetRecord(60, "60"), false);
+});
+test("isSetRecord: kg non numerico -> false", () => {
   assert.equal(isSetRecord(60, ""), false);
 });

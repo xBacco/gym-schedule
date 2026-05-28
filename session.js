@@ -121,21 +121,21 @@ export function previousNote(data, day, exId, weekKey, superset = false) {
 export function bestKg(data, day, exId) {
   let best = null;
   for (const k of Object.keys(data?.weeks ?? {})) {
-    const e = normalizeEntry(getEntry(data, k, day, exId));
-    for (const s of e.sets) {
+    const t = entryTrack(getEntry(data, k, day, exId), null);
+    for (const s of t.sets) {
       if (s.warmup || s.failed) continue;
-      const v = parseFloat(String(s.kg).replace(",", "."));
-      if (Number.isFinite(v) && (best === null || v > best)) best = v;
+      const v = parseNum(s.kg);
+      if (v !== null && (best === null || v > best)) best = v;
     }
   }
   return best;
 }
 
-// Max kg working escludendo la settimana `weekKey` (per capire se è un nuovo PR).
+// Max kg working delle settimane precedenti a `weekKey` (per capire se è un nuovo PR).
 export function bestKgBefore(data, day, exId, weekKey, track = null) {
   let best = null;
   for (const k of Object.keys(data?.weeks ?? {})) {
-    if (k === weekKey) continue;
+    if (k >= weekKey) continue;
     const t = entryTrack(getEntry(data, k, day, exId), track);
     for (const s of t.sets) {
       if (s.warmup || s.failed) continue;
