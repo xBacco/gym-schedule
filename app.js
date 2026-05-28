@@ -3,8 +3,11 @@ import { migrate, backfillMuscles, addExercise, removeExercise, reorderExercise,
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
-  GitHubStore, ConflictError, AuthError,
+  GitHubStore, SupabaseStore, mergeBlobs, ConflictError, AuthError,
 } from "./store.js";
+import { supabase } from "./supabase-client.js";
+import { bindAuthScreen, hideAuthScreen, signOut } from "./auth.js";
+import { ProfileStorage } from "./profile-storage.js";
 import {
   parseTarget, activeSetIndex, isEntryComplete, bestKg, isWeekRecord, isSetRecord, progressionDelta,
   withSet, withoutSet, withSupersetSet, withoutSupersetSet, withNote, previousNote,
@@ -31,6 +34,9 @@ let currentDay = "A";
 let openIndex = null;        // esercizio aperto nel focus a schermo intero (null = nessuno)
 let supersetTab = "a";       // sotto-tab attivo nel focus di un superset
 let store = null;
+let session = null;        // { user: {id, email}, ... } da Supabase
+let profileStorage = null; // ProfileStorage per la sessione corrente
+let dataVersion = 0;       // optimistic lock version (sostituisce 'sha')
 
 // Stato del dialog progressione
 let chartExId = null;   // id esercizio mostrato
@@ -1983,11 +1989,30 @@ function wireDrawer() {
 }
 
 // ---- Boot ----
-function initStore() {
-  store = new GitHubStore({ owner: OWNER, repo: REPO, token: getToken() });
-}
 
 async function boot() {
+  // 1. Verifica sessione.
+  const { data: sessionData } = await supabase.auth.getSession();
+  session = sessionData.session;
+
+  // 2. Bind dell'auth screen (idempotente, basta una volta).
+  bindAuthScreen(supabase, {
+    redirectTo: location.origin + location.pathname,
+    onLoggedIn: () => location.reload(),
+  });
+
+  if (!session) {
+    document.getElementById("auth-screen").hidden = false;
+    document.getElementById("app").hidden = true;
+    return;
+  }
+
+  // 3. Sessione attiva → mostra app, inizializza store.
+  hideAuthScreen();
+  profileStorage = new ProfileStorage(localStorage, session.user.id);
+  store = new SupabaseStore(supabase);
+
+  // Wire UI event listeners (richiedono DOM visibile).
   wireSettings();
   wireTimerControls();
   wireSetDialog();
@@ -2053,30 +2078,82 @@ async function boot() {
     if (planOpen) { planOpen = false; renderPlanEditor(); }
     if (calendarOpen) { calendarOpen = false; renderCalendar(); }
   });
-  initStore();
-  setStatus("carico…");
-  try {
-    const loaded = await store.load();
-    data = applyPending(loaded.data);
-    sha = loaded.sha;
-    setStatus(getToken() ? "salvato ✓" : "sola lettura", getToken() ? "ok" : "pending");
-  } catch (err) {
-    data = applyPending(emptyData());
-    setStatus(err instanceof AuthError ? "token non valido ⚠" : "offline ⧗", err instanceof AuthError ? "error" : "pending");
+
+  // 4. Carica dati: prima da localStorage (mostra subito), poi da remote.
+  const cached = profileStorage.get("data");
+  if (cached) {
+    data = cached;
+    dataVersion = profileStorage.get("version") || 0;
+    render();
   }
-  // Migrazione schema 1->2 (indice->id) dopo applyPending, su entrambi i rami.
-  data = migrate(data, PLAN);
-  // Migrazione schema 2->3: backfill dei gruppi muscolari sul plan esistente.
-  data = backfillMuscles(data, PLAN);
-  data = ensureWeek(data, currentWeek);
-  openIndex = null;
-  renderWeekSelect();
-  render();
-  wakeLock.enable();
-  if (getPending().length && getToken()) saveToCloud();
+
+  try {
+    const remote = await store.load();
+    if (cached && profileStorage.get("dirty")) {
+      // Locale dirty → merge + push.
+      const merged = mergeBlobs(cached, remote.data);
+      dataVersion = await store.save(merged, remote.version);
+      data = merged;
+      profileStorage.set("data", data);
+      profileStorage.set("version", dataVersion);
+      profileStorage.set("dirty", false);
+    } else if (!cached || remote.version > (profileStorage.get("version") || 0)) {
+      data = remote.data;
+      dataVersion = remote.version;
+      profileStorage.set("data", data);
+      profileStorage.set("version", dataVersion);
+    }
+    // Backfill schema sui dati appena letti (riusa logica esistente).
+    data = backfillMuscles(migrate(data), PLAN);
+    render();
+    setStatus("ok ✓", "ok");
+  } catch (err) {
+    if (err instanceof AuthError) {
+      // Sessione invalidata: logout pulito.
+      await signOut(supabase);
+      location.reload();
+      return;
+    }
+    setStatus("offline ⧗", "pending");
+  }
+
+  // 5. Listener auth changes (es. logout da altra tab).
+  supabase.auth.onAuthStateChange((_event, newSession) => {
+    if (!newSession && session) {
+      // Logout
+      profileStorage?.clear();
+      location.reload();
+    }
+  });
+
+  // 6. Reconcile on visibility change (telefono+PC).
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      reconcileFromRemote().catch(() => {});
+    }
+  });
 }
 
-boot();
+async function reconcileFromRemote() {
+  if (!store || !session) return;
+  try {
+    const remote = await store.load();
+    if (remote.version === dataVersion) return; // nessun cambio
+    const merged = mergeBlobs(data, remote.data);
+    dataVersion = await store.save(merged, remote.version);
+    data = merged;
+    profileStorage.set("data", data);
+    profileStorage.set("version", dataVersion);
+    render();
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      // Race: ritenta una volta.
+      return reconcileFromRemote();
+    }
+  }
+}
+
+window.addEventListener("load", boot);
 
 // PWA: registra il service worker e gestisce l'aggiornamento (best-effort).
 // `swUpdating` distingue l'aggiornamento voluto dall'utente (tap sul banner)
