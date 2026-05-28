@@ -464,20 +464,29 @@ function ensureAudio() {
   audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === "suspended") audioCtx.resume();
 }
-function beep() {
+// Tono singolo WebAudio (freq Hz, durata s, volume di picco). after = ritardo s.
+function tone(freq, dur = 0.18, peak = 0.3, after = 0) {
   try {
     ensureAudio();
+    const t0 = audioCtx.currentTime + after;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.001, t0);
+    gain.gain.exponentialRampToValueAtTime(peak, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
     osc.connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.5);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
   } catch (_) { /* audio unavailable; ignore */ }
 }
+// Fine recupero: due toni ascendenti ben udibili. Preavviso (−10s): doppio tono
+// basso. Countdown (3-2-1): tick acuto breve. Suoni distinti tra loro così si
+// riconoscono a orecchio anche con la musica nelle cuffie.
+function beep() { tone(880, 0.45, 0.32); tone(1180, 0.4, 0.3, 0.16); }
+function cueWarning() { tone(440, 0.16, 0.24); tone(440, 0.16, 0.24, 0.2); if (navigator.vibrate) navigator.vibrate(120); }
+function cueCountdown() { tone(700, 0.11, 0.26); }
+let lastTickSecond = null;
 
 function showRestDoneBanner() {
   const b = document.getElementById("restDoneBanner");
@@ -498,6 +507,13 @@ const timer = new RestTimer({
   onTick: (remaining, label) => {
     document.getElementById("timerTime").textContent = formatTime(remaining);
     document.getElementById("timerLabel").textContent = label;
+    // Cue sonori una sola volta per secondo (onTick gira ogni 250ms): preavviso a
+    // 10s, poi countdown 3-2-1. Il suono di fine è in onEnd.
+    if (remaining !== lastTickSecond) {
+      if (remaining === 10) cueWarning();
+      else if (remaining >= 1 && remaining <= 3) cueCountdown();
+      lastTickSecond = remaining;
+    }
   },
   onEnd: (label) => {
     hideFeelAsk();
