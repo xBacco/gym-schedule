@@ -282,4 +282,39 @@ export class SupabaseStore {
     if (!row) return { data: emptyData(), version: 0 };
     return { data: row.data, version: row.version };
   }
+
+  // Salva il blob con optimistic locking su version. Ritorna newVersion.
+  // - expectedVersion = 0  → INSERT (prima save dell'utente)
+  // - expectedVersion > 0  → UPDATE con WHERE version = expectedVersion
+  // Se l'update tocca 0 righe → ConflictError.
+  async save(blob, expectedVersion) {
+    const userId = await this._requireSession();
+    if (expectedVersion === 0) {
+      const { data: row, error } = await this.client
+        .from("user_data")
+        .upsert({ user_id: userId, data: blob, version: 1 }, { onConflict: "user_id", ignoreDuplicates: false })
+        .select("version")
+        .single();
+      if (error) {
+        if (error.status === 401 || error.status === 403) throw new AuthError(error.message);
+        throw new Error(`Supabase save (insert) failed: ${error.message}`);
+      }
+      return row.version;
+    }
+    const { data: row, error } = await this.client
+      .from("user_data")
+      .update({ data: blob })
+      .match({ user_id: userId, version: expectedVersion })
+      .select("version")
+      .single();
+    if (error) {
+      if (error.code === "PGRST116") {
+        // PGRST116 = "Cannot coerce the result to a single object" → 0 righe
+        throw new ConflictError("Conflitto: versione cambiata sul server");
+      }
+      if (error.status === 401 || error.status === 403) throw new AuthError(error.message);
+      throw new Error(`Supabase save failed: ${error.message}`);
+    }
+    return row.version;
+  }
 }

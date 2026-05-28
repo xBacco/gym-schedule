@@ -2,31 +2,48 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { SupabaseStore, ConflictError, AuthError } from "../store.js";
 
-// Mock minimale del client Supabase. Le firme replicano quelle usate da SupabaseStore.
-function mockClient({ session = { user: { id: "u1" } }, queries = [] } = {}) {
-  let queryIdx = 0;
+// Mock espressivo del client Supabase. Supporta sia load che save.
+function mockClient({ session = { user: { id: "u1" } }, loads = [], saves = [] } = {}) {
+  let loadIdx = 0, saveIdx = 0;
   return {
-    auth: {
-      getSession: async () => ({ data: { session }, error: null }),
-    },
+    auth: { getSession: async () => ({ data: { session }, error: null }) },
     from(table) {
       assert.equal(table, "user_data");
-      return {
+      const builder = {
+        _filters: {},
         select() { return this; },
         eq(col, val) {
           assert.equal(col, "user_id");
           assert.equal(val, session.user.id);
+          this._filters[col] = val;
           return this;
         },
+        match(f) { this._filters = { ...this._filters, ...f }; return this; },
         maybeSingle: async () => {
-          const next = queries[queryIdx++];
-          if (!next) throw new Error("mock: queries esaurite");
+          const next = loads[loadIdx++];
+          if (!next) throw new Error("mock: loads esaurite");
           return next;
         },
-        update(payload) { this._upd = payload; return this; },
-        match(filter) { this._match = filter; return this; },
-        select_after_update() { return this; },
+        update(payload) {
+          this._update = payload;
+          return this;
+        },
+        upsert(payload, opts) {
+          this._upsert = payload;
+          this._upsertOpts = opts;
+          return this;
+        },
+        insert(payload) {
+          this._insert = payload;
+          return this;
+        },
+        single: async () => {
+          const next = saves[saveIdx++];
+          if (!next) throw new Error("mock: saves esaurite");
+          return next;
+        },
       };
+      return builder;
     },
   };
 }
@@ -34,7 +51,7 @@ function mockClient({ session = { user: { id: "u1" } }, queries = [] } = {}) {
 test("SupabaseStore.load ritorna {data, version} dalla riga utente", async () => {
   const remote = { weeks: { "2026-W22": { label: "1", entries: {} } }, updatedAt: "2026-05-25T10:00:00Z" };
   const client = mockClient({
-    queries: [{ data: { data: remote, version: 7 }, error: null }],
+    loads: [{ data: { data: remote, version: 7 }, error: null }],
   });
   const store = new SupabaseStore(client);
   const result = await store.load();
@@ -42,7 +59,7 @@ test("SupabaseStore.load ritorna {data, version} dalla riga utente", async () =>
 });
 
 test("SupabaseStore.load ritorna emptyData quando nessuna riga ancora", async () => {
-  const client = mockClient({ queries: [{ data: null, error: null }] });
+  const client = mockClient({ loads: [{ data: null, error: null }] });
   const store = new SupabaseStore(client);
   const result = await store.load();
   assert.deepEqual(result, { data: { weeks: {}, updatedAt: null }, version: 0 });
@@ -52,4 +69,24 @@ test("SupabaseStore.load lancia AuthError quando non c'è sessione", async () =>
   const client = mockClient({ session: null });
   const store = new SupabaseStore(client);
   await assert.rejects(() => store.load(), AuthError);
+});
+
+test("SupabaseStore.save aggiorna riga esistente e ritorna nuova version", async () => {
+  const blob = { weeks: { "2026-W22": {} }, updatedAt: "2026-05-25T10:00:00Z" };
+  const client = mockClient({
+    saves: [{ data: { version: 8 }, error: null, count: 1 }],
+  });
+  const store = new SupabaseStore(client);
+  const newVersion = await store.save(blob, 7);
+  assert.equal(newVersion, 8);
+});
+
+test("SupabaseStore.save su version=0 fa insert iniziale", async () => {
+  const blob = { weeks: {}, updatedAt: null };
+  const client = mockClient({
+    saves: [{ data: { version: 1 }, error: null, count: 1 }],
+  });
+  const store = new SupabaseStore(client);
+  const newVersion = await store.save(blob, 0);
+  assert.equal(newVersion, 1);
 });
