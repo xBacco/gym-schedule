@@ -542,7 +542,8 @@
           "recText": "2 min",
           "restSeconds": 120,
           "superset": false,
-          "id": "cxgj3"
+          "id": "cxgj3",
+          "muscle": "Petto"
         },
         {
           "name": "Lento avanti manubri",
@@ -550,7 +551,8 @@
           "recText": "2 min",
           "restSeconds": 120,
           "superset": false,
-          "id": "z3ps9"
+          "id": "z3ps9",
+          "muscle": "Spalle"
         },
         {
           "name": "Croci ai cavi",
@@ -558,7 +560,8 @@
           "recText": "75 sec",
           "restSeconds": 75,
           "superset": false,
-          "id": "howq7"
+          "id": "howq7",
+          "muscle": "Petto"
         },
         {
           "name": "Dips",
@@ -566,7 +569,8 @@
           "recText": "90 sec",
           "restSeconds": 90,
           "superset": false,
-          "id": "52mk0"
+          "id": "52mk0",
+          "muscle": "Petto"
         },
         {
           "name": "Pulldown presa larga",
@@ -574,7 +578,8 @@
           "recText": "90 sec",
           "restSeconds": 90,
           "superset": false,
-          "id": "5q8yi"
+          "id": "5q8yi",
+          "muscle": "Dorso"
         },
         {
           "name": "Pushdown tricipiti + Curl manubri",
@@ -582,7 +587,9 @@
           "recText": "75 sec",
           "restSeconds": 75,
           "superset": true,
-          "id": "1gidd"
+          "id": "1gidd",
+          "muscle": "Tricipiti",
+          "muscleB": "Bicipiti"
         },
         {
           "name": "Polpacci in piedi",
@@ -590,7 +597,8 @@
           "recText": "60 sec",
           "restSeconds": 60,
           "superset": false,
-          "id": "v5097"
+          "id": "v5097",
+          "muscle": "Polpacci"
         },
         {
           "name": "Crunch a terra + Plank",
@@ -598,7 +606,9 @@
           "recText": "60 sec",
           "restSeconds": 60,
           "superset": true,
-          "id": "tz1nt"
+          "id": "tz1nt",
+          "muscle": "Core",
+          "muscleB": "Core"
         }
       ]
     },
@@ -612,23 +622,8 @@
           "recText": "2 min",
           "restSeconds": 120,
           "superset": false,
-          "id": "8q1zt"
-        },
-        {
-          "name": "Rematore bilanciere",
-          "setsReps": "3 × 8-10",
-          "recText": "2 min",
-          "restSeconds": 120,
-          "superset": false,
-          "id": "ngw9n"
-        },
-        {
-          "name": "Pullover con manubrio",
-          "setsReps": "3 × 12-15",
-          "recText": "75 sec",
-          "restSeconds": 75,
-          "superset": false,
-          "id": "1ytay"
+          "id": "8q1zt",
+          "muscle": "Gambe"
         },
         {
           "name": "Affondi con manubri",
@@ -636,7 +631,26 @@
           "recText": "90-120 s",
           "restSeconds": 120,
           "superset": false,
-          "id": "2hvi3"
+          "id": "2hvi3",
+          "muscle": "Gambe"
+        },
+        {
+          "name": "Rematore bilanciere",
+          "setsReps": "3 × 8-10",
+          "recText": "2 min",
+          "restSeconds": 120,
+          "superset": false,
+          "id": "ngw9n",
+          "muscle": "Dorso"
+        },
+        {
+          "name": "Pullover con manubrio",
+          "setsReps": "3 × 12-15",
+          "recText": "75 sec",
+          "restSeconds": 75,
+          "superset": false,
+          "id": "1ytay",
+          "muscle": "Dorso"
         },
         {
           "name": "Spinte su panca inclinata (manubri)",
@@ -644,7 +658,8 @@
           "recText": "90 sec",
           "restSeconds": 90,
           "superset": false,
-          "id": "3f9te"
+          "id": "3f9te",
+          "muscle": "Petto"
         },
         {
           "name": "Curl EZ + Skullcrusher",
@@ -653,7 +668,9 @@
           "restSeconds": 75,
           "superset": true,
           "bar": 10,
-          "id": "xu7ag"
+          "id": "xu7ag",
+          "muscle": "Bicipiti",
+          "muscleB": "Tricipiti"
         },
         {
           "name": "Face pull",
@@ -661,7 +678,8 @@
           "recText": "60 sec",
           "restSeconds": 60,
           "superset": false,
-          "id": "bpr46"
+          "id": "bpr46",
+          "muscle": "Spalle"
         },
         {
           "name": "Leg raise + Russian twist",
@@ -669,7 +687,9 @@
           "recText": "60 sec",
           "restSeconds": 60,
           "superset": true,
-          "id": "zcx7z"
+          "id": "zcx7z",
+          "muscle": "Core",
+          "muscleB": "Core"
         }
       ]
     },
@@ -683,7 +703,8 @@
           "recText": "2 min",
           "restSeconds": 120,
           "superset": false,
-          "id": "aaui5"
+          "id": "aaui5",
+          "muscle": "Spalle"
         },
         {
           "name": "Alzate laterali",
@@ -691,7 +712,8 @@
           "recText": "60 sec",
           "restSeconds": 60,
           "superset": false,
-          "id": "v527v"
+          "id": "v527v",
+          "muscle": "Spalle"
         },
         {
           "name": "Alzate posteriori (reverse fly)",
@@ -699,7 +721,8 @@
           "recText": "60 sec",
           "restSeconds": 60,
           "superset": false,
-          "id": "gnj31"
+          "id": "gnj31",
+          "muscle": "Spalle"
         },
         {
           "name": "Spinte manubri panca piana",
@@ -707,7 +730,8 @@
           "recText": "90 sec",
           "restSeconds": 90,
           "superset": false,
-          "id": "mgndf"
+          "id": "mgndf",
+          "muscle": "Petto"
         },
         {
           "name": "Rematore al cavo, presa neutra",
@@ -715,7 +739,17 @@
           "recText": "90 sec",
           "restSeconds": 90,
           "superset": false,
-          "id": "85gvb"
+          "id": "85gvb",
+          "muscle": "Dorso"
+        },
+        {
+          "name": "Rematore manubrio",
+          "setsReps": "3 × 10-12",
+          "recText": "90 sec",
+          "restSeconds": 90,
+          "superset": false,
+          "id": "rmman",
+          "muscle": "Dorso"
         },
         {
           "name": "Curl EZ + Skullcrusher",
@@ -724,7 +758,9 @@
           "restSeconds": 75,
           "superset": true,
           "bar": 10,
-          "id": "3tzq7"
+          "id": "3tzq7",
+          "muscle": "Bicipiti",
+          "muscleB": "Tricipiti"
         },
         {
           "name": "Curl concentrato + Pushdown",
@@ -732,7 +768,9 @@
           "recText": "60 sec",
           "restSeconds": 60,
           "superset": true,
-          "id": "bslij"
+          "id": "bslij",
+          "muscle": "Bicipiti",
+          "muscleB": "Tricipiti"
         },
         {
           "name": "Crunch inverso + Plank laterale",
@@ -740,7 +778,9 @@
           "recText": "60 sec",
           "restSeconds": 60,
           "superset": true,
-          "id": "f7m27"
+          "id": "f7m27",
+          "muscle": "Core",
+          "muscleB": "Core"
         }
       ]
     }
