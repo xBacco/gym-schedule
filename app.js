@@ -2151,9 +2151,22 @@ async function offerSeedIfEmpty() {
   }
 }
 
-// Rescue dei dati pre-cut-over a Supabase: legge le vecchie chiavi non-namespacizzate
-// (`gymsched_data` + `gymsched_pending`), fa merge con il blob corrente e pianifica
-// il push sul cloud. Le chiavi legacy NON vengono cancellate: restano come backup.
+// Rescue dei dati pre-cut-over a Supabase. Il vecchio app.js NON salvava il blob
+// `data` in localStorage (caricava dal cloud data.json ad ogni boot), salvava solo
+// i log non ancora pushati in `gymsched_pending` + qualche preferenza (`gymsched_bar`,
+// `gymsched_plates`, ecc.). Il rescue legge ogni potenziale fonte e fa merge.
+// Le chiavi legacy NON vengono cancellate: restano come backup.
+function dumpGymschedKeys() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith("gymsched")) {
+      const v = localStorage.getItem(k) ?? "";
+      out.push({ key: k, size: v.length });
+    }
+  }
+  return out.sort((a, b) => a.key.localeCompare(b.key));
+}
 async function rescueLegacyLocalStorage() {
   const rawData = localStorage.getItem("gymsched_data");
   const rawPending = localStorage.getItem(PENDING_KEY);
@@ -2170,7 +2183,19 @@ async function rescueLegacyLocalStorage() {
   }
   const wkKeys = Object.keys(legacy?.weeks || {}).sort();
   if (wkKeys.length === 0 && pendingList.length === 0) {
-    alert("Nessun dato locale legacy trovato in questo browser.\n\nSe avevi gli allenamenti su un altro device, aprilo lì e prova questo bottone.");
+    // Diagnostic: elenca tutte le chiavi gymsched_* presenti, così capiamo
+    // dove sono finiti i dati (o se non ci sono mai stati su questo device).
+    const keys = dumpGymschedKeys();
+    const list = keys.length === 0
+      ? "  (nessuna chiave 'gymsched_*' nel localStorage di questo browser)"
+      : keys.map((k) => `  • ${k.key} — ${k.size} byte`).join("\n");
+    alert(
+      "Nessun dato di scheda trovato in localStorage.\n\n" +
+      "Chiavi 'gymsched_*' presenti in questo browser:\n" + list + "\n\n" +
+      "Account attivo: " + (session?.user?.email ?? "—") + "\n" +
+      "Origine: " + location.origin + location.pathname + "\n\n" +
+      "Se avevi gli allenamenti su un altro device o profilo, aprilo lì."
+    );
     return;
   }
   const wkRange = wkKeys.length === 0 ? "—" : (wkKeys.length === 1 ? wkKeys[0] : `${wkKeys[0]} → ${wkKeys[wkKeys.length-1]}`);
