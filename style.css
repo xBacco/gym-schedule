@@ -266,8 +266,9 @@ dialog#settingsDialog.settings-v2-host::backdrop{
 .sv-pill-acc{ background:var(--acc); color:var(--acc-ink); border-color:var(--acc); }
 .sv-pill-acc:active{ filter:brightness(.92); }
 .sv-grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
-.sv-field{ display:flex; flex-direction:column; gap:3px; }
-.sv-field > span{
+/* Specificità .settings-v2 .sv-field per battere `.settings label{display:block}` */
+.settings-v2 .sv-field{ display:flex; flex-direction:column; gap:3px; margin:0; }
+.settings-v2 .sv-field > span{
   font-family:"JetBrains Mono",monospace;
   font-size:9px; letter-spacing:.12em; text-transform:uppercase;
   color:var(--dim); font-weight:700;
@@ -302,9 +303,11 @@ dialog#settingsDialog.settings-v2-host::backdrop{
   background:var(--acc); color:var(--acc-ink); border:none; border-radius:9px;
   width:36px; padding:0; font-size:18px; font-weight:800; cursor:pointer;
 }
-/* Riga toggle: icona · etichetta · switch iOS-style allineato a destra */
+/* Riga toggle: icona · etichetta · switch iOS-style allineato a destra.
+   Specificità .settings-v2 .sv-toggle (0,2,0) batte `.settings label{display:block}`
+   che altrimenti collassa il flex e schiaccia tutti i figli inline a sinistra. */
 .sv-toggle-card{ padding:0; }
-.sv-toggle{
+.settings-v2 .sv-toggle{
   display:flex; align-items:center; gap:10px;
   padding:11px 12px; cursor:pointer; margin:0;
 }
@@ -312,7 +315,7 @@ dialog#settingsDialog.settings-v2-host::backdrop{
 .sv-toggle-lbl{ flex:1; font-size:13px; font-weight:600; color:var(--ink); }
 .sv-switch{
   position:relative; width:42px; height:24px; flex:none;
-  display:inline-block;
+  display:inline-block; margin-left:auto;
 }
 .sv-switch input{
   position:absolute; inset:0; width:100%; height:100%;
