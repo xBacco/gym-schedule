@@ -62,3 +62,11 @@ test("applyFx rimuove le classi quando le pref tornano false", () => {
   applyFx(root, s);
   assert.equal(root.classList.contains("fx-glow"), false);
 });
+
+test("applyFx applica entrambe le classi quando entrambe le pref sono attive", () => {
+  const s = fakeStorage({ gymsched_fx_glow: "1", gymsched_fx_scan: "1" });
+  const root = fakeRoot();
+  applyFx(root, s);
+  assert.equal(root.classList.contains("fx-glow"), true);
+  assert.equal(root.classList.contains("fx-scan"), true);
+});
