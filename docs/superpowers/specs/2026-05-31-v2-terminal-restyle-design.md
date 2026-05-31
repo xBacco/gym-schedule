@@ -144,13 +144,10 @@ col tema, con `+ aggiungi giorno` / `+ aggiungi esercizio`.
 ## 7. Onboarding & demo
 
 - Utente **nuovo** → empty-state. Nessun import automatico della scheda altrui.
-- L'attuale `seedDialog` (“importa scheda demo da `data.json` pubblico”) viene
-  **rimosso dal flusso del nuovo utente**. Opzioni (da confermare in review):
-  - (a) eliminarlo del tutto;
-  - (b) mantenerlo come voce esplicita e neutra in Impostazioni (“importa scheda di
-    esempio”), **senza** che la demo sia la scheda personale del proprietario.
-  - Raccomandazione: **(a)** per l'MVP (più pulito), con possibilità di import file
-    `.json` dell'utente (export/import è già nel backlog migliorie #4).
+- **DECISO**: l'attuale `seedDialog` (“importa scheda demo da `data.json` pubblico”)
+  viene **eliminato del tutto** dal codice. Nessun import automatico né voce demo.
+  L'import resta possibile in futuro solo come **import file `.json`** dell'utente
+  (export/import = backlog migliorie #4, fuori da questo spec).
 
 ## 8. Dati del proprietario (account esistente)
 
