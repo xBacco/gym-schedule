@@ -896,9 +896,9 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .item .ex-foot .logbtn.fulldone{ background:transparent; color:var(--dim); border-color:var(--line); }
 
 /* ===== Piano 3a — Focus / logging (vs 03-esercizio.html) ===== */
-.focus-ov .focus-sbar{ margin:0 0 8px; border-radius:0; border:none; border-bottom:1px solid var(--line); }
+.focus-ov .focus-sbar{ padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px; border-radius:0; border:none; border-bottom:1px solid var(--line); }
 .focus-top{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
-.focus-back{ color:var(--ac2); background:none; border:none; font-size:18px; cursor:pointer; }
+.focus-back{ color:var(--ac2); background:none; border:none; font-size:18px; cursor:pointer; min-width:44px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
 .focus-id .fn{ color:var(--tx); font-size:16px; }
 .focus-id .fs{ color:var(--dim); font-size:10px; letter-spacing:.08em; margin-top:1px; }
 .focus-chart{ color:var(--ac2); background:none; border:none; font-size:15px; }
