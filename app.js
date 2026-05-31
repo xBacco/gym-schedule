@@ -1933,10 +1933,8 @@ function renderList() {
     // Piede riga: sparkline (storico top-set) + azione log esplicita.
     const foot = document.createElement("div");
     foot.className = "ex-foot";
-    const exIdF = exIdAt(i);
-    const trend = exerciseTrend(data, currentDay, exIdF, currentWeek, 4, !!ex.superset);
-    const NS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(NS, "svg");
+    const trend = exerciseTrend(data, currentDay, exIdL, currentWeek, 4, !!ex.superset);
+    const svg = document.createElementNS(SVGNS, "svg");
     svg.setAttribute("class", "spark");
     svg.setAttribute("height", "18");
     svg.setAttribute("width", "100%");
@@ -1944,27 +1942,28 @@ function renderList() {
     svg.setAttribute("preserveAspectRatio", "none");
     if (trend.length >= 2) {
       const geo = chartGeometry(trend, { width: 120, height: 18, padX: 2, padTop: 3, padBottom: 3, padRight: 4 });
-      const pl = document.createElementNS(NS, "polyline");
+      const pl = document.createElementNS(SVGNS, "polyline");
       pl.setAttribute("points", geo.points.map((p) => `${p.x},${p.y}`).join(" "));
       pl.setAttribute("fill", "none");
       pl.setAttribute("stroke", "var(--ac2)");
       pl.setAttribute("stroke-width", "1.5");
       svg.appendChild(pl);
       const last = geo.points[geo.points.length - 1];
-      const dot = document.createElementNS(NS, "circle");
+      const dot = document.createElementNS(SVGNS, "circle");
       dot.setAttribute("cx", String(last.x)); dot.setAttribute("cy", String(last.y));
       dot.setAttribute("r", "2.2"); dot.setAttribute("fill", "var(--acc)");
       svg.appendChild(dot);
     } else {
-      const pl = document.createElementNS(NS, "polyline");
+      const pl = document.createElementNS(SVGNS, "polyline");
       pl.setAttribute("points", "2,9 60,9 118,9");
       pl.setAttribute("fill", "none"); pl.setAttribute("stroke", "var(--ctc)"); pl.setAttribute("stroke-width", "1.5");
       svg.appendChild(pl);
     }
     const logbtn = document.createElement("button");
     logbtn.type = "button";
-    logbtn.className = "logbtn" + (isComplete(i) ? " fulldone" : "");
-    logbtn.textContent = isComplete(i) ? "✓ fatto" : "› log";
+    const done = isComplete(i);
+    logbtn.className = "logbtn" + (done ? " fulldone" : "");
+    logbtn.textContent = done ? "✓ fatto" : "› log";
     logbtn.addEventListener("click", (e) => { e.stopPropagation(); openFocus(i); });
     foot.append(svg, logbtn);
     item.appendChild(foot);
