@@ -1,13 +1,28 @@
 :root{
-  --bg:#100E0A; --surf:#181511; --surf2:#1E1A14; --line:#2A2620;
-  --ink:#EFEBE3; --dim:#938B7B; --faint:#6F685B;
-  --acc:#E8A93C; --acc-ink:#241803; --ok:#E8A93C; --down:#E0843F;
-  --field:#221D14;
+  /* Amber CRT — palette V2 (mockups/v2-amber-crt). Nomi invariati per churn minimo. */
+  --bg:#0c0a06;        /* near-black caldo            */
+  --surf:#16120a;      /* superfici / box             */
+  --surf2:#1a150c;     /* superfici alternate         */
+  --line:#2a2012;      /* bordi                       */
+  --ink:#cdb27a;       /* testo base (sobrio)         */
+  --tx:#f0dca0;        /* testo in evidenza / titoli  */
+  --dim:#6a5733;       /* meta / attenuato            */
+  --faint:#5a4a2a;     /* molto attenuato             */
+  --acc:#ffd36b;       /* accento azioni (giallo-oro) */
+  --acc-ink:#1a1305;   /* testo su accento            */
+  --ac2:#e0a04a;       /* accento dati / telemetria   */
+  --ok:#9fd08a;        /* serie ok / done             */
+  --down:#e0705a;      /* warn / errori (rosso caldo) */
+  --field:#100c06;     /* sfondi input / stepper      */
+  --ctb:#2a1f08;       /* sfondo CTA                  */
+  --ctc:#4a3712;       /* bordo CTA                   */
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"JetBrains Mono",monospace;
+  --glow1:none;        /* attivato da body.fx-glow in un task successivo */
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;}
-body{background:#0a0b0a;color:var(--ink);font-family:"Inter",system-ui,-apple-system,sans-serif;
-  display:flex;justify-content:center;min-height:100vh;font-size:16px;line-height:1.45;}
+body{background:#000;color:var(--ink);font-family:var(--mono);
+  display:flex;justify-content:center;min-height:100vh;font-size:15px;line-height:1.45;}
 .mono{font-family:"JetBrains Mono",monospace;}
 .wrap{width:100%;max-width:440px;background:var(--bg);min-height:100vh;padding:20px 16px 132px;position:relative;}
 .hidden{display:none !important;}
