@@ -27,6 +27,10 @@ export function emptyData() {
   return { updatedAt: null, weeks: {}, plan: [], schema: 5 };
 }
 
+export function planIsEmpty(data) {
+  return !data || !Array.isArray(data.plan) || data.plan.length === 0;
+}
+
 export function ensureWeek(data, weekKey, label) {
   const next = structuredClone(data);
   if (!next.weeks[weekKey]) {

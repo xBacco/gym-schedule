@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet, toggleComment } from "../store.js";
+import { isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet, toggleComment, planIsEmpty } from "../store.js";
 
 test("isoWeekKey returns ISO year-week", () => {
   assert.equal(isoWeekKey(new Date(2020, 0, 1)), "2020-W01"); // Wed 1 Jan 2020
@@ -36,6 +36,17 @@ test("emptyData: parte con plan vuoto e schema corrente (5)", () => {
   assert.deepEqual(d.weeks, {});
   assert.deepEqual(d.plan, []);
   assert.equal(d.schema, 5);
+});
+
+test("planIsEmpty: true se manca plan o e vuoto", () => {
+  assert.equal(planIsEmpty(emptyData()), true);
+  assert.equal(planIsEmpty({ weeks: {} }), true);
+  assert.equal(planIsEmpty({ plan: [] }), true);
+  assert.equal(planIsEmpty(null), true);
+});
+
+test("planIsEmpty: false se c'e almeno un giorno", () => {
+  assert.equal(planIsEmpty({ plan: [{ day: "A", title: "x", exercises: [] }] }), false);
 });
 
 test("ensureWeek adds a week without touching existing ones", () => {
