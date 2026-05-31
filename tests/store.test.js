@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet, toggleComment, planIsEmpty } from "../store.js";
+import { migrate } from "../editor.js";
 
 test("isoWeekKey returns ISO year-week", () => {
   assert.equal(isoWeekKey(new Date(2020, 0, 1)), "2020-W01"); // Wed 1 Jan 2020
@@ -351,4 +352,21 @@ test("exerciseBar: ricade sul default quando bar è assente/0/negativo/NaN", () 
 test("exerciseBar: exercise null/undefined -> default", () => {
   assert.equal(exerciseBar(null, 20), 20);
   assert.equal(exerciseBar(undefined, 25), 25);
+});
+
+test("boot: una riga trigger schema-less, normalizzata con emptyData, migra come no-op e resta vuota (niente seed proprietario)", () => {
+  // default DB del trigger di signup: nessuno schema, nessun plan
+  const triggerRow = { weeks: {}, updatedAt: null };
+  const normalized = { ...emptyData(), ...triggerRow }; // il guard del boot
+  assert.equal(normalized.schema, 5);
+  const out = migrate(normalized); // chiamata come nel boot (seedPlan undefined): NON deve crashare
+  assert.equal(out.schema, 5);
+  assert.deepEqual(out.plan, []);
+  assert.equal(planIsEmpty(out), true);
+});
+
+test("migrate: un blob schema-less senza seed crasherebbe -> il guard emptyData lo previene", () => {
+  // documenta il fallimento originale: senza schema, migrate(blob) tenta seedPlan.map
+  assert.throws(() => migrate({ weeks: {}, updatedAt: null }));
+  // col guard non si arriva mai a questo caso
 });

@@ -2305,6 +2305,13 @@ async function boot() {
       profileStorage.set("data", data);
       profileStorage.set("version", dataVersion);
     }
+    // Una riga creata dal trigger di signup è la default del DB ({weeks:{},updatedAt:null},
+    // senza `schema`): senza questo guard `migrate` rientrerebbe nel ramo seed e
+    // crasherebbe (seedPlan undefined). Normalizzandola con i default di emptyData()
+    // (schema corrente, plan vuoto) le migrazioni sono no-op e l'utente nuovo parte
+    // vuoto, senza la scheda del proprietario. I dati già migrati (schema presente)
+    // restano invariati: i loro valori vincono sullo spread.
+    if (data && data.schema == null) data = { ...emptyData(), ...data };
     // Backfill schema sui dati appena letti (riusa logica esistente).
     data = patchPlanV5(patchPlanV4(backfillMuscles(migrate(data), PLAN)));
     render();
