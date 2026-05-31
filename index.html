@@ -100,73 +100,47 @@
           <button id="settingsClose" class="sv-x" type="button" aria-label="Chiudi">✕</button>
         </header>
 
-        <div class="sv-body">
-          <section class="sv-card">
-            <div class="sv-card-h">
-              <span class="sv-card-t">Account</span>
-              <button type="button" id="btnLogout" class="sv-pill sv-pill-ghost">Esci</button>
-            </div>
-            <div class="sv-email" id="accountEmail">…</div>
-            <div class="sv-row-2">
-              <button type="button" id="btnForceUpdate" class="sv-mini">🔄 Aggiorna</button>
-            </div>
-          </section>
+        <div class="sv-body sv-term">
+          <div class="sv-sec">account</div>
+          <div class="sv-line">
+            <span class="k">email</span>
+            <span class="v"><span id="accountEmail">…</span> <button type="button" id="btnLogout" class="sv-tag">esci</button></span>
+          </div>
+          <div class="sv-line">
+            <span class="k">app</span>
+            <span class="v"><button type="button" id="btnForceUpdate" class="sv-tag">🔄 aggiorna</button></span>
+          </div>
 
-          <section class="sv-card">
-            <div class="sv-card-t">Attrezzatura</div>
-            <div class="sv-grid-2">
-              <label class="sv-field">
-                <span>Bilanciere (kg)</span>
-                <input id="barInput" type="number" inputmode="decimal" step="0.5" min="0" placeholder="20">
-              </label>
-              <label class="sv-field">
-                <span>Dischi / lato</span>
-                <input id="platesInput" type="text" inputmode="decimal" placeholder="20, 15, 10, 5">
-              </label>
-            </div>
-          </section>
+          <div class="sv-sec">attrezzatura</div>
+          <div class="sv-line">
+            <span class="k">bilanciere kg</span>
+            <span class="v"><input id="barInput" type="number" inputmode="decimal" step="0.5" min="0" placeholder="20" class="sv-inp"></span>
+          </div>
+          <div class="sv-line">
+            <span class="k">dischi / lato</span>
+            <span class="v"><input id="platesInput" type="text" inputmode="decimal" placeholder="20, 15, 10, 5" class="sv-inp"></span>
+          </div>
 
-          <section class="sv-card">
-            <div class="sv-card-t">Commenti veloci</div>
-            <div id="qcList" class="sv-qclist"></div>
-            <div class="sv-add qc-add">
-              <input id="qcInput" type="text" placeholder="nuovo commento…" autocomplete="off">
-              <button type="button" id="qcAdd">+</button>
-            </div>
-          </section>
+          <div class="sv-sec">commenti veloci</div>
+          <div id="qcList" class="sv-qclist"></div>
+          <div class="sv-add qc-add">
+            <input id="qcInput" type="text" placeholder="nuovo commento…" autocomplete="off">
+            <button type="button" id="qcAdd">+</button>
+          </div>
 
-          <section class="sv-card sv-toggle-card">
-            <label class="sv-toggle">
-              <span class="sv-toggle-ic">🔔</span>
-              <span class="sv-toggle-lbl">Notifica a fine recupero</span>
-              <span class="sv-switch">
-                <input type="checkbox" id="notifyToggle">
-                <span class="sv-switch-track"></span>
-              </span>
-            </label>
-          </section>
-
-          <section class="sv-card sv-toggle-card">
-            <label class="sv-toggle">
-              <span class="sv-toggle-ic">✦</span>
-              <span class="sv-toggle-lbl">Bagliore (glow)</span>
-              <span class="sv-switch">
-                <input type="checkbox" id="fxGlowToggle">
-                <span class="sv-switch-track"></span>
-              </span>
-            </label>
-          </section>
-
-          <section class="sv-card sv-toggle-card">
-            <label class="sv-toggle">
-              <span class="sv-toggle-ic">▤</span>
-              <span class="sv-toggle-lbl">Scanline CRT</span>
-              <span class="sv-switch">
-                <input type="checkbox" id="fxScanToggle">
-                <span class="sv-switch-track"></span>
-              </span>
-            </label>
-          </section>
+          <div class="sv-sec">interfaccia</div>
+          <label class="sv-line sv-linetoggle">
+            <span class="k">notifica recupero</span>
+            <span class="v sv-switch"><input type="checkbox" id="notifyToggle"><span class="sv-switch-track"></span></span>
+          </label>
+          <label class="sv-line sv-linetoggle">
+            <span class="k">bagliore glow</span>
+            <span class="v sv-switch"><input type="checkbox" id="fxGlowToggle"><span class="sv-switch-track"></span></span>
+          </label>
+          <label class="sv-line sv-linetoggle">
+            <span class="k">scanline crt</span>
+            <span class="v sv-switch"><input type="checkbox" id="fxScanToggle"><span class="sv-switch-track"></span></span>
+          </label>
 
           <details class="sv-card sv-details">
             <summary>
