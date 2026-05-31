@@ -2043,6 +2043,11 @@ function renderFocusOverlay() {
   }
   const ex = dayPlan().exercises[openIndex];
   if (!ex) { openIndex = null; renderFocusOverlay(); return; }
+  const exsForBar = dayPlan().exercises;
+  const ctxEl = document.getElementById("focusSbarCtx");
+  const cntEl = document.getElementById("focusSbarCount");
+  if (ctxEl) ctxEl.textContent = `◈ LOG · ${currentDay}`;
+  if (cntEl) cntEl.textContent = `ex ${String(openIndex + 1).padStart(2, "0")}/${exsForBar.length} · ${currentWeek.split("-").pop()}`;
   document.getElementById("focusName").textContent = ex.name;
   body.textContent = "";
   foot.textContent = "";
