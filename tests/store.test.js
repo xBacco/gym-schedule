@@ -28,7 +28,14 @@ test("nextFreeWeekKey: attraversa il confine d'anno", () => {
 });
 
 test("emptyData is the initial database shape", () => {
-  assert.deepEqual(emptyData(), { updatedAt: null, weeks: {} });
+  assert.deepEqual(emptyData(), { updatedAt: null, weeks: {}, plan: [], schema: 5 });
+});
+
+test("emptyData: parte con plan vuoto e schema corrente (5)", () => {
+  const d = emptyData();
+  assert.deepEqual(d.weeks, {});
+  assert.deepEqual(d.plan, []);
+  assert.equal(d.schema, 5);
 });
 
 test("ensureWeek adds a week without touching existing ones", () => {
@@ -36,19 +43,20 @@ test("ensureWeek adds a week without touching existing ones", () => {
   const d1 = ensureWeek(d0, "2026-W22", "Sett. 1");
   assert.deepEqual(d1.weeks["2026-W22"], { label: "Sett. 1", entries: {} });
   // immutability: original untouched
-  assert.deepEqual(d0, { updatedAt: null, weeks: {} });
+  assert.deepEqual(d0, { updatedAt: null, weeks: {}, plan: [], schema: 5 });
   // does not overwrite an existing week's entries
   const d2 = setEntry(d1, "2026-W22", "A", 0, "60kg 8/8", "2026-05-25T10:00:00Z");
   const d3 = ensureWeek(d2, "2026-W22", "Sett. 1");
   assert.equal(getEntry(d3, "2026-W22", "A", 0), "60kg 8/8");
 });
+// (immutability check below uses the full emptyData shape)
 
 test("setEntry stores a value and updates updatedAt, immutably", () => {
   const d0 = emptyData();
   const d1 = setEntry(d0, "2026-W22", "A", 0, "60kg 8/8/7", "2026-05-25T10:00:00Z");
   assert.equal(getEntry(d1, "2026-W22", "A", 0), "60kg 8/8/7");
   assert.equal(d1.updatedAt, "2026-05-25T10:00:00Z");
-  assert.deepEqual(d0, { updatedAt: null, weeks: {} }); // original untouched
+  assert.deepEqual(d0, { updatedAt: null, weeks: {}, plan: [], schema: 5 }); // original untouched
 });
 
 test("setEntry merges without clobbering sibling entries", () => {

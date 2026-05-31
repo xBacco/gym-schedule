@@ -24,7 +24,7 @@ export function nextFreeWeekKey(weeks, from = new Date()) {
 }
 
 export function emptyData() {
-  return { updatedAt: null, weeks: {} };
+  return { updatedAt: null, weeks: {}, plan: [], schema: 5 };
 }
 
 export function ensureWeek(data, weekKey, label) {

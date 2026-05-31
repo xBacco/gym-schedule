@@ -62,7 +62,7 @@ test("SupabaseStore.load ritorna emptyData quando nessuna riga ancora", async ()
   const client = mockClient({ loads: [{ data: null, error: null }] });
   const store = new SupabaseStore(client);
   const result = await store.load();
-  assert.deepEqual(result, { data: { weeks: {}, updatedAt: null }, version: 0 });
+  assert.deepEqual(result, { data: { weeks: {}, updatedAt: null, plan: [], schema: 5 }, version: 0 });
 });
 
 test("SupabaseStore.load lancia AuthError quando non c'è sessione", async () => {
