@@ -613,10 +613,16 @@ body.timer-on .focus-body{padding-bottom:160px;}
 .srow .editset:active { opacity: 1; }
 
 /* ---- Editor scheda ---- */
-.plan-tabs{display:flex;gap:6px;padding:0 16px 10px;}
-.plan-tabs button{flex:1;padding:9px 0;border-radius:10px;border:1px solid var(--line);
+.plan-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px;}
+.plan-tabs button{flex:1 1 auto;min-width:44px;padding:9px 6px;border-radius:10px;border:1px solid var(--line);
   background:var(--surf2);color:var(--dim);font-family:"JetBrains Mono",monospace;font-size:14px;font-weight:700;cursor:pointer;}
 .plan-tabs button.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);}
+.plan-tabs .pe-tab-add{flex:0 0 auto;width:44px;min-width:44px;padding:9px 0;color:var(--acc);}
+.pe-daybar{display:flex;gap:8px;margin-bottom:10px;}
+.pe-daybtn{flex:1;padding:9px 0;border-radius:10px;border:1px solid var(--line);
+  background:var(--surf2);color:var(--acc);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+.pe-daybtn-del{color:var(--dim);}
+.pe-empty-hint{color:var(--dim);font-size:13px;text-align:center;padding:24px 8px;}
 .plan-body{padding:0 16px 28px;overflow-y:auto;}
 .pe-row{display:flex;align-items:center;gap:8px;background:var(--surf);border:1px solid var(--line);
   border-radius:12px;padding:10px 8px;margin-bottom:8px;touch-action:none;

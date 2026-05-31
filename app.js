@@ -1,5 +1,5 @@
 import { PLAN } from "./plan.js";
-import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan } from "./editor.js";
+import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan, addDay, renameDay, removeDay } from "./editor.js";
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
@@ -111,20 +111,101 @@ function renderPlanEditor() {
     if (openIndex === null && !nutritionOpen) document.body.style.overflow = "";
     return;
   }
-  const day = planEditDay;
-  document.getElementById("planSub").textContent = `giorno ${day}`;
-  for (const b of document.querySelectorAll("#planTabs button")) b.classList.toggle("on", b.dataset.day === day);
+  const plan = Array.isArray(data.plan) ? data.plan : [];
+  const dp = plan.find((d) => d.day === planEditDay) || plan[0] || null;
+  if (dp) planEditDay = dp.day;
+
+  // Tab dei giorni: generate da data.plan (non da planDays(), così una scheda
+  // vuota mostra un editor vuoto, mai gli esercizi del proprietario).
+  const tabs = document.getElementById("planTabs");
+  tabs.textContent = "";
+  for (const d of plan) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.day = d.day;
+    b.textContent = d.title || d.day;
+    if (d.day === planEditDay) b.classList.add("on");
+    b.addEventListener("click", () => { planEditDay = d.day; renderPlanEditor(); });
+    tabs.appendChild(b);
+  }
+  const addTab = document.createElement("button");
+  addTab.type = "button";
+  addTab.className = "pe-tab-add";
+  addTab.setAttribute("aria-label", "Aggiungi giorno");
+  addTab.textContent = "＋";
+  addTab.addEventListener("click", addPlanDay);
+  tabs.appendChild(addTab);
+
+  document.getElementById("planSub").textContent = dp ? `giorno ${dp.title || dp.day}` : "nessun giorno";
+
   const body = document.getElementById("planBody");
   body.textContent = "";
-  const dp = planDays().find((d) => d.day === day) || planDays()[0];
-  dp.exercises.forEach((ex, i) => body.appendChild(buildPlanRow(ex, i, dp.exercises.length)));
-  const add = document.createElement("button");
-  add.type = "button"; add.className = "pe-add"; add.textContent = "＋ Aggiungi esercizio";
-  add.addEventListener("click", () => openExDialog(day, null));
-  body.appendChild(add);
+  if (dp) {
+    // Toolbar rinomina/elimina per il giorno corrente.
+    const bar = document.createElement("div");
+    bar.className = "pe-daybar";
+    const ren = document.createElement("button");
+    ren.type = "button"; ren.className = "pe-daybtn"; ren.textContent = "✎ Rinomina";
+    ren.addEventListener("click", renamePlanDay);
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "pe-daybtn pe-daybtn-del"; del.textContent = "🗑 Elimina";
+    del.addEventListener("click", deletePlanDay);
+    bar.appendChild(ren); bar.appendChild(del);
+    body.appendChild(bar);
+
+    dp.exercises.forEach((ex, i) => body.appendChild(buildPlanRow(ex, i, dp.exercises.length)));
+    const add = document.createElement("button");
+    add.type = "button"; add.className = "pe-add"; add.textContent = "＋ Aggiungi esercizio";
+    add.addEventListener("click", () => openExDialog(dp.day, null));
+    body.appendChild(add);
+  } else {
+    const hint = document.createElement("p");
+    hint.className = "pe-empty-hint";
+    hint.textContent = "Nessun giorno. Tocca ＋ per aggiungerne uno.";
+    body.appendChild(hint);
+  }
   ov.classList.remove("hidden");
   ov.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+}
+
+// ---- Editor scheda: gestione giorni (aggiungi/rinomina/elimina). ----
+function addPlanDay() {
+  const title = prompt("Nome del giorno (es. Petto/Tricipiti)");
+  if (title === null) return; // annullato
+  data = { ...data, plan: addDay(data.plan, title) };
+  planEditDay = data.plan[data.plan.length - 1].day; // seleziona il nuovo giorno
+  scheduleSave();
+  renderPlanEditor();
+  render(); // aggiorna home/empty-state
+}
+
+function renamePlanDay() {
+  const dp = (data.plan || []).find((d) => d.day === planEditDay);
+  if (!dp) return;
+  const t = prompt("Nuovo nome del giorno", dp.title || dp.day);
+  if (t === null) return;
+  data = { ...data, plan: renameDay(data.plan, planEditDay, t) };
+  scheduleSave();
+  renderPlanEditor();
+  render();
+}
+
+function deletePlanDay() {
+  const dp = (data.plan || []).find((d) => d.day === planEditDay);
+  if (!dp) return;
+  if (!confirm(`Eliminare il giorno ${dp.title || dp.day}?`)) return;
+  const remaining = removeDay(data.plan, planEditDay);
+  data = { ...data, plan: remaining };
+  scheduleSave();
+  if (remaining.length === 0) {
+    closePlanEditor(); // torna alla home → render() mostra l'empty-state
+    render();          // il popstate handler non rende la home: lo forziamo qui
+    return;
+  }
+  planEditDay = remaining[0].day;
+  renderPlanEditor();
+  render();
 }
 
 // ---- Calendario allenamenti: overlay a schermo intero (stessa logica history). ----
@@ -1428,6 +1509,14 @@ function persist(idx) {
   pusher.schedule();
 }
 
+// Salva `data` in locale (marcandolo dirty) e schedula il push cloud. Usato dalle
+// mutazioni dell'editor scheda (esercizi e giorni) per non duplicare il pattern.
+function scheduleSave() {
+  profileStorage.set("data", data);
+  profileStorage.set("dirty", true);
+  pusher.schedule();
+}
+
 function renderFocusNormal(ex, idx, container, footer) {
   const exId = exIdAt(idx);
   const v = getEntry(data, currentWeek, currentDay, exId);
@@ -2250,9 +2339,6 @@ async function boot() {
   wireDrawer();
   document.getElementById("calPrev").addEventListener("click", () => calShiftMonth(-1));
   document.getElementById("calNext").addEventListener("click", () => calShiftMonth(1));
-  for (const b of document.querySelectorAll("#planTabs button")) {
-    b.addEventListener("click", () => { planEditDay = b.dataset.day; renderPlanEditor(); });
-  }
   document.getElementById("exDlgSave").addEventListener("click", saveExDialog);
   document.getElementById("exSuperset").addEventListener("change", (e) => toggleMuscleB(e.target.checked));
   document.getElementById("exDlgClose").addEventListener("click", () => document.getElementById("exDialog").close());
