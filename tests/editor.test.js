@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { genId, addExercise, removeExercise, reorderExercise, updateExercise, migrate, backfillMuscles, patchPlanV4, patchPlanV5, keepLocalPlan, addDay, nextDayCode } from "../editor.js";
+import { genId, addExercise, removeExercise, reorderExercise, updateExercise, migrate, backfillMuscles, patchPlanV4, patchPlanV5, keepLocalPlan, addDay, nextDayCode, renameDay } from "../editor.js";
 
 const samplePlan = () => [
   { day: "A", title: "A", exercises: [
@@ -314,5 +314,19 @@ test("addDay: aggiunge un giorno vuoto con code univoco e titolo dato", () => {
 test("addDay: titolo vuoto -> fallback al code del giorno", () => {
   const out = addDay([], "");
   assert.equal(out[0].day, "A");
+  assert.equal(out[0].title, "A");
+});
+
+test("renameDay: cambia solo il titolo, non il code ne le entries", () => {
+  const plan = [{ day: "A", title: "Petto", exercises: [{ id: "x1", name: "Panca" }] }];
+  const out = renameDay(plan, "A", "Petto/Tricipiti");
+  assert.equal(out[0].day, "A");
+  assert.equal(out[0].title, "Petto/Tricipiti");
+  assert.equal(out[0].exercises[0].id, "x1");
+  assert.equal(plan[0].title, "Petto");
+});
+
+test("renameDay: titolo vuoto -> resta il code come titolo", () => {
+  const out = renameDay([{ day: "A", title: "Petto", exercises: [] }], "A", "  ");
   assert.equal(out[0].title, "A");
 });
