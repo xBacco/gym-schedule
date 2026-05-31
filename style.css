@@ -949,3 +949,43 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .nutri-body .meal.key{ background:#1c1608; border:1px solid var(--ctc); border-radius:7px; padding:9px 10px; }
 .nutri-body .meal.key .mh{ color:var(--acc); }
 .nutri-body .nutri-foot{ color:var(--dim); font-size:10px; letter-spacing:.08em; margin-top:12px; text-align:center; }
+
+/* ===== Piano 3a — Dialog CRT (vs 04-resto-3a.html) ===== */
+/* NOTE specificity: pre-existing rules .set-dialog .modal-h (0,2,0) and .set-dialog .modal-h .t/.x (0,3,0)
+   beat bare .modal-h (0,1,0) selectors. Fixed by scoping to .set-dialog/.ex-dialog context.
+   Similarly .ex-dialog .ex-inp (0,2,0) beats .ex-inp (0,1,0) — fixed.
+   .set-dialog .confirm (0,2,0) pre-exists with acc bg — overridden below (same spec, later wins).
+   Equal-spec rules: new block appended at end, so they win by source order. */
+.set-dialog, .qc-dialog{ background:var(--surf); border:1px solid var(--ctc); border-radius:10px; color:var(--ink);
+  font-family:var(--mono); padding:14px; max-width:380px; }
+.set-dialog::backdrop, .qc-dialog::backdrop{ background:#000a; }
+/* .modal-h scoped to override .set-dialog .modal-h (pre-existing spec 0,2,0) */
+.set-dialog .modal-h, .ex-dialog .modal-h{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.qc-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+/* .modal-h .t/.x scoped to override .set-dialog .modal-h .t/.x (pre-existing spec 0,3,0) */
+.set-dialog .modal-h .t, .ex-dialog .modal-h .t{ color:var(--tx); font-size:15px; font-weight:700; }
+.set-dialog .modal-h .t::before, .ex-dialog .modal-h .t::before{ content:"$ "; color:var(--ac2); }
+.qc-head h2{ color:var(--tx); font-size:15px; font-weight:700; }
+.qc-head h2::before{ content:"$ "; color:var(--ac2); }
+.set-dialog .modal-h .x, .ex-dialog .modal-h .x{ color:var(--dim); background:none; border:none; font-size:16px; cursor:pointer; }
+.qc-x{ color:var(--dim); background:none; border:none; font-size:16px; cursor:pointer; }
+.editlabel{ font-size:10px; color:var(--ac2); letter-spacing:.08em; text-transform:uppercase; margin:10px 0 4px; }
+/* .ex-inp scoped to override .ex-dialog .ex-inp (pre-existing spec 0,2,0) */
+.ex-dialog .ex-inp, .set-dialog input, .set-dialog select, .set-dialog textarea{
+  width:100%; background:var(--field); border:1px solid var(--line); border-radius:7px;
+  padding:9px 11px; color:var(--tx); font-family:var(--mono); font-size:13px; }
+.ex-dialog .ex-inp::placeholder, .set-dialog input::placeholder{ color:var(--dim); }
+/* .confirm scoped to override .set-dialog .confirm (pre-existing spec 0,2,0, acc bg) */
+.set-dialog .confirm{ width:100%; margin-top:14px; background:var(--ctb); border:1px solid var(--acc); color:var(--acc);
+  font-family:var(--mono); font-size:14px; padding:10px; border-radius:8px; letter-spacing:.05em; cursor:pointer; }
+.failtoggle{ background:none; border:1px solid var(--line); color:var(--down); border-radius:7px; padding:7px 10px; font-family:var(--mono); cursor:pointer; }
+.failnote{ margin-top:8px; }
+.acts{ display:flex; gap:8px; margin-top:10px; }
+.acts button{ flex:1; background:var(--surf); border:1px solid var(--line); color:var(--ink); border-radius:7px; padding:8px; font-family:var(--mono); cursor:pointer; }
+.acts .danger{ color:var(--down); border-color:var(--ctc); }
+/* .notifyrow scoped to override .ex-dialog .notifyrow (pre-existing spec 0,2,0) */
+.ex-dialog .notifyrow{ display:flex; align-items:center; gap:8px; color:var(--ink); font-size:12px; margin:10px 0; }
+.qc-options{ display:flex; flex-wrap:wrap; gap:7px; }
+.qc-options button{ background:var(--surf); border:1px solid var(--line); color:var(--ink); border-radius:7px; padding:7px 11px; font-family:var(--mono); font-size:12px; cursor:pointer; }
+.qc-options button.on{ background:var(--ctb); border-color:var(--ctc); color:var(--acc); }
+.hint{ color:var(--dim); font-size:11px; margin-bottom:10px; }
