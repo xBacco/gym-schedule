@@ -63,6 +63,13 @@
 
   <div id="app">
     <div class="wrap">
+    <section id="emptyState" class="empty-state hidden" aria-hidden="true">
+      <p class="es-hint"># nessuna scheda</p>
+      <p class="es-prompt">$ crea <span class="es-cur">scheda</span></p>
+      <p class="es-sub">giorni · esercizi · recuperi — li definisci tu.</p>
+      <button type="button" id="btnCreatePlan" class="es-cta">› crea la prima scheda</button>
+    </section>
+    <div id="homeMain">
     <div class="kicker">DAY <b id="kickDay">A</b> · <span id="kickWeek">SETT. —</span></div>
     <h1 id="dayTitle">—</h1>
 
@@ -84,6 +91,7 @@
 
     <div id="list"></div>
     <div id="volRow"></div>
+    </div>
 
     <dialog id="settingsDialog" class="settings-v2-host">
       <form method="dialog" class="settings settings-v2">

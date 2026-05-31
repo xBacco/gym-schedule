@@ -3,7 +3,7 @@ import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, addExercise, remove
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
-  SupabaseStore, mergeBlobs, ConflictError, AuthError,
+  SupabaseStore, mergeBlobs, ConflictError, AuthError, planIsEmpty,
 } from "./store.js";
 import { supabase } from "./supabase-client.js";
 import { bindAuthScreen, hideAuthScreen, signOut } from "./auth.js";
@@ -1938,6 +1938,13 @@ function renderVolRow() {
 }
 
 function render() {
+  const empty = planIsEmpty(data);
+  const es = document.getElementById("emptyState");
+  const home = document.getElementById("homeMain");
+  es.classList.toggle("hidden", !empty);
+  es.setAttribute("aria-hidden", String(!empty));
+  home.classList.toggle("hidden", empty);
+  if (empty) return; // niente home (eviterebbe il fallback a PLAN); l'empty-state guida la creazione
   renderWeekSelect();
   renderHeader();
   renderProgress();
@@ -2222,6 +2229,7 @@ async function boot() {
   wireSetDialog();
   document.getElementById("weekSelect").addEventListener("change", (e) => changeWeek(e.target.value));
   document.getElementById("newWeekBtn").addEventListener("click", newWeek);
+  document.getElementById("btnCreatePlan").addEventListener("click", () => openPlanEditor());
   for (const b of document.querySelectorAll("#dayTabs button")) {
     b.addEventListener("click", () => changeDay(b.dataset.day));
   }
