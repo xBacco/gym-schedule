@@ -2341,6 +2341,7 @@ async function boot() {
   if (!session) {
     document.getElementById("auth-screen").hidden = false;
     document.getElementById("app").hidden = true;
+    splashBootReady();
     return;
   }
 
@@ -2491,6 +2492,9 @@ async function boot() {
     }
     setStatus("offline ⧗", "pending");
   }
+
+  // App pronta (render fatto o offline gestito): lo splash può andarsene.
+  splashBootReady();
 
   // 5. Listener auth changes (es. logout da altra tab).
   supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -2669,6 +2673,30 @@ async function reconcileFromRemote() {
       // Race: ritenta una volta.
       return reconcileFromRemote();
     }
+  }
+}
+
+// --- Splash d'apertura --------------------------------------------------
+// L'overlay #splash è già visibile da HTML/CSS (parte senza JS). Lo rimuoviamo
+// quando l'animazione minima è trascorsa E il boot è pronto; con un timeout di
+// sicurezza se il boot si blocca. `splashBootReady()` è chiamata da boot().
+let resolveSplashReady = () => {};
+function splashBootReady() { resolveSplashReady(); }
+function dismissSplash() {
+  const el = document.getElementById("splash");
+  if (!el) return;
+  el.classList.add("splash-out");
+  setTimeout(() => el.remove(), 460);
+}
+{
+  const splash = document.getElementById("splash");
+  if (splash) {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const minMs = reduce ? 250 : 1150;
+    const ready = new Promise((r) => { resolveSplashReady = r; });
+    const minDelay = new Promise((r) => setTimeout(r, minMs));
+    const safety = new Promise((r) => setTimeout(r, 6000));
+    Promise.race([Promise.all([ready, minDelay]), safety]).then(dismissSplash);
   }
 }
 

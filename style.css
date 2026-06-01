@@ -1023,3 +1023,40 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .sv-term .sv-qclist{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:7px; }
 .sv-term .qc-add{ display:flex; gap:7px; } .sv-term .qc-add input{ flex:1; background:var(--field); border:1px solid var(--line); border-radius:6px; color:var(--tx); font-family:var(--mono); padding:9px 10px; }
 .sv-term .qc-add button{ background:var(--ctb); border:1px solid var(--ctc); color:var(--acc); border-radius:6px; width:44px; min-height:44px; cursor:pointer; }
+
+/* ===== Splash d'apertura (S1: assembla + terminale) ===================== */
+#splash{ position:fixed; inset:0; z-index:1000; background:#0c0a06;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; }
+#splash.splash-out{ opacity:0; transition:opacity .44s ease; pointer-events:none; }
+#splash svg{ width:128px; height:128px; display:block; }
+#splash .cap{ font-family:ui-monospace,"SFMono-Regular",Menlo,monospace; font-size:1rem;
+  color:#E8A93C; letter-spacing:.02em; white-space:nowrap; display:flex; align-items:center; }
+#splash .cap .pr{ margin-right:.4ch; }
+#splash .cap .type{ display:inline-block; overflow:hidden; white-space:nowrap; vertical-align:bottom; width:0ch; }
+#splash .cap .cur{ display:inline-block; width:.55ch; height:1.05em; background:#E8A93C; margin-left:1px;
+  animation:sp-blink 1s steps(1) infinite; }
+#splash .anim{ transform-box:fill-box; transform-origin:center; }
+
+#splash .p-l{ animation:sp-pl .5s ease-out .05s both; }
+#splash .p-r{ animation:sp-pr .5s ease-out .05s both; }
+#splash .chip{ animation:sp-chip .55s ease-out .12s both; }
+#splash .core{ animation:sp-core .7s ease-out .12s both; }
+#splash .legs{ animation:sp-legs .5s ease-out .3s both; }
+#splash .pr{ animation:sp-fade .25s ease-out .12s both; }
+#splash .type{ animation:sp-type .82s steps(15,end) .14s both; }
+
+@keyframes sp-blink{ 50%{opacity:0} }
+@keyframes sp-pl{ from{transform:translateX(-66px);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes sp-pr{ from{transform:translateX(66px);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes sp-chip{ 0%{opacity:0;transform:scale(.5)} 70%{opacity:1;transform:scale(1.12)} 100%{opacity:1;transform:scale(1)} }
+@keyframes sp-core{ 0%{opacity:.15} 55%{opacity:1} 68%{opacity:.4} 80%{opacity:1} 100%{opacity:1} }
+@keyframes sp-legs{ from{opacity:0} to{opacity:1} }
+@keyframes sp-fade{ from{opacity:0} to{opacity:1} }
+@keyframes sp-type{ from{width:0ch} to{width:16ch} }
+
+@media (prefers-reduced-motion: reduce){
+  #splash .p-l,#splash .p-r,#splash .chip,#splash .core,#splash .legs,#splash .pr{
+    animation:none !important; opacity:1 !important; transform:none !important; }
+  #splash .type{ animation:none !important; width:16ch; }
+  #splash .cap .cur{ animation:none !important; }
+}
