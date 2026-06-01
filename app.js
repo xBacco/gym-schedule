@@ -23,6 +23,7 @@ import { ScreenWakeLock } from "./wakelock.js";
 import { renderNutritionGuide } from "./nutrition.js";
 import { createPusher } from "./sync.js";
 import { getFx, setFx, applyFx } from "./fx.js";
+import { actionBarSpec } from "./focus-ui.js";
 
 const PENDING_KEY = "gymsched_pending"; // local buffer of unsynced edits
 const SEED_URL = "https://xbacco.github.io/gym-schedule/data.json";
@@ -1977,6 +1978,40 @@ function renderList() {
 // (focusDrawerOpen) sopravvive alla ricostruzione del DOM.
 function toggleFocusDrawer() { focusDrawerOpen = !focusDrawerOpen; render(); }
 function openFocusDrawer() { focusDrawerOpen = true; render(); }
+
+// Barra azioni in fondo al focus. `handlers` mappa key→funzione (rest/comment/
+// fail/more); comment e fail possono mancare (esercizio completato). `restValue`
+// è l'etichetta del pulsante recupero (es. "90s").
+function buildActionBar({ allDone, restValue, handlers }) {
+  const bar = document.createElement("div");
+  bar.className = "actbar";
+  actionBarSpec({ allDone, drawerOpen: focusDrawerOpen }).forEach((s) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "actbtn"
+      + (s.key === "fail" ? " fail" : "")
+      + (s.key === "more" ? " more" + (s.active ? " open" : "") : "");
+    const g = document.createElement("span"); g.className = "ab-g"; g.textContent = s.glyph;
+    const l = document.createElement("span"); l.className = "lbl";
+    l.textContent = s.key === "rest" && restValue ? restValue : s.label;
+    b.append(g, l);
+    const fn = handlers[s.key];
+    if (fn) b.addEventListener("click", fn);
+    bar.appendChild(b);
+  });
+  return bar;
+}
+
+// Gruppo ancorato in fondo: cassetto (chiuso di default) + barra azioni.
+function buildFocusActions(drawerChildren, barOpts) {
+  const group = document.createElement("div");
+  group.className = "focus-actions";
+  const drawer = document.createElement("div");
+  drawer.className = "drawer" + (focusDrawerOpen ? " open" : "");
+  drawerChildren.filter(Boolean).forEach((c) => drawer.appendChild(c));
+  group.append(drawer, buildActionBar(barOpts));
+  return group;
+}
 
 // Editor del tempo di recupero per esercizio, sempre visibile dentro l'overlay:
 // modifica l'override per-esercizio (setRest) e aggiorna subito il valore mostrato.
