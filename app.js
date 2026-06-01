@@ -850,26 +850,6 @@ function openQcDialog(selected, onChange) {
   if (!dlg.open) dlg.showModal();
 }
 
-// Bottone "commento veloce (n)" + riepilogo tag. onOpen() apre il popup.
-function buildQuickCommentButton(selected, onOpen) {
-  const wrap = document.createElement("div");
-  const btn = document.createElement("button");
-  btn.type = "button"; btn.className = "qc-btn";
-  const lab = document.createElement("span"); lab.textContent = "💬 commento veloce";
-  const cnt = document.createElement("span");
-  cnt.className = "cnt" + (selected.length ? "" : " zero");
-  cnt.textContent = String(selected.length);
-  btn.append(lab, cnt);
-  btn.addEventListener("click", onOpen);
-  wrap.appendChild(btn);
-  if (selected.length) {
-    const sel = document.createElement("div"); sel.className = "qc-sel";
-    selected.forEach((t) => { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; sel.appendChild(s); });
-    wrap.appendChild(sel);
-  }
-  return wrap;
-}
-
 // Fino a due chip: "↑ serie sopra" (stessa sessione) e "↶ scorsa Wxx" (settimana precedente).
 // inSession/prevWeek = {reps,kg[,week]} o null. onPick({reps,kg}) precompila lo stepper.
 function buildRepeatChips(inSession, prevWeek, onPick) {
