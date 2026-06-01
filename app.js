@@ -23,6 +23,7 @@ import { ScreenWakeLock } from "./wakelock.js";
 import { renderNutritionGuide } from "./nutrition.js";
 import { createPusher } from "./sync.js";
 import { getFx, setFx, applyFx } from "./fx.js";
+import { getTheme, setTheme, applyTheme } from "./theme.js";
 import { actionBarSpec } from "./focus-ui.js";
 
 const PENDING_KEY = "gymsched_pending"; // local buffer of unsynced edits
@@ -2155,6 +2156,7 @@ function wireSettings() {
     document.getElementById("platesInput").value = getPlateSet().join(", ");
     renderQcList();
     document.getElementById("notifyToggle").checked = notifyOn();
+    document.getElementById("themeToggle").checked = getTheme(localStorage) === "graphite";
     document.getElementById("fxGlowToggle").checked = getFx(localStorage, "glow");
     document.getElementById("fxScanToggle").checked = getFx(localStorage, "scan");
     // Blocca lo scroll della pagina sotto mentre il dialog è aperto:
@@ -2188,6 +2190,10 @@ function wireSettings() {
     }
   });
 
+  document.getElementById("themeToggle").addEventListener("change", (e) => {
+    setTheme(localStorage, e.target.checked ? "graphite" : "carta");
+    applyTheme(document.documentElement, localStorage);
+  });
   document.getElementById("fxGlowToggle").addEventListener("change", (e) => {
     setFx(localStorage, "glow", e.target.checked);
     applyFx(document.body, localStorage);
@@ -2348,6 +2354,7 @@ async function boot() {
   // 3. Sessione attiva → mostra app, inizializza store.
   hideAuthScreen();
   profileStorage = new ProfileStorage(localStorage, session.user.id);
+  applyTheme(document.documentElement, localStorage);
   applyFx(document.body, localStorage);
   store = new SupabaseStore(supabase);
 
@@ -2692,7 +2699,7 @@ function dismissSplash() {
   const splash = document.getElementById("splash");
   if (splash) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const minMs = reduce ? 250 : 1150;
+    const minMs = reduce ? 250 : 2400;
     const ready = new Promise((r) => { resolveSplashReady = r; });
     const minDelay = new Promise((r) => setTimeout(r, minMs));
     const safety = new Promise((r) => setTimeout(r, 6000));

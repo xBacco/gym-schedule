@@ -1,7 +1,8 @@
-# gym-schedule
+# set.log
 
-Web app per la scheda di allenamento: log carico/reps per settimana, sync cross-device,
-timer di recupero, multi-utente con account email + password.
+Web app per la scheda di allenamento (nome: **set.log**): log carico/reps per settimana,
+sync cross-device, timer di recupero, multi-utente con account email + password.
+Due temi: **Carta** (chiaro, default) e **Graphite** (scuro), commutabili da ⚙ Impostazioni.
 
 ## Come funziona
 - Sito statico su **GitHub Pages**.

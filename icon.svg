@@ -1,18 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" rx="112" fill="#100E0A"/>
-  <g fill="#E8A93C">
+  <defs>
+    <radialGradient id="vign" cx="50%" cy="44%" r="62%">
+      <stop offset="44%" stop-color="#f4ecd9"/>
+      <stop offset="100%" stop-color="#d8caa8"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#vign)"/>
+  <g fill="#b07211">
     <rect x="150" y="191" width="40" height="130" rx="16"/>
     <rect x="322" y="191" width="40" height="130" rx="16"/>
     <rect x="104" y="215" width="30" height="82" rx="12"/>
     <rect x="378" y="215" width="30" height="82" rx="12"/>
   </g>
-  <g stroke="#E8A93C" stroke-width="7" stroke-linecap="round">
+  <g stroke="#b07211" stroke-width="7" stroke-linecap="round">
     <line x1="190" y1="244" x2="228" y2="244"/>
     <line x1="190" y1="268" x2="228" y2="268"/>
     <line x1="284" y1="244" x2="322" y2="244"/>
     <line x1="284" y1="268" x2="322" y2="268"/>
   </g>
-  <g fill="#E8A93C">
+  <g fill="#b07211">
     <rect x="236" y="214" width="8" height="14" rx="2"/>
     <rect x="252" y="214" width="8" height="14" rx="2"/>
     <rect x="268" y="214" width="8" height="14" rx="2"/>
@@ -20,6 +26,6 @@
     <rect x="252" y="284" width="8" height="14" rx="2"/>
     <rect x="268" y="284" width="8" height="14" rx="2"/>
   </g>
-  <rect x="228" y="228" width="56" height="56" rx="6" fill="#100E0A" stroke="#E8A93C" stroke-width="7"/>
-  <rect x="246" y="246" width="20" height="20" rx="4" fill="#E8A93C"/>
+  <rect x="228" y="228" width="56" height="56" rx="6" fill="#f4ecd9" stroke="#b07211" stroke-width="7"/>
+  <rect x="246" y="246" width="20" height="20" rx="4" fill="#b07211"/>
 </svg>

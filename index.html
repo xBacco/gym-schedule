@@ -3,28 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0c0a06">
-  <title>Gym Schedule</title>
+  <meta name="theme-color" content="#ece3d0">
+  <title>set.log</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="./icon-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <script>
+    // Applica il tema prima del paint per evitare il flash (chiaro→scuro) al boot.
+    // Fonte di verità: theme.js (stessa chiave gymsched_theme).
+    try { if (localStorage.getItem("gymsched_theme") === "graphite")
+      document.documentElement.setAttribute("data-theme", "graphite"); } catch (e) {}
+  </script>
 </head>
 <body>
   <div id="splash" aria-hidden="true">
-    <svg viewBox="0 0 512 512" width="128" height="128">
-      <g class="anim p-l" fill="#E8A93C"><rect x="150" y="191" width="40" height="130" rx="16"/><rect x="104" y="215" width="30" height="82" rx="12"/></g>
-      <g class="anim p-r" fill="#E8A93C"><rect x="322" y="191" width="40" height="130" rx="16"/><rect x="378" y="215" width="30" height="82" rx="12"/></g>
-      <g class="legs" stroke="#E8A93C" stroke-width="7" stroke-linecap="round"><line x1="190" y1="244" x2="228" y2="244"/><line x1="190" y1="268" x2="228" y2="268"/><line x1="284" y1="244" x2="322" y2="244"/><line x1="284" y1="268" x2="322" y2="268"/></g>
-      <g class="anim chip"><g fill="#E8A93C"><rect x="236" y="214" width="8" height="14" rx="2"/><rect x="252" y="214" width="8" height="14" rx="2"/><rect x="268" y="214" width="8" height="14" rx="2"/><rect x="236" y="284" width="8" height="14" rx="2"/><rect x="252" y="284" width="8" height="14" rx="2"/><rect x="268" y="284" width="8" height="14" rx="2"/></g><rect x="228" y="228" width="56" height="56" rx="6" fill="#100E0A" stroke="#E8A93C" stroke-width="7"/></g>
-      <rect class="core" x="246" y="246" width="20" height="20" rx="4" fill="#E8A93C"/>
-    </svg>
-    <div class="cap"><span class="pr">&gt;</span><span class="type">scheda-palestra</span><span class="cur"></span></div>
+    <div class="sp-badge">
+      <svg viewBox="0 0 512 512" aria-hidden="true">
+        <g class="plate"><rect x="150" y="191" width="40" height="130" rx="16"/><rect x="104" y="215" width="30" height="82" rx="12"/><rect x="322" y="191" width="40" height="130" rx="16"/><rect x="378" y="215" width="30" height="82" rx="12"/></g>
+        <g class="grip"><line x1="190" y1="244" x2="228" y2="244"/><line x1="190" y1="268" x2="228" y2="268"/><line x1="284" y1="244" x2="322" y2="244"/><line x1="284" y1="268" x2="322" y2="268"/></g>
+        <g class="pin"><rect x="236" y="214" width="8" height="14" rx="2"/><rect x="252" y="214" width="8" height="14" rx="2"/><rect x="268" y="214" width="8" height="14" rx="2"/><rect x="236" y="284" width="8" height="14" rx="2"/><rect x="252" y="284" width="8" height="14" rx="2"/><rect x="268" y="284" width="8" height="14" rx="2"/></g>
+        <rect class="chipbody" x="228" y="228" width="56" height="56" rx="6"/>
+        <rect class="core" x="246" y="246" width="20" height="20" rx="4"/>
+      </svg>
+    </div>
+    <div class="sp-word">set<span class="a">.log</span></div>
+    <div class="cap"><span class="pr">&gt;</span><span class="type">system ready</span><span class="cur"></span></div>
   </div>
   <section id="auth-screen" hidden>
     <div class="auth-card">
-      <h1>🏋 scheda-palestra</h1>
+      <h1>set<span class="a">.log</span></h1>
       <nav class="auth-tabs">
         <button type="button" data-tab="login" class="auth-tab is-active">Accedi</button>
         <button type="button" data-tab="signup" class="auth-tab">Registrati</button>
@@ -139,6 +148,10 @@
           </div>
 
           <div class="sv-sec">interfaccia</div>
+          <label class="sv-line sv-linetoggle">
+            <span class="k">tema scuro</span>
+            <span class="v sv-switch"><input type="checkbox" id="themeToggle"><span class="sv-switch-track"></span></span>
+          </label>
           <label class="sv-line sv-linetoggle">
             <span class="k">notifica recupero</span>
             <span class="v sv-switch"><input type="checkbox" id="notifyToggle"><span class="sv-switch-track"></span></span>
