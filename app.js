@@ -34,6 +34,7 @@ let currentWeek = isoWeekKey(new Date());
 let currentDay = "A";
 let openIndex = null;        // esercizio aperto nel focus a schermo intero (null = nessuno)
 let supersetTab = "a";       // sotto-tab attivo nel focus di un superset
+let focusDrawerOpen = false; // cassetto "⋯ Altro" del focus esercizio (UI effimera, non persistita)
 let store = null;
 let session = null;        // { user: {id, email}, ... } da Supabase
 let profileStorage = null; // ProfileStorage per la sessione corrente
@@ -52,6 +53,7 @@ let pusher = null;
 function openFocus(i) {
   openIndex = i;
   supersetTab = "a";
+  focusDrawerOpen = false;
   history.pushState({ gymFocus: true }, "");
   render();
 }
@@ -1971,6 +1973,11 @@ function renderList() {
   });
 }
 
+// Apre/chiude il cassetto "⋯ Altro" del focus. Passa da render() così lo stato
+// (focusDrawerOpen) sopravvive alla ricostruzione del DOM.
+function toggleFocusDrawer() { focusDrawerOpen = !focusDrawerOpen; render(); }
+function openFocusDrawer() { focusDrawerOpen = true; render(); }
+
 // Editor del tempo di recupero per esercizio, sempre visibile dentro l'overlay:
 // modifica l'override per-esercizio (setRest) e aggiorna subito il valore mostrato.
 // Step ±10s, minimo 10s; il valore vale anche per il timer e per la riga in lista.
@@ -2052,7 +2059,6 @@ function renderFocusOverlay() {
   body.textContent = "";
   foot.textContent = "";
   foot.appendChild(buildNextStrip(dayPlan().exercises, openIndex));
-  body.appendChild(buildRestEditor(openIndex, ex));
   if (ex.superset) renderFocusSuperset(ex, openIndex, body, foot);
   else renderFocusNormal(ex, openIndex, body, foot);
   ov.classList.remove("hidden");
@@ -2096,6 +2102,7 @@ function changeWeek(key) {
   currentWeek = key;
   data = ensureWeek(data, currentWeek, data.weeks[currentWeek]?.label);
   openIndex = null;
+  focusDrawerOpen = false;
   volExpanded = false;
   renderWeekSelect();
   render();
@@ -2103,6 +2110,7 @@ function changeWeek(key) {
 function changeDay(day) {
   currentDay = day;
   openIndex = null;
+  focusDrawerOpen = false;
   volExpanded = false;
   render();
 }
