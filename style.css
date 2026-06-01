@@ -1001,16 +1001,3 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .sv-term .sv-qclist{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:7px; }
 .sv-term .qc-add{ display:flex; gap:7px; } .sv-term .qc-add input{ flex:1; background:var(--field); border:1px solid var(--line); border-radius:6px; color:var(--tx); font-family:var(--mono); padding:9px 10px; }
 .sv-term .qc-add button{ background:var(--ctb); border:1px solid var(--ctc); color:var(--acc); border-radius:6px; width:44px; min-height:44px; cursor:pointer; }
-
-/* ===== Piano 3a — Impostazioni stile terminale (vs 04-resto-3a.html) ===== */
-.sv-term .sv-sec{ font-size:9px; color:var(--dim); letter-spacing:.14em; text-transform:uppercase; margin:14px 0 6px; }
-.sv-term .sv-sec:first-child{ margin-top:0; }
-.sv-term .sv-line{ display:flex; align-items:center; justify-content:space-between; gap:10px;
-  border:1px solid var(--line); border-radius:7px; background:var(--surf); padding:10px 12px; margin-bottom:7px; font-size:12px; }
-.sv-term .sv-line .k{ color:var(--ac2); } .sv-term .sv-line .k::before{ content:"# "; color:var(--dim); }
-.sv-term .sv-line .v{ color:var(--tx); display:flex; align-items:center; gap:8px; justify-content:flex-end; text-align:right; }
-.sv-term .sv-tag{ border:1px solid var(--ctc); border-radius:6px; padding:3px 9px; color:var(--acc); background:var(--ctb); font-family:var(--mono); font-size:11px; cursor:pointer; }
-.sv-term .sv-inp{ width:120px; background:var(--field); border:1px solid var(--line); border-radius:6px; color:var(--tx); font-family:var(--mono); font-size:12px; padding:5px 8px; text-align:right; }
-.sv-term .sv-qclist{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:7px; }
-.sv-term .qc-add{ display:flex; gap:7px; } .sv-term .qc-add input{ flex:1; background:var(--field); border:1px solid var(--line); border-radius:6px; color:var(--tx); font-family:var(--mono); padding:6px 9px; }
-.sv-term .qc-add button{ background:var(--ctb); border:1px solid var(--ctc); color:var(--acc); border-radius:6px; width:34px; cursor:pointer; }
