@@ -2699,10 +2699,12 @@ function dismissSplash() {
   const splash = document.getElementById("splash");
   if (splash) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const minMs = reduce ? 250 : 2400;
+    // La riga "> system ready" finisce di digitarsi a ~2.85s; lasciamo un beat
+    // per leggerla prima di dismettere lo splash (era 2400 → spariva a metà).
+    const minMs = reduce ? 250 : 3400;
     const ready = new Promise((r) => { resolveSplashReady = r; });
     const minDelay = new Promise((r) => setTimeout(r, minMs));
-    const safety = new Promise((r) => setTimeout(r, 6000));
+    const safety = new Promise((r) => setTimeout(r, 7000));
     Promise.race([Promise.all([ready, minDelay]), safety]).then(dismissSplash);
   }
 }
