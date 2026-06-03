@@ -3,6 +3,7 @@
 //      blob.catalog = [{ id, name, muscle, note }]. Liste separate dalle schede,
 //      collegate per NOME (vedi catalogUsage in task successivi). ----
 import { genId } from "./editor.js";
+import { topSetSeries } from "./session.js";
 
 const norm = (s) => String(s ?? "").trim().toLowerCase();
 const clone = (blob) => structuredClone(blob);
@@ -101,4 +102,40 @@ export function groupedCatalog(blob) {
     out.push({ muscle, items });
   }
   return out;
+}
+
+// Ultima settimana valida presente nelle weeks (chiave max che matcha il formato).
+function latestWeekKey(weeks) {
+  const keys = Object.keys(weeks ?? {}).filter((k) => /^\d{4}-W\d{2}(\.\d+)?$/.test(k)).sort();
+  return keys.length ? keys[keys.length - 1] : null;
+}
+
+// Collega una voce di catalogo allo storico delle schede PER NOME.
+// usedIn: dove compare; series/lastKg: andamento del top-set della miglior
+// corrispondenza (storico più recente). Liste separate: se il nome non combacia
+// con nessun esercizio nei plan, fallback vuoto.
+export function catalogUsage(blob, name) {
+  const target = norm(name);
+  const sheets = Array.isArray(blob.sheets) ? blob.sheets : [];
+  const usedIn = [];
+  const matches = []; // { weeks, day, exId, superset, lastWeek }
+  for (const s of sheets) {
+    for (const d of (Array.isArray(s.plan) ? s.plan : [])) {
+      for (const ex of (Array.isArray(d.exercises) ? d.exercises : [])) {
+        if (norm(ex.name) !== target) continue;
+        usedIn.push({ sheet: s.name, day: d.title || d.day });
+        matches.push({ weeks: s.weeks ?? {}, day: d.day, exId: ex.id,
+          superset: !!ex.superset, lastWeek: latestWeekKey(s.weeks) });
+      }
+    }
+  }
+  if (!matches.length) return { usedIn: [], series: [], lastKg: null };
+  // miglior corrispondenza = quella con la settimana loggata più recente
+  const best = matches
+    .filter((m) => m.lastWeek)
+    .sort((a, b) => (a.lastWeek < b.lastWeek ? 1 : -1))[0];
+  if (!best) return { usedIn, series: [], lastKg: null };
+  const series = topSetSeries({ weeks: best.weeks }, best.day, best.exId, best.lastWeek);
+  const lastKg = series.length ? series[series.length - 1].kg : null;
+  return { usedIn, series, lastKg };
 }

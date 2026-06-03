@@ -112,3 +112,37 @@ test("groupedCatalog: ordina alfabeticamente dentro il gruppo, salta gruppi vuot
   assert.deepEqual(gambe.items.map((e) => e.name), ["affondi", "Zercher squat"]);
   assert.ok(!g.some((x) => x.muscle === "Spalle")); // gruppo vuoto assente
 });
+
+import { catalogUsage } from "../catalog.js";
+
+function blobWithHistory() {
+  return {
+    schema: 6, updatedAt: null, activeSheetId: "s1",
+    sheets: [{
+      id: "s1", name: "Push Pull Legs",
+      plan: [{ day: "A", title: "Spinta", exercises: [{ id: "e1", name: "Panca piana bilanciere", muscle: "Petto" }] }],
+      weeks: {
+        "2026-W01": { entries: { A: { e1: { sets: [{ reps: "5", kg: "60", done: true }] } } } },
+        "2026-W02": { entries: { A: { e1: { sets: [{ reps: "5", kg: "65", done: true }] } } } },
+      },
+    }],
+    catalog: [{ id: "c1", name: "Panca piana bilanciere", muscle: "Petto", note: "" }],
+  };
+}
+
+test("catalogUsage: trova usato-in e serie per nome", () => {
+  const u = catalogUsage(blobWithHistory(), "Panca piana bilanciere");
+  assert.deepEqual(u.usedIn, [{ sheet: "Push Pull Legs", day: "Spinta" }]);
+  assert.equal(u.lastKg, 65);
+  assert.ok(u.series.length >= 2);
+});
+
+test("catalogUsage: match per nome case-insensitive", () => {
+  const u = catalogUsage(blobWithHistory(), "PANCA piana bilanciere");
+  assert.equal(u.usedIn.length, 1);
+});
+
+test("catalogUsage: nessun match → fallback vuoto", () => {
+  const u = catalogUsage(blobWithHistory(), "Esercizio inesistente");
+  assert.deepEqual(u, { usedIn: [], series: [], lastKg: null });
+});
