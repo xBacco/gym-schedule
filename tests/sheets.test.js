@@ -138,3 +138,34 @@ test("setActiveSheet: cambia attiva; id ignoto è no-op", () => {
   assert.equal(setActiveSheet(b, firstId).activeSheetId, firstId);
   assert.equal(setActiveSheet(b, "ghost").activeSheetId, b.activeSheetId);
 });
+
+// Task 5 — sheetSummaries
+import { sheetSummaries } from "../sheets.js";
+
+test("sheetSummaries: conta giorni, esercizi, settimane, ultima data", () => {
+  const blob = {
+    schema: 6, updatedAt: "t", activeSheetId: "a",
+    sheets: [
+      { id: "a", name: "PPL", plan: [
+          { day: "A", exercises: [{ id: "1" }, { id: "2" }] },
+          { day: "B", exercises: [{ id: "3" }] },
+        ],
+        weeks: {
+          "2026-W01": { label: "w1", entries: {}, dates: { A: "2026-01-05" } },
+          "2026-W02": { label: "w2", entries: {}, dates: { B: "2026-01-12" } },
+        } },
+      { id: "b", name: "Vuota", plan: [], weeks: {} },
+    ],
+  };
+  const sums = sheetSummaries(blob);
+  assert.equal(sums.length, 2);
+  assert.deepEqual(
+    { ...sums[0], id: undefined },
+    { id: undefined, name: "PPL", active: true, days: 2, exercises: 3, weeks: 2, lastDate: "2026-01-12" }
+  );
+  assert.equal(sums[0].id, "a");
+  assert.deepEqual(
+    { ...sums[1], id: undefined },
+    { id: undefined, name: "Vuota", active: false, days: 0, exercises: 0, weeks: 0, lastDate: null }
+  );
+});

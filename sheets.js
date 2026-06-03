@@ -129,3 +129,31 @@ export function setActiveSheet(blob, id) {
   if (out.sheets.some((s) => s.id === id)) out.activeSheetId = id;
   return out;
 }
+
+// Riepilogo per la UI del gestore: una riga per scheda con conteggi e ultima data
+// loggata. lastDate = max tra tutte le weeks[*].dates[*] della scheda (o null).
+export function sheetSummaries(blob) {
+  const b = toSheetsBlob(blob);
+  return b.sheets.map((s) => {
+    const plan = Array.isArray(s.plan) ? s.plan : [];
+    const exercises = plan.reduce((n, d) => n + (Array.isArray(d.exercises) ? d.exercises.length : 0), 0);
+    const weekKeys = Object.keys(s.weeks ?? {});
+    let lastDate = null;
+    for (const wk of weekKeys) {
+      const dates = s.weeks[wk]?.dates ?? {};
+      for (const day of Object.keys(dates)) {
+        const dt = dates[day];
+        if (dt && (lastDate === null || dt > lastDate)) lastDate = dt;
+      }
+    }
+    return {
+      id: s.id,
+      name: s.name,
+      active: s.id === b.activeSheetId,
+      days: plan.length,
+      exercises,
+      weeks: weekKeys.length,
+      lastDate,
+    };
+  });
+}
