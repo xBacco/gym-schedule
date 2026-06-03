@@ -378,17 +378,117 @@ function mutateCatalog(fn) {
   renderCatalog();
 }
 
+// Helper di rendering del catalogo (escape, normalizzazione, highlight, sparkline).
+const dbEsc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const dbNorm = (s) => String(s ?? "").toLowerCase().trim();
+function dbHL(name) {
+  if (!dbFilter) return dbEsc(name);
+  const i = dbNorm(name).indexOf(dbNorm(dbFilter));
+  if (i < 0) return dbEsc(name);
+  return dbEsc(name.slice(0, i)) + "<mark>" + dbEsc(name.slice(i, i + dbFilter.length)) +
+    "</mark>" + dbEsc(name.slice(i + dbFilter.length));
+}
+function dbSparkSVG(series) {
+  if (!series.length) return "";
+  const a = series.map((p) => p.kg), w = 260, h = 42;
+  const mn = Math.min(...a), mx = Math.max(...a), rg = (mx - mn) || 1;
+  const pts = a.map((v, i) => [8 + i * (w - 16) / (Math.max(1, a.length - 1)), h - 6 - ((v - mn) / rg) * (h - 13)]);
+  const ln = pts.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+  const lp = pts[pts.length - 1];
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">` +
+    `<polygon points="8,${h - 6} ${ln} ${w - 8},${h - 6}" fill="var(--acc)" opacity=".18"/>` +
+    `<polyline class="spk" points="${ln}" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linejoin="round"/>` +
+    `<circle class="spk-dot" cx="${lp[0].toFixed(1)}" cy="${lp[1].toFixed(1)}" r="3" fill="var(--acc)"/></svg>`;
+}
+
+// Dettaglio inline di una voce: usato-in / sparkline / nota (animazione CRT).
+function dbDetHTML(entry) {
+  const blob = dehydrate(data);
+  const u = catalogUsage(blob, entry.name);
+  let h = `<div class="db-det"><div class="scan"></div><div class="reveal">`;
+  h += `<div class="cmd"><span class="c1">$</span> stat "${dbEsc(entry.name)}"</div>`;
+  h += `<div><span class="sec">usato in</span></div>`;
+  if (u.usedIn.length) {
+    u.usedIn.forEach((x) => h += `<div class="uin"><span class="pf">›</span><span class="sc">${dbEsc(x.sheet)}</span><span class="dy">· giorno ${dbEsc(x.day)}</span></div>`);
+  } else {
+    h += `<div class="none">— non presente in nessuna scheda —</div>`;
+  }
+  h += `<div style="margin-top:9px"><span class="sec">andamento</span></div>`;
+  if (u.series.length) {
+    h += `<div class="spark"><div class="top"><span class="lastv">${u.lastKg}<span class="u"> kg ult.</span></span><span class="cap">${u.series.length} sessioni</span></div>${dbSparkSVG(u.series)}</div>`;
+  } else {
+    h += `<div class="none">— ancora nessuno storico —</div>`;
+  }
+  h += `<div style="margin-top:9px"><span class="sec">nota</span></div>`;
+  h += `<textarea class="note" data-id="${entry.id}" placeholder="cue tecnico, presa, link…">${dbEsc(entry.note || "")}</textarea>`;
+  h += `<div class="dacts"><button class="edit">✎ modifica</button><button class="del">× elimina</button></div>`;
+  h += `</div></div>`;
+  return h;
+}
+
 function renderCatalog() {
   const ov = document.getElementById("dbOverlay");
   if (!catalogOpen) { ov.classList.add("hidden"); ov.setAttribute("aria-hidden", "true"); return; }
   ov.classList.remove("hidden"); ov.setAttribute("aria-hidden", "false");
   const tree = document.getElementById("dbTree");
   const meta = document.getElementById("dbMeta");
-  const groups = groupedCatalog(dehydrate(data));
-  const total = groups.reduce((n, g) => n + g.items.length, 0);
-  meta.textContent = `${total} rec`;
-  tree.innerHTML = ""; // riempito in un task successivo
+  const blob = dehydrate(data);
+  const groups = groupedCatalog(blob);
+  meta.textContent = groups.reduce((n, g) => n + g.items.length, 0) + " rec";
+  tree.innerHTML = "";
+  const f = dbNorm(dbFilter);
+  let any = false;
+
+  groups.forEach(({ muscle, items }) => {
+    const shown = items.filter((e) => !f || dbNorm(e.name).includes(f));
+    if (f && !shown.length) return;
+    any = any || shown.length > 0;
+    const isOpen = f ? true : (dbOpenGroups[muscle] !== false);
+    const node = document.createElement("div");
+    node.className = "db-gnode" + (isOpen ? "" : " closed");
+    const hd = document.createElement("div");
+    hd.className = "db-ghd";
+    hd.innerHTML = `<span class="car">${isOpen ? "▾" : "▸"}</span><span class="nm">${muscle.toLowerCase()}</span><span class="fill"></span><span class="ct">${String(items.length).padStart(2, "0")}</span>`;
+    if (!f) hd.onclick = () => { dbOpenGroups[muscle] = !(dbOpenGroups[muscle] !== false); renderCatalog(); };
+    node.appendChild(hd);
+    const kids = document.createElement("div");
+    kids.className = "db-kids";
+    shown.forEach((entry, idx) => {
+      const last = idx === shown.length - 1;
+      const isExOpen = dbOpenEx === entry.id;
+      const k = document.createElement("div");
+      k.className = "db-k" + (isExOpen ? " open" : "");
+      const noteDot = entry.note ? '<span class="nb" title="ha una nota"> ✎·</span>' : '';
+      k.innerHTML = `<div class="db-krow"><span class="br">${last ? "└─" : "├─"}</span>` +
+        `<span class="knm">${dbHL(entry.name)}${noteDot}</span><span class="car2">▸</span></div>` +
+        (isExOpen ? dbDetHTML(entry) : "");
+      k.querySelector(".db-krow").onclick = () => { dbOpenEx = isExOpen ? null : entry.id; renderCatalog(); };
+      if (isExOpen) wireDetail(k, entry);
+      kids.appendChild(k);
+    });
+    node.appendChild(kids);
+    tree.appendChild(node);
+  });
+
+  if (f && !any) {
+    tree.innerHTML = `<div class="db-nores">nessun match per "<b>${dbEsc(dbFilter)}</b>"<br>` +
+      `<button class="mk" id="dbMkNew">+ aggiungi "${dbEsc(dbFilter)}"</button></div>`;
+    document.getElementById("dbMkNew").onclick = () => openCatalogForm(null, dbFilter);
+  }
 }
+
+// Aggancia gli handler del dettaglio inline (nota + azioni). La modale è il Task 10.
+function wireDetail(k, entry) {
+  const ta = k.querySelector(".note");
+  ta.onclick = (e) => e.stopPropagation();
+  ta.onblur = () => mutateCatalog((b) => setCatalogNote(b, entry.id, ta.value));
+  k.querySelector(".edit").onclick = (e) => { e.stopPropagation(); openCatalogForm(entry); };
+  k.querySelector(".del").onclick = (e) => { e.stopPropagation(); openCatalogDelete(entry); };
+}
+// Stub: il corpo della modale di create/rename e di conferma elimina arriva col Task 10.
+// Dichiarazioni `function` (hoisted) così renderCatalog può referenziarle già ora.
+function openCatalogForm(entry, prefill) { /* Task 10 */ }
+function openCatalogDelete(entry) { /* Task 10 */ }
 
 // ---- Menu drawer in fondo: stessa logica history degli overlay. ----
 let drawerOpen = false;
@@ -2753,6 +2853,8 @@ async function boot() {
   document.getElementById("calendarBack").addEventListener("click", closeCalendar);
   document.getElementById("sheetsBack").addEventListener("click", closeSheets);
   document.getElementById("dbBack").addEventListener("click", closeCatalog);
+  document.getElementById("dbQ").oninput = (e) => { dbFilter = e.target.value; renderCatalog(); };
+  document.getElementById("dbAddInline").onclick = () => openCatalogForm(null, dbFilter);
   wireDrawer();
   document.getElementById("calPrev").addEventListener("click", () => calShiftMonth(-1));
   document.getElementById("calNext").addEventListener("click", () => calShiftMonth(1));
