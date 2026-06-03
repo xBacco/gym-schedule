@@ -379,14 +379,18 @@ function mutateCatalog(fn) {
 }
 
 // Helper di rendering del catalogo (escape, normalizzazione, highlight, sparkline).
-const dbEsc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// Escape per body E attributi (copre anche le virgolette): così i valori
+// interpolati in `value="..."` (es. modale Task 10) sono sicuri senza doppio-escape.
+const dbEsc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 const dbNorm = (s) => String(s ?? "").toLowerCase().trim();
 function dbHL(name) {
   if (!dbFilter) return dbEsc(name);
-  const i = dbNorm(name).indexOf(dbNorm(dbFilter));
+  const nf = dbNorm(dbFilter); // lunghezza normalizzata: niente drift con spazi nel filtro
+  const i = dbNorm(name).indexOf(nf);
   if (i < 0) return dbEsc(name);
-  return dbEsc(name.slice(0, i)) + "<mark>" + dbEsc(name.slice(i, i + dbFilter.length)) +
-    "</mark>" + dbEsc(name.slice(i + dbFilter.length));
+  return dbEsc(name.slice(0, i)) + "<mark>" + dbEsc(name.slice(i, i + nf.length)) +
+    "</mark>" + dbEsc(name.slice(i + nf.length));
 }
 function dbSparkSVG(series) {
   if (!series.length) return "";
