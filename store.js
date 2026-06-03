@@ -269,8 +269,8 @@ export function mergeBlobs(local, remote) {
     const localPlanFilled = Array.isArray(ls.plan) && ls.plan.length > 0;
     sheets.push({
       id: ls.id,
-      name: ls.name ?? rs.name,
-      plan: localPlanFilled ? ls.plan : (rs.plan ?? []),
+      name: ls.name ?? rs.name, // name: local wins
+      plan: localPlanFilled ? structuredClone(ls.plan) : structuredClone(rs.plan ?? []),
       weeks: mergeSheetWeeks(ls.weeks, rs.weeks, lUpd, rUpd),
     });
   }

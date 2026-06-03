@@ -134,4 +134,5 @@ test("mergeBlobs: retro-compat — fonde un blob schema 5 con uno schema 6", () 
   const merged = mergeBlobs(legacy, sheeted);
   assert.equal(merged.schema, 6);
   assert.ok(Array.isArray(merged.sheets));
+  assert.equal(merged.sheets.length, 2); // id legacy diversi => due schede (comportamento atteso)
 });
