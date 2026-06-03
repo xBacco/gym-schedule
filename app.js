@@ -528,9 +528,12 @@ function openCatalogForm(entry, prefill = "") {
   document.getElementById("dbFCancel").onclick = dbCloseModal;
   ok.onclick = () => {
     const name = nm.value.trim(), muscle = grp.value;
+    // Stato vista PRIMA della mutazione: mutateCatalog ri-renderizza già, così
+    // gruppo aperto + filtro azzerato sono riflessi senza un render extra.
+    if (!isEdit) { dbOpenGroups[muscle] = true; dbFilter = ""; document.getElementById("dbQ").value = ""; }
     if (isEdit) mutateCatalog((b) => renameCatalogEntry(b, entry.id, { name, muscle }));
-    else { mutateCatalog((b) => addCatalogEntry(b, { name, muscle })); dbOpenGroups[muscle] = true; dbFilter = ""; document.getElementById("dbQ").value = ""; }
-    dbCloseModal(); renderCatalog();
+    else mutateCatalog((b) => addCatalogEntry(b, { name, muscle }));
+    dbCloseModal();
   };
   if (!dlg.open) dlg.showModal();
   setTimeout(() => nm.focus(), 30);
@@ -545,8 +548,9 @@ function openCatalogDelete(entry) {
     `<button class="confirm db-danger" type="button" id="dbFOk">elimina</button></div>`;
   document.getElementById("dbFCancel").onclick = dbCloseModal;
   document.getElementById("dbFOk").onclick = () => {
+    dbOpenEx = null; // prima della mutazione: il render di mutateCatalog lo riflette
     mutateCatalog((b) => deleteCatalogEntry(b, entry.id));
-    dbOpenEx = null; dbCloseModal(); renderCatalog();
+    dbCloseModal();
   };
   if (!dlg.open) dlg.showModal();
 }
@@ -2950,6 +2954,7 @@ async function boot() {
       if (planOpen) history.pushState({ gymPlan: true }, "");
       else if (nutritionOpen) history.pushState({ gymNutrition: true }, "");
       else if (calendarOpen) history.pushState({ gymCalendar: true }, "");
+      else if (catalogOpen) history.pushState({ gymCatalog: true }, "");
       else if (openIndex !== null) history.pushState({ gymFocus: true }, "");
       return;
     }
