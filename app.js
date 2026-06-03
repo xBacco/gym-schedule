@@ -489,10 +489,67 @@ function wireDetail(k, entry) {
   k.querySelector(".edit").onclick = (e) => { e.stopPropagation(); openCatalogForm(entry); };
   k.querySelector(".del").onclick = (e) => { e.stopPropagation(); openCatalogDelete(entry); };
 }
-// Stub: il corpo della modale di create/rename e di conferma elimina arriva col Task 10.
-// Dichiarazioni `function` (hoisted) così renderCatalog può referenziarle già ora.
-function openCatalogForm(entry, prefill) { /* Task 10 */ }
-function openCatalogDelete(entry) { /* Task 10 */ }
+// Modale add / edit / delete del catalogo (Task 10). Dialog nativo #dbScrim:
+// riusa lo stile .set-dialog (header .modal-h/.t/.x, .editlabel, input/select, .confirm).
+function dbCloseModal() {
+  const dlg = document.getElementById("dbScrim");
+  if (dlg.open) dlg.close();
+}
+function openCatalogForm(entry, prefill = "") {
+  const dlg = document.getElementById("dbScrim");
+  const mttl = document.getElementById("dbMTtl");
+  const mbody = document.getElementById("dbMBody");
+  const isEdit = !!entry;
+  mttl.textContent = isEdit ? "MODIFICA ESERCIZIO" : "NUOVO ESERCIZIO";
+  const name0 = isEdit ? entry.name : prefill;
+  const grp0 = isEdit ? entry.muscle : MUSCLE_GROUPS[0];
+  mbody.innerHTML =
+    `<label class="editlabel">nome esercizio</label>` +
+    `<input id="dbFNm" value="${dbEsc(name0)}" placeholder="es. Panca piana bilanciere" autocomplete="off">` +
+    `<div class="db-warn" id="dbFWarn"></div>` +
+    `<label class="editlabel">gruppo muscolare</label><select id="dbFGrp">` +
+    MUSCLE_GROUPS.map((m) => `<option ${m === grp0 ? "selected" : ""}>${m}</option>`).join("") +
+    `</select>` +
+    `<div class="db-mfoot"><button class="db-cancel" type="button" id="dbFCancel">annulla</button>` +
+    `<button class="confirm" type="button" id="dbFOk">salva</button></div>`;
+  const nm = document.getElementById("dbFNm");
+  const grp = document.getElementById("dbFGrp");
+  const ok = document.getElementById("dbFOk");
+  const warn = document.getElementById("dbFWarn");
+  const blob = dehydrate(data);
+  function check() {
+    const v = nm.value.trim();
+    if (!v) { ok.disabled = true; warn.textContent = ""; return; }
+    const dup = (blob.catalog || []).some((e) =>
+      e.muscle === grp.value && dbNorm(e.name) === dbNorm(v) && (!isEdit || e.id !== entry.id));
+    ok.disabled = dup; warn.textContent = dup ? "già presente in " + grp.value : "";
+  }
+  nm.oninput = check; grp.onchange = check; check();
+  document.getElementById("dbFCancel").onclick = dbCloseModal;
+  ok.onclick = () => {
+    const name = nm.value.trim(), muscle = grp.value;
+    if (isEdit) mutateCatalog((b) => renameCatalogEntry(b, entry.id, { name, muscle }));
+    else { mutateCatalog((b) => addCatalogEntry(b, { name, muscle })); dbOpenGroups[muscle] = true; dbFilter = ""; document.getElementById("dbQ").value = ""; }
+    dbCloseModal(); renderCatalog();
+  };
+  if (!dlg.open) dlg.showModal();
+  setTimeout(() => nm.focus(), 30);
+}
+function openCatalogDelete(entry) {
+  const dlg = document.getElementById("dbScrim");
+  document.getElementById("dbMTtl").textContent = "ELIMINA";
+  document.getElementById("dbMBody").innerHTML =
+    `<div class="db-delmsg">Eliminare <b>${dbEsc(entry.name)}</b> da <b>${dbEsc(entry.muscle)}</b>?` +
+    `<br>Non tocca lo storico delle schede.</div>` +
+    `<div class="db-mfoot"><button class="db-cancel" type="button" id="dbFCancel">annulla</button>` +
+    `<button class="confirm db-danger" type="button" id="dbFOk">elimina</button></div>`;
+  document.getElementById("dbFCancel").onclick = dbCloseModal;
+  document.getElementById("dbFOk").onclick = () => {
+    mutateCatalog((b) => deleteCatalogEntry(b, entry.id));
+    dbOpenEx = null; dbCloseModal(); renderCatalog();
+  };
+  if (!dlg.open) dlg.showModal();
+}
 
 // ---- Menu drawer in fondo: stessa logica history degli overlay. ----
 let drawerOpen = false;
@@ -2859,6 +2916,8 @@ async function boot() {
   document.getElementById("dbBack").addEventListener("click", closeCatalog);
   document.getElementById("dbQ").oninput = (e) => { dbFilter = e.target.value; renderCatalog(); };
   document.getElementById("dbAddInline").onclick = () => openCatalogForm(null, dbFilter);
+  document.getElementById("dbMx").addEventListener("click", dbCloseModal);
+  document.getElementById("dbScrim").addEventListener("click", (e) => { if (e.target.id === "dbScrim") dbCloseModal(); });
   wireDrawer();
   document.getElementById("calPrev").addEventListener("click", () => calShiftMonth(-1));
   document.getElementById("calNext").addEventListener("click", () => calShiftMonth(1));

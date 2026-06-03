@@ -1102,6 +1102,13 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 /* .confirm scoped to override .set-dialog .confirm (pre-existing spec 0,2,0, acc bg) */
 .set-dialog .confirm{ width:100%; margin-top:14px; background:var(--ctb); border:1px solid var(--acc); color:var(--acc);
   font-family:var(--mono); font-size:14px; padding:10px; border-radius:8px; letter-spacing:.05em; cursor:pointer; }
+/* Modale catalogo esercizi (Task 10): riusa .set-dialog, qui solo le parti extra. */
+.db-warn{ min-height:14px; margin:6px 0 2px; font-family:var(--mono); font-size:11px; color:var(--down); }
+.db-delmsg{ font-family:var(--mono); font-size:13px; color:var(--tx); line-height:1.5; }
+.db-mfoot{ display:flex; gap:8px; margin-top:16px; }
+.db-mfoot .confirm{ flex:1; margin-top:0; }
+.db-cancel{ flex:1; background:var(--surf); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:10px; font-family:var(--mono); font-size:14px; cursor:pointer; min-height:44px; letter-spacing:.05em; }
+.db-danger{ background:var(--ctb); border-color:var(--down); color:var(--down); }
 .failtoggle{ background:none; border:1px solid var(--line); color:var(--down); border-radius:7px; padding:7px 10px; font-family:var(--mono); cursor:pointer; }
 .failnote{ margin-top:8px; }
 .acts{ display:flex; gap:8px; margin-top:10px; }
