@@ -146,3 +146,19 @@ test("catalogUsage: nessun match → fallback vuoto", () => {
   const u = catalogUsage(blobWithHistory(), "Esercizio inesistente");
   assert.deepEqual(u, { usedIn: [], series: [], lastKg: null });
 });
+
+test("catalogUsage: best match = scheda con la settimana loggata più recente", () => {
+  const blob = {
+    schema: 6, activeSheetId: "s1",
+    sheets: [
+      { id: "s1", name: "Vecchia", plan: [{ day: "A", title: "X", exercises: [{ id: "e1", name: "Panca", muscle: "Petto" }] }],
+        weeks: { "2026-W01": { entries: { A: { e1: { sets: [{ reps: "5", kg: "50", done: true }] } } } } } },
+      { id: "s2", name: "Nuova", plan: [{ day: "B", title: "Y", exercises: [{ id: "e9", name: "Panca", muscle: "Petto" }] }],
+        weeks: { "2026-W05": { entries: { B: { e9: { sets: [{ reps: "5", kg: "80", done: true }] } } } } } },
+    ],
+    catalog: [{ id: "c1", name: "Panca", muscle: "Petto", note: "" }],
+  };
+  const u = catalogUsage(blob, "Panca");
+  assert.equal(u.usedIn.length, 2);       // appare in entrambe
+  assert.equal(u.lastKg, 80);             // serie dalla scheda più recente (W05)
+});

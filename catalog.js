@@ -118,23 +118,25 @@ export function catalogUsage(blob, name) {
   const target = norm(name);
   const sheets = Array.isArray(blob.sheets) ? blob.sheets : [];
   const usedIn = [];
-  const matches = []; // { weeks, day, exId, superset, lastWeek }
+  const matches = []; // { weeks, day, exId, lastWeek }
   for (const s of sheets) {
     for (const d of (Array.isArray(s.plan) ? s.plan : [])) {
       for (const ex of (Array.isArray(d.exercises) ? d.exercises : [])) {
         if (norm(ex.name) !== target) continue;
         usedIn.push({ sheet: s.name, day: d.title || d.day });
         matches.push({ weeks: s.weeks ?? {}, day: d.day, exId: ex.id,
-          superset: !!ex.superset, lastWeek: latestWeekKey(s.weeks) });
+          lastWeek: latestWeekKey(s.weeks) });
       }
     }
   }
   if (!matches.length) return { usedIn: [], series: [], lastKg: null };
-  // miglior corrispondenza = quella con la settimana loggata più recente
+  // miglior corrispondenza = quella con la settimana loggata più recente;
+  // a parità di lastWeek vince la prima incontrata (O(n) stabile, deterministico).
   const best = matches
     .filter((m) => m.lastWeek)
-    .sort((a, b) => (a.lastWeek < b.lastWeek ? 1 : -1))[0];
+    .reduce((acc, m) => (acc && acc.lastWeek >= m.lastWeek ? acc : m), null);
   if (!best) return { usedIn, series: [], lastKg: null };
+  // v1: anche per esercizi superset usiamo la traccia normale (track null).
   const series = topSetSeries({ weeks: best.weeks }, best.day, best.exId, best.lastWeek);
   const lastKg = series.length ? series[series.length - 1].kg : null;
   return { usedIn, series, lastKg };
