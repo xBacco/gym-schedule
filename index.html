@@ -250,14 +250,32 @@
         <div id="calSub" class="fs">i tuoi allenamenti</div>
       </div>
     </header>
-    <div class="cal-nav">
-      <button id="calPrev" class="btn-soft" aria-label="Mese precedente">‹</button>
-      <div id="calTitle" class="cal-title"></div>
-      <button id="calNext" class="btn-soft" aria-label="Mese successivo">›</button>
+    <div class="cal-scroll">
+      <div class="cal-nav">
+        <button id="calPrev" class="btn-soft" aria-label="Mese precedente">‹</button>
+        <div id="calTitle" class="cal-title"></div>
+        <button id="calNext" class="btn-soft" aria-label="Mese successivo">›</button>
+      </div>
+      <div id="calMsum" class="cal-msum"></div>
+      <div id="calGrid" class="cal-grid"></div>
+      <div class="cal-legend"><span>volume</span><span class="sq" style="background:var(--surf2)"></span>
+        <span class="sq cal-lvl1"></span><span class="sq cal-lvl2"></span><span class="sq cal-lvl3"></span><span class="sq cal-lvl4"></span><span>più</span></div>
+      <div class="cal-prog">
+        <div class="cal-prog-head"><span class="cpt">Progressione</span>
+          <div class="cal-mt" id="calMetric"><button type="button" data-m="vol" class="on">Volume</button><button type="button" data-m="kg">Carico</button></div>
+        </div>
+        <div id="calDelta" class="cal-delta"></div>
+        <div id="calChart" class="cal-chartbox"></div>
+        <div class="cal-cap">i punti in ambra sono il mese visualizzato · tocca un punto per aprire</div>
+      </div>
     </div>
-    <div id="calGrid" class="cal-grid"></div>
-    <div id="calDetail" class="cal-detail"></div>
   </div>
+
+  <!-- Pop-up sessione completa del calendario (stile terminale) -->
+  <dialog id="calDayDialog" class="cal-modal">
+    <div class="cal-mbar"><span class="cal-dot"></span><span id="calDayTtl" class="cal-mttl">SESSIONE</span><button id="calDayClose" class="cal-x" type="button" aria-label="Chiudi">✕</button></div>
+    <div id="calDayBody" class="cal-mbody"></div>
+  </dialog>
 
   <!-- Popup commento veloce -->
   <dialog id="qcDialog" class="qc-dialog">
