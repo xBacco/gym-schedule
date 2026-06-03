@@ -244,6 +244,7 @@ function calShiftMonth(delta) {
 
 // ---- Gestore schede: overlay a schermo intero (stessa logica history degli altri). ----
 let sheetsOpen = false;
+let sheetsPending = null; // azione da eseguire dopo la chiusura del gestore schede
 
 function openSheets() {
   sheetsOpen = true;
@@ -254,7 +255,7 @@ function openSheets() {
 function closeSheets() {
   if (!sheetsOpen) return;
   if (history.state && history.state.gymSheets) history.back(); // → popstate chiude
-  else { sheetsOpen = false; renderSheets(); }
+  else { sheetsOpen = false; renderSheets(); const t = sheetsPending; sheetsPending = null; if (t) t(); }
 }
 
 // Applica una mutazione (blob→blob) alla scheda corrente, deidratando/idratando
@@ -266,7 +267,6 @@ function mutateSheets(fn) {
   render();
 }
 
-// Stub: il corpo completo del gestore arriva nel Task 11.
 function renderSheets() {
   const ov = document.getElementById("sheetsOverlay");
   if (!sheetsOpen) { ov.classList.add("hidden"); ov.setAttribute("aria-hidden", "true"); return; }
@@ -305,7 +305,7 @@ function renderSheets() {
     acts.className = "sheet-acts";
 
     if (s.active) {
-      acts.appendChild(mkBtn("✎ Modifica scheda", "edit", () => { closeSheets(); openPlanEditor(); }));
+      acts.appendChild(mkBtn("✎ Modifica scheda", "edit", () => { sheetsPending = openPlanEditor; closeSheets(); }));
       acts.appendChild(mkBtn("rinomina", "", () => renameSheetPrompt(s)));
     } else {
       acts.appendChild(mkBtn("↪ attiva", "go", () => mutateSheets((b) => setActiveSheet(b, s.id))));
@@ -1771,7 +1771,7 @@ function setRow(i, set, prev, isCurrent, onRemove, onOpen, meta = { factor: 1, u
 function persist(idx) {
   const exId = exIdAt(idx);
   bufferEdit(currentWeek, currentDay, exId, getEntry(data, currentWeek, currentDay, exId));
-  profileStorage.set("data", data);
+  profileStorage.set("data", dehydrate(data));
   profileStorage.set("dirty", true);
   pusher.schedule();
 }
@@ -2410,7 +2410,7 @@ function newWeek() {
   if (label === null) return;
   data = ensureWeek(data, key, label || key);
   changeWeek(key);
-  profileStorage.set("data", data);
+  profileStorage.set("data", dehydrate(data));
   profileStorage.set("dirty", true);
   pusher.schedule();
 }
@@ -2507,7 +2507,7 @@ function wireSettings() {
     if (dlg.returnValue === "save") {
       localStorage.setItem(BAR_KEY, String(parseFloat(document.getElementById("barInput").value) || 20));
       localStorage.setItem(PLATES_KEY, document.getElementById("platesInput").value);
-      profileStorage.set("data", data);
+      profileStorage.set("data", dehydrate(data));
       profileStorage.set("dirty", true);
       pusher.schedule();
       render(); // ridipinge il calcolatore col nuovo set
@@ -2756,7 +2756,7 @@ async function boot() {
     if (nutritionOpen) { nutritionOpen = false; renderNutritionOverlay(); }
     if (planOpen) { planOpen = false; renderPlanEditor(); }
     if (calendarOpen) { calendarOpen = false; renderCalendar(); }
-    if (sheetsOpen) { sheetsOpen = false; renderSheets(); }
+    if (sheetsOpen) { sheetsOpen = false; renderSheets(); const t = sheetsPending; sheetsPending = null; if (t) t(); }
   });
 
   // 4. Carica dati: prima da localStorage (mostra subito), poi da remote.
