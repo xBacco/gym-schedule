@@ -8,6 +8,10 @@ import {
 import {
   hydrate, dehydrate, addSheet, renameSheet, deleteSheet, setActiveSheet, sheetSummaries,
 } from "./sheets.js";
+import {
+  addCatalogEntry, renameCatalogEntry, deleteCatalogEntry, setCatalogNote,
+  groupedCatalog, catalogUsage, MUSCLE_GROUPS, seedCatalogIfAbsent,
+} from "./catalog.js";
 import { supabase } from "./supabase-client.js";
 import { bindAuthScreen, hideAuthScreen, signOut } from "./auth.js";
 import { ProfileStorage } from "./profile-storage.js";
@@ -346,6 +350,44 @@ function renameSheetPrompt(s) {
 function deleteSheetConfirm(s) {
   if (!window.confirm(`Eliminare "${s.name}"? Verrà cancellato anche lo storico di questa scheda.`)) return;
   mutateSheets((b) => deleteSheet(b, s.id));
+}
+
+// ---- Database esercizi: overlay a schermo intero (stessa logica history). ----
+let catalogOpen = false;
+let dbFilter = "";        // testo del filtro (handler in un task successivo)
+let dbOpenGroups = {};    // gruppo → bool (default: aperti)
+let dbOpenEx = null;      // id voce espansa (una per volta)
+
+function openCatalog() {
+  catalogOpen = true;
+  history.pushState({ gymCatalog: true }, "");
+  renderCatalog();
+}
+
+function closeCatalog() {
+  if (!catalogOpen) return;
+  if (history.state && history.state.gymCatalog) history.back(); // → popstate chiude
+  else { catalogOpen = false; renderCatalog(); }
+}
+
+// Applica una mutazione (blob→blob) sul catalogo, deidratando/idratando attorno,
+// poi salva e ridisegna. Rispetta l'invariante dehydrate-a-ogni-save.
+function mutateCatalog(fn) {
+  data = hydrate(fn(dehydrate(data)));
+  scheduleSave();
+  renderCatalog();
+}
+
+function renderCatalog() {
+  const ov = document.getElementById("dbOverlay");
+  if (!catalogOpen) { ov.classList.add("hidden"); ov.setAttribute("aria-hidden", "true"); return; }
+  ov.classList.remove("hidden"); ov.setAttribute("aria-hidden", "false");
+  const tree = document.getElementById("dbTree");
+  const meta = document.getElementById("dbMeta");
+  const groups = groupedCatalog(dehydrate(data));
+  const total = groups.reduce((n, g) => n + g.items.length, 0);
+  meta.textContent = `${total} rec`;
+  tree.innerHTML = ""; // riempito in un task successivo
 }
 
 // ---- Menu drawer in fondo: stessa logica history degli overlay. ----
@@ -2618,7 +2660,7 @@ function wireDrawer() {
   document.getElementById("drawerPanel").addEventListener("click", (e) => {
     const b = e.target.closest(".dr-item");
     if (!b) return;
-    const map = { nutrition: openNutrition, calendar: openCalendar, sheets: openSheets, settings: openSettings };
+    const map = { nutrition: openNutrition, calendar: openCalendar, sheets: openSheets, catalog: openCatalog, settings: openSettings };
     const fn = map[b.dataset.act];
     if (fn) drawerLaunch(fn);
   });
@@ -2710,6 +2752,7 @@ async function boot() {
   document.getElementById("planBack").addEventListener("click", () => closePlanEditor());
   document.getElementById("calendarBack").addEventListener("click", closeCalendar);
   document.getElementById("sheetsBack").addEventListener("click", closeSheets);
+  document.getElementById("dbBack").addEventListener("click", closeCatalog);
   wireDrawer();
   document.getElementById("calPrev").addEventListener("click", () => calShiftMonth(-1));
   document.getElementById("calNext").addEventListener("click", () => calShiftMonth(1));
@@ -2757,6 +2800,7 @@ async function boot() {
     if (planOpen) { planOpen = false; renderPlanEditor(); }
     if (calendarOpen) { calendarOpen = false; renderCalendar(); }
     if (sheetsOpen) { sheetsOpen = false; renderSheets(); const t = sheetsPending; sheetsPending = null; if (t) t(); }
+    if (catalogOpen) { catalogOpen = false; renderCatalog(); }
   });
 
   // 4. Carica dati: prima da localStorage (mostra subito), poi da remote.
@@ -2792,6 +2836,13 @@ async function boot() {
     if (data && data.schema == null) data = { ...emptyData(), ...data };
     // Backfill schema sui dati appena letti (riusa logica esistente).
     data = hydrate(patchPlanV5(patchPlanV4(backfillMuscles(migrate(data), PLAN))));
+    // One-shot: al primo avvio (catalog mai inizializzato) inietta il seed e
+    // persiste. seedCatalogIfAbsent ritorna lo STESSO riferimento se il catalog
+    // c'è già, un blob NUOVO se ha seminato → confronto per riferimento per
+    // evitare un save inutile a ogni boot. La merge cloud successiva unisce.
+    const _blob = dehydrate(data);
+    const _maybe = seedCatalogIfAbsent(_blob);
+    if (_maybe !== _blob) { data = hydrate(_maybe); scheduleSave(); }
     render();
     setStatus("ok ✓", "ok");
   } catch (err) {

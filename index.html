@@ -283,6 +283,23 @@
     <div id="sheetsBody" class="sheets-body"></div>
   </div>
 
+  <!-- Database esercizi: overlay a schermo intero (stessa cornice delle schede) -->
+  <div id="dbOverlay" class="focus-ov hidden" aria-hidden="true">
+    <header class="focus-top">
+      <button id="dbBack" class="focus-back" aria-label="Chiudi database esercizi">←</button>
+      <div class="focus-id">
+        <div class="fn">Database esercizi</div>
+        <div id="dbMeta" class="fs">—</div>
+      </div>
+    </header>
+    <div class="sheets-body">
+      <div class="db-prompt"><span class="ps">grep&gt;</span>
+        <input id="dbQ" placeholder="filtra esercizio…" autocomplete="off">
+        <button class="add" id="dbAddInline" type="button">+ NEW</button></div>
+      <div id="dbTree"></div>
+    </div>
+  </div>
+
   <!-- Pop-up sessione completa del calendario (stile terminale) -->
   <dialog id="calDayDialog" class="cal-modal">
     <div class="cal-mbar"><span class="cal-dot"></span><span id="calDayTtl" class="cal-mttl">SESSIONE</span><button id="calDayClose" class="cal-x" type="button" aria-label="Chiudi">✕</button></div>
@@ -391,6 +408,7 @@
       <button class="dr-item" data-act="nutrition" role="menuitem"><span class="e">🥗</span><span class="t">Alimentazione</span></button>
       <button class="dr-item" data-act="calendar" role="menuitem"><span class="e">📅</span><span class="t">Calendario</span></button>
       <button class="dr-item" data-act="sheets" role="menuitem"><span class="e">📒</span><span class="t">Schede</span></button>
+      <button class="dr-item" data-act="catalog" role="menuitem"><span class="e">🗂️</span><span class="t">Database esercizi</span></button>
       <button class="dr-item" data-act="settings" role="menuitem"><span class="e">⚙</span><span class="t">Impostazioni</span></button>
     </div>
   </div>
