@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   addCatalogEntry, renameCatalogEntry, deleteCatalogEntry, setCatalogNote,
   seedCatalog, seedCatalogIfAbsent,
+  groupedCatalog, MUSCLE_GROUPS,
 } from "../catalog.js";
 
 const base = () => ({
@@ -93,4 +94,21 @@ test("seedCatalogIfAbsent: catalog popolato resta invariato", () => {
     sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
     catalog: [{ id: "c1", name: "X", muscle: "Petto", note: "" }] };
   assert.deepEqual(seedCatalogIfAbsent(blob).catalog, blob.catalog);
+});
+
+test("MUSCLE_GROUPS: gli 8 gruppi fissi nell'ordine di index.html", () => {
+  assert.deepEqual(MUSCLE_GROUPS,
+    ["Petto", "Dorso", "Spalle", "Bicipiti", "Tricipiti", "Gambe", "Polpacci", "Core"]);
+});
+
+test("groupedCatalog: ordina alfabeticamente dentro il gruppo, salta gruppi vuoti", () => {
+  const blob = { schema: 6, catalog: [
+    { id: "a", name: "Zercher squat", muscle: "Gambe", note: "" },
+    { id: "b", name: "affondi", muscle: "Gambe", note: "" },
+    { id: "c", name: "Panca", muscle: "Petto", note: "" },
+  ] };
+  const g = groupedCatalog(blob);
+  const gambe = g.find((x) => x.muscle === "Gambe");
+  assert.deepEqual(gambe.items.map((e) => e.name), ["affondi", "Zercher squat"]);
+  assert.ok(!g.some((x) => x.muscle === "Spalle")); // gruppo vuoto assente
 });

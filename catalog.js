@@ -8,6 +8,9 @@ const norm = (s) => String(s ?? "").trim().toLowerCase();
 const clone = (blob) => structuredClone(blob);
 const cat = (blob) => (Array.isArray(blob.catalog) ? blob.catalog : []);
 
+// Gli 8 gruppi fissi, stesso ordine della <select id="exMuscle"> in index.html.
+export const MUSCLE_GROUPS = ["Petto", "Dorso", "Spalle", "Bicipiti", "Tricipiti", "Gambe", "Polpacci", "Core"];
+
 // Seed iniziale: 8 gruppi fissi (stesso ordine di index.html) → esercizi.
 const SEED_BY_GROUP = {
   Petto: ["Panca piana bilanciere", "Spinte inclinata manubri", "Croci ai cavi", "Dips", "Pectoral machine", "Chest press", "Panca declinata", "Push-up"],
@@ -79,5 +82,23 @@ export function setCatalogNote(blob, id, note) {
   const out = clone(blob);
   const t = String(note ?? "").trim();
   out.catalog = cat(out).map((e) => (e.id === id ? { ...e, note: t } : e));
+  return out;
+}
+
+// [{ muscle, items:[voce…] }] nei soli gruppi con voci, ordine gruppi fisso,
+// voci ordinate alfabeticamente (it, case/accent-insensitive).
+export function groupedCatalog(blob) {
+  const list = cat(blob);
+  const byGroup = new Map(MUSCLE_GROUPS.map((m) => [m, []]));
+  for (const e of list) {
+    if (byGroup.has(e.muscle)) byGroup.get(e.muscle).push(e);
+  }
+  const out = [];
+  for (const muscle of MUSCLE_GROUPS) {
+    const items = byGroup.get(muscle);
+    if (!items.length) continue;
+    items.sort((a, b) => a.name.localeCompare(b.name, "it", { sensitivity: "base" }));
+    out.push({ muscle, items });
+  }
   return out;
 }
