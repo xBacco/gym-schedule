@@ -5,7 +5,9 @@ import {
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
   SupabaseStore, mergeBlobs, ConflictError, AuthError, planIsEmpty,
 } from "./store.js";
-import { hydrate, dehydrate } from "./sheets.js";
+import {
+  hydrate, dehydrate, addSheet, renameSheet, deleteSheet, setActiveSheet, sheetSummaries,
+} from "./sheets.js";
 import { supabase } from "./supabase-client.js";
 import { bindAuthScreen, hideAuthScreen, signOut } from "./auth.js";
 import { ProfileStorage } from "./profile-storage.js";
@@ -238,6 +240,38 @@ function calShiftMonth(delta) {
   calYear = d.getFullYear();
   calMonth = d.getMonth();
   renderCalendar();
+}
+
+// ---- Gestore schede: overlay a schermo intero (stessa logica history degli altri). ----
+let sheetsOpen = false;
+
+function openSheets() {
+  sheetsOpen = true;
+  history.pushState({ gymSheets: true }, "");
+  renderSheets();
+}
+
+function closeSheets() {
+  if (!sheetsOpen) return;
+  if (history.state && history.state.gymSheets) history.back(); // → popstate chiude
+  else { sheetsOpen = false; renderSheets(); }
+}
+
+// Applica una mutazione (blob→blob) alla scheda corrente, deidratando/idratando
+// attorno, poi salva e ridisegna gestore + home.
+function mutateSheets(fn) {
+  data = hydrate(fn(dehydrate(data)));
+  scheduleSave();
+  renderSheets();
+  render();
+}
+
+// Stub: il corpo completo del gestore arriva nel Task 11.
+function renderSheets() {
+  const ov = document.getElementById("sheetsOverlay");
+  if (!sheetsOpen) { ov.classList.add("hidden"); ov.setAttribute("aria-hidden", "true"); return; }
+  ov.classList.remove("hidden"); ov.setAttribute("aria-hidden", "false");
+  // corpo: Task 11
 }
 
 // ---- Menu drawer in fondo: stessa logica history degli overlay. ----
@@ -2510,7 +2544,7 @@ function wireDrawer() {
   document.getElementById("drawerPanel").addEventListener("click", (e) => {
     const b = e.target.closest(".dr-item");
     if (!b) return;
-    const map = { nutrition: openNutrition, calendar: openCalendar, plan: openPlanEditor, settings: openSettings };
+    const map = { nutrition: openNutrition, calendar: openCalendar, sheets: openSheets, settings: openSettings };
     const fn = map[b.dataset.act];
     if (fn) drawerLaunch(fn);
   });
@@ -2601,6 +2635,7 @@ async function boot() {
   document.getElementById("nutritionBack").addEventListener("click", () => closeNutrition());
   document.getElementById("planBack").addEventListener("click", () => closePlanEditor());
   document.getElementById("calendarBack").addEventListener("click", closeCalendar);
+  document.getElementById("sheetsBack").addEventListener("click", closeSheets);
   wireDrawer();
   document.getElementById("calPrev").addEventListener("click", () => calShiftMonth(-1));
   document.getElementById("calNext").addEventListener("click", () => calShiftMonth(1));
@@ -2647,6 +2682,7 @@ async function boot() {
     if (nutritionOpen) { nutritionOpen = false; renderNutritionOverlay(); }
     if (planOpen) { planOpen = false; renderPlanEditor(); }
     if (calendarOpen) { calendarOpen = false; renderCalendar(); }
+    if (sheetsOpen) { sheetsOpen = false; renderSheets(); }
   });
 
   // 4. Carica dati: prima da localStorage (mostra subito), poi da remote.
