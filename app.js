@@ -2551,9 +2551,9 @@ async function boot() {
     store,
     onConflict: async () => {
       const remote = await store.load();
-      const merged = mergeBlobs(data, remote.data);
+      const merged = mergeBlobs(dehydrate(data), remote.data);
       dataVersion = await store.save(merged, remote.version);
-      data = merged;
+      data = hydrate(merged);
       profileStorage.set("data", data);
       profileStorage.set("version", dataVersion);
       profileStorage.set("dirty", false);
@@ -2661,9 +2661,9 @@ async function boot() {
     const remote = await store.load();
     if (cached && profileStorage.get("dirty")) {
       // Locale dirty → merge + push.
-      const merged = mergeBlobs(cached, remote.data);
+      const merged = mergeBlobs(dehydrate(cached), remote.data);
       dataVersion = await store.save(merged, remote.version);
-      data = merged;
+      data = hydrate(merged);
       profileStorage.set("data", data);
       profileStorage.set("version", dataVersion);
       profileStorage.set("dirty", false);
@@ -2863,9 +2863,9 @@ async function reconcileFromRemote() {
   try {
     const remote = await store.load();
     if (remote.version === dataVersion) return; // nessun cambio
-    const merged = mergeBlobs(data, remote.data);
+    const merged = mergeBlobs(dehydrate(data), remote.data);
     dataVersion = await store.save(merged, remote.version);
-    data = merged;
+    data = hydrate(merged);
     profileStorage.set("data", data);
     profileStorage.set("version", dataVersion);
     render();
