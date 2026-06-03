@@ -14,7 +14,7 @@ import {
   previousSetInSession, previousWeekSet,
   sessionVolume, volumeByMuscle, exerciseTrend, nextExercisePreview,
   topSetSeries, chartGeometry,
-  sessionDates, monthGrid,
+  sessionDates, monthGrid, sessionHasDoneSet,
   lastWorkingSet,
   isDumbbell, volumeMeta, exerciseVolume, setVolume,
 } from "./session.js";
@@ -324,6 +324,10 @@ function calBuildByDate() {
   const map = new Map();
   for (const s of sessionDates(data)) {
     const dp = planDays().find((d) => d.day === s.day) || null;
+    // La data in weeks[].dates è uno stamp che non si rimuove svuotando le serie:
+    // mostra il giorno solo se c'è almeno una serie davvero completata (no sessioni
+    // di prova annullate, no celle "0 kg").
+    if (!sessionHasDoneSet(data, s.weekKey, s.day, dp)) continue;
     const vol = dp ? Math.round(sessionVolume(data, s.weekKey, s.day, dp)) : 0;
     const top = dp ? calTopKg(s.weekKey, s.day, dp) : 0;
     if (!map.has(s.date)) map.set(s.date, []);
@@ -465,7 +469,7 @@ function calExerciseRows(v, ex) {
       let tg = "";
       if (st.warmup) tg = '<span class="tg warm">ris.</span>';
       else if (st.failed) tg = '<span class="tg fail">fail</span>';
-      else if (st.feel) tg = `<span class="tg${st.feel === "hard" ? " hard" : ""}">${RPE_LABEL[st.feel] || st.feel}</span>`;
+      else if (st.feel) tg = `<span class="tg${st.feel === "hard" ? " hard" : ""}">${calEsc(RPE_LABEL[st.feel] || st.feel)}</span>`;
       out += `<div class="cl set"><span class="si">${si}</span>${val}${tg}</div>`;
     }
   }

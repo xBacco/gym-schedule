@@ -283,6 +283,22 @@ export function sessionVolume(data, weekKey, day, dayPlan) {
   return total;
 }
 
+// True se la sessione ha almeno UNA serie completata (done) tra gli esercizi del
+// piano. È il criterio "allenamento avvenuto" per il calendario: la data in
+// weeks[].dates è solo uno stamp set-if-absent e resta anche se poi si svuotano
+// le serie (es. sessione di prova annullata), quindi non basta a dire "fatto".
+// Conta anche le serie a corpo libero (volume 0): basta che siano done.
+export function sessionHasDoneSet(data, weekKey, day, dayPlan) {
+  for (const ex of dayPlan?.exercises ?? []) {
+    const v = getEntry(data, weekKey, day, ex.id);
+    const tracks = ex?.superset
+      ? [normalizeSupersetEntry(v).a, normalizeSupersetEntry(v).b]
+      : [normalizeEntry(v)];
+    if (tracks.some((t) => t.sets.some((st) => st.done))) return true;
+  }
+  return false;
+}
+
 // Volume settimanale per gruppo muscolare: [{muscle, volume}] ordinato desc.
 // Traccia normale/A -> ex.muscle, traccia B del superset -> ex.muscleB. Muscolo
 // assente -> "Altro". Riusa trackVolume (serie done, no warmup/failed).

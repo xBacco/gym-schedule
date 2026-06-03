@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { parseTargetTrack, parseTarget, activeSetIndex, isEntryComplete, activeExerciseIndex, nextExercisePreview } from "../session.js";
 import { withSet, withoutSet, withSupersetSet, withoutSupersetSet } from "../session.js";
 import { bestKg, bestKgBefore, isWeekRecord, isSetRecord, progressionDelta, withNote, previousNote, previousSetInSession, previousWeekSet, lastWorkingSet, sessionVolume, volumeByMuscle, exerciseTrend, topSetSeries, chartGeometry } from "../session.js";
-import { sessionDates, monthGrid } from "../session.js";
+import { sessionDates, monthGrid, sessionHasDoneSet } from "../session.js";
 import { isDumbbell, volumeMeta, exerciseVolume, setVolume } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
@@ -335,6 +335,39 @@ test("sessionVolume: 0 senza serie done e ignora valori non numerici", () => {
   let d = emptyData();
   d = setEntry(d, "2026-W22", "A", "pab0", { sets: [{ reps: "max", kg: "", done: true }] });
   assert.equal(sessionVolume(d, "2026-W22", "A", PLAN_AB), 0);
+});
+
+test("sessionHasDoneSet: true se almeno una serie è done (normale)", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "pab0", { sets: [{ reps: "8", kg: "70", done: true }] }, "2026-05-25T08:00:00Z");
+  assert.equal(sessionHasDoneSet(d, "2026-W22", "A", PLAN_AB), true);
+});
+
+test("sessionHasDoneSet: false con data stampata ma nessuna serie done (sessione di prova annullata)", () => {
+  let d = emptyData();
+  // sessione di prova: la data resta stampata in weeks[].dates, ma nessuna serie è done
+  d = setEntry(d, "2026-W22", "A", "pab0", { sets: [{ reps: "8", kg: "70", done: false }] }, "2026-05-25T08:00:00Z");
+  assert.ok(d.weeks["2026-W22"].dates.A, "la data resta in weeks[].dates");
+  assert.equal(sessionHasDoneSet(d, "2026-W22", "A", PLAN_AB), false);
+});
+
+test("sessionHasDoneSet: true se la traccia B del superset ha una serie done", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "pab1", { a: { sets: [] }, b: { sets: [{ reps: "15", kg: "10", done: true }] } }, "t");
+  assert.equal(sessionHasDoneSet(d, "2026-W22", "A", PLAN_AB), true);
+});
+
+test("sessionHasDoneSet: conta una serie done a corpo libero (reps senza kg, volume 0)", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "pab0", { sets: [{ reps: "12", kg: "", done: true }] }, "t");
+  assert.equal(sessionVolume(d, "2026-W22", "A", PLAN_AB), 0);
+  assert.equal(sessionHasDoneSet(d, "2026-W22", "A", PLAN_AB), true);
+});
+
+test("sessionHasDoneSet: false senza dayPlan", () => {
+  let d = emptyData();
+  d = setEntry(d, "2026-W22", "A", "pab0", { sets: [{ reps: "8", kg: "70", done: true }] }, "t");
+  assert.equal(sessionHasDoneSet(d, "2026-W22", "A", null), false);
 });
 
 test("exerciseTrend: top-set kg delle ultime n settimane, ordine crescente", () => {
