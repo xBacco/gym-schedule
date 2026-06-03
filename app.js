@@ -2839,7 +2839,13 @@ async function boot() {
     // One-shot: al primo avvio (catalog mai inizializzato) inietta il seed e
     // persiste. seedCatalogIfAbsent ritorna lo STESSO riferimento se il catalog
     // c'è già, un blob NUOVO se ha seminato → confronto per riferimento per
-    // evitare un save inutile a ogni boot. La merge cloud successiva unisce.
+    // evitare un save inutile a ogni boot.
+    // DELIBERATO: il seed sta QUI, dopo il reconcile remoto — NON nel ramo cached
+    // o nel catch offline. Se seminassimo offline su un device nuovo che POI
+    // sincronizza con un remote che ha già un catalogo, mergeBlobs (union-by-id)
+    // terrebbe sia gli id seed-* sia gli id reali → catalogo duplicato. Aspettare
+    // il reconcile garantisce il seed una volta sola e mai sopra un remote esistente.
+    // Trade-off accettato: un first-run OFFLINE vede "0 rec" finché non va online.
     const _blob = dehydrate(data);
     const _maybe = seedCatalogIfAbsent(_blob);
     if (_maybe !== _blob) { data = hydrate(_maybe); scheduleSave(); }
