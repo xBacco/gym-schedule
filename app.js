@@ -3,10 +3,10 @@ import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, addExercise, remove
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
-  SupabaseStore, mergeBlobs, ConflictError, AuthError, planIsEmpty,
+  SupabaseStore, mergeBlobs, ConflictError, AuthError, planIsEmpty, fromBase64,
 } from "./store.js";
 import {
-  hydrate, dehydrate, addSheet, renameSheet, deleteSheet, setActiveSheet, sheetSummaries,
+  hydrate, dehydrate, addSheet, importSheet, renameSheet, deleteSheet, setActiveSheet, sheetSummaries,
 } from "./sheets.js";
 import {
   addCatalogEntry, renameCatalogEntry, deleteCatalogEntry, setCatalogNote,
@@ -334,6 +334,7 @@ function renderSheets() {
   newrow.className = "sheet-newrow";
   newrow.appendChild(mkBtn("+ Nuova vuota", "empty", () => mutateSheets((b) => addSheet(b, { duplicateActive: false }))));
   newrow.appendChild(mkBtn("⧉ Duplica attiva", "dup", () => mutateSheets((b) => addSheet(b, { duplicateActive: true }))));
+  newrow.appendChild(mkBtn("📥 Importa", "imp", importSheetPrompt));
   inner.appendChild(newrow);
   body.appendChild(inner);
 }
@@ -353,6 +354,26 @@ function renameSheetPrompt(s) {
   const t = name.trim();
   if (!t) return;                        // vuoto ignorato (coerente con renameSheet)
   mutateSheets((b) => renameSheet(b, s.id, t));
+}
+
+// Importa una scheda da un codice incollato (utile su mobile, niente console).
+// Accetta sia il codice base64 fornito, sia JSON grezzo; payload = {name, plan}
+// oppure direttamente l'array `plan`. Crea la scheda, la attiva, salva.
+function importSheetPrompt() {
+  const raw = window.prompt("Incolla qui il codice della scheda:");
+  if (raw == null) return;            // annullato
+  const t = raw.trim();
+  if (!t) return;
+  let payload = null;
+  for (const parse of [() => JSON.parse(fromBase64(t)), () => JSON.parse(t)]) {
+    try { const v = parse(); if (v) { payload = v; break; } } catch (_) {}
+  }
+  if (!payload) { alert("Codice non valido: non riesco a leggerlo."); return; }
+  const plan = Array.isArray(payload) ? payload : payload.plan;
+  const name = Array.isArray(payload) ? "Scheda importata" : (payload.name || "Scheda importata");
+  if (!Array.isArray(plan) || plan.length === 0) { alert("Codice non valido: nessun giorno trovato."); return; }
+  mutateSheets((b) => importSheet(b, name, plan));
+  alert(`Importata "${name}" (${plan.length} giorni). Ora è la scheda attiva.`);
 }
 
 function deleteSheetConfirm(s) {

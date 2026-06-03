@@ -104,7 +104,30 @@ test("dehydrate è idempotente: ridehydrare un blob non azzera la scheda attiva"
 });
 
 // Task 4 — CRUD: addSheet, renameSheet, deleteSheet, setActiveSheet
-import { addSheet, renameSheet, deleteSheet, setActiveSheet } from "../sheets.js";
+import { addSheet, importSheet, renameSheet, deleteSheet, setActiveSheet } from "../sheets.js";
+
+test("importSheet: crea scheda col plan dato, la attiva, assegna id unici, storico vuoto", () => {
+  const start = toSheetsBlob({ schema: 5, plan: [{ day: "A", title: "A", exercises: [{ id: "dup1", name: "X" }] }], weeks: {}, updatedAt: "t" });
+  const plan = [
+    { day: "A", title: "Petto", exercises: [{ name: "Panca" }, { name: "Croci" }] },
+    { day: "B", title: "Dorso", exercises: [{ id: "dup1", name: "Rematore" }] }, // id in collisione → rigenerato
+  ];
+  const b = importSheet(start, "Scheda 2 — Focus alto", plan);
+  assert.equal(b.sheets.length, 2);
+  const s = b.sheets[1];
+  assert.equal(s.name, "Scheda 2 — Focus alto");
+  assert.equal(b.activeSheetId, s.id);
+  assert.deepEqual(s.weeks, {});
+  // tutti gli id esercizio presenti e unici nell'intero blob
+  const ids = b.sheets.flatMap((sh) => sh.plan.flatMap((d) => d.exercises.map((e) => e.id)));
+  assert.ok(ids.every(Boolean), "ogni esercizio ha un id");
+  assert.equal(new Set(ids).size, ids.length, "nessun id duplicato");
+});
+
+test("importSheet: nome vuoto → nome di default progressivo", () => {
+  const b = importSheet(toSheetsBlob(null), "  ", [{ day: "A", exercises: [] }]);
+  assert.equal(b.sheets[b.sheets.length - 1].name, "Scheda 2");
+});
 
 const base = () => toSheetsBlob({ schema: 5, plan: [{ day: "A" }], weeks: { w: { label: "w", entries: {} } }, updatedAt: "t" });
 

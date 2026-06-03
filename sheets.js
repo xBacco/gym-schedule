@@ -108,6 +108,29 @@ export function addSheet(blob, { duplicateActive = false } = {}) {
   return out;
 }
 
+// Importa una scheda da un `plan` esterno: crea una nuova scheda con quel piano
+// (storico SEMPRE vuoto) e la rende attiva. Garantisce id-esercizio unici nel blob
+// (rigenera quelli mancanti o in collisione). `name` vuoto → nome di default.
+export function importSheet(blob, name, plan) {
+  const out = toSheetsBlob(blob);
+  const sheetId = genId(out.sheets.map((s) => s.id));
+  const used = new Set();
+  for (const s of out.sheets) for (const d of s.plan ?? []) for (const e of d.exercises ?? []) if (e?.id) used.add(e.id);
+  const cleanPlan = (Array.isArray(plan) ? plan : []).map((d) => ({
+    ...d,
+    exercises: (Array.isArray(d.exercises) ? d.exercises : []).map((e) => {
+      let id = e?.id;
+      if (!id || used.has(id)) id = genId([...used]);
+      used.add(id);
+      return { ...e, id };
+    }),
+  }));
+  const nm = String(name ?? "").trim() || defaultSheetName(out.sheets);
+  out.sheets.push({ id: sheetId, name: nm, plan: cleanPlan, weeks: {} });
+  out.activeSheetId = sheetId;
+  return out;
+}
+
 // Rinomina per id. Trim; nome vuoto → invariato.
 export function renameSheet(blob, id, name) {
   const out = toSheetsBlob(blob);
