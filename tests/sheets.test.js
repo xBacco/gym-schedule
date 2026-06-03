@@ -1,8 +1,7 @@
 // tests/sheets.test.js
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SHEETS_SCHEMA, defaultSheetName } from "../sheets.js";
-import { toSheetsBlob } from "../sheets.js";
+import { SHEETS_SCHEMA, defaultSheetName, toSheetsBlob } from "../sheets.js";
 
 test("SHEETS_SCHEMA è 6", () => {
   assert.equal(SHEETS_SCHEMA, 6);

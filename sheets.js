@@ -18,6 +18,8 @@ export function defaultSheetName(sheets) {
 // - null/undefined: una Scheda 1 vuota.
 export function toSheetsBlob(input) {
   const data = input || {};
+  // schema >= 6 (non ===): un eventuale schema futuro mantiene i suoi sheets,
+  // ri-etichettato a 6, senza perdere dati. Niente downgrade distruttivo.
   if (data.schema >= SHEETS_SCHEMA && Array.isArray(data.sheets)) {
     const out = structuredClone(data);
     if (!out.sheets.length) {
@@ -35,7 +37,7 @@ export function toSheetsBlob(input) {
     activeSheetId: id,
     sheets: [{
       id,
-      name: "Scheda 1",
+      name: defaultSheetName([]),
       plan: Array.isArray(data.plan) ? structuredClone(data.plan) : [],
       weeks: data.weeks ? structuredClone(data.weeks) : {},
     }],
