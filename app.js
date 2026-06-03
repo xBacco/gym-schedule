@@ -5,6 +5,7 @@ import {
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
   SupabaseStore, mergeBlobs, ConflictError, AuthError, planIsEmpty,
 } from "./store.js";
+import { hydrate, dehydrate } from "./sheets.js";
 import { supabase } from "./supabase-client.js";
 import { bindAuthScreen, hideAuthScreen, signOut } from "./auth.js";
 import { ProfileStorage } from "./profile-storage.js";
@@ -2680,7 +2681,7 @@ async function boot() {
     // restano invariati: i loro valori vincono sullo spread.
     if (data && data.schema == null) data = { ...emptyData(), ...data };
     // Backfill schema sui dati appena letti (riusa logica esistente).
-    data = patchPlanV5(patchPlanV4(backfillMuscles(migrate(data), PLAN)));
+    data = hydrate(patchPlanV5(patchPlanV4(backfillMuscles(migrate(data), PLAN))));
     render();
     setStatus("ok ✓", "ok");
   } catch (err) {
@@ -2772,7 +2773,7 @@ async function rescueLegacyLocalStorage() {
   for (const e of pendingList) {
     try { withPending = setEntry(withPending, e.weekKey, e.day, e.idx, e.value, new Date().toISOString()); } catch {}
   }
-  data = patchPlanV5(patchPlanV4(backfillMuscles(migrate(withPending, PLAN), PLAN)));
+  data = hydrate(patchPlanV5(patchPlanV4(backfillMuscles(migrate(withPending, PLAN), PLAN))));
   profileStorage.set("data", data);
   profileStorage.set("dirty", true);
   pusher.schedule();
@@ -2845,7 +2846,7 @@ async function recoverLogsFromOldCloud() {
   );
   if (!ok) return;
   const merged = mergeBlobs(data ?? emptyData(), seed);
-  data = patchPlanV5(patchPlanV4(backfillMuscles(migrate(merged), PLAN)));
+  data = hydrate(patchPlanV5(patchPlanV4(backfillMuscles(migrate(merged), PLAN))));
   profileStorage.set("data", data);
   profileStorage.set("dirty", true);
   pusher.schedule();
