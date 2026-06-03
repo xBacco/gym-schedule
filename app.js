@@ -1671,7 +1671,7 @@ function persist(idx) {
 // Salva `data` in locale (marcandolo dirty) e schedula il push cloud. Usato dalle
 // mutazioni dell'editor scheda (esercizi e giorni) per non duplicare il pattern.
 function scheduleSave() {
-  profileStorage.set("data", data);
+  profileStorage.set("data", dehydrate(data));
   profileStorage.set("dirty", true);
   pusher.schedule();
 }
@@ -2544,7 +2544,7 @@ async function boot() {
   store = new SupabaseStore(supabase);
 
   pusher = createPusher({
-    getData: () => data,
+    getData: () => dehydrate(data),
     getVersion: () => dataVersion,
     setVersion: (v) => { dataVersion = v; profileStorage.set("version", v); },
     setDirty: (d) => profileStorage.set("dirty", d),
@@ -2652,7 +2652,7 @@ async function boot() {
   // 4. Carica dati: prima da localStorage (mostra subito), poi da remote.
   const cached = profileStorage.get("data");
   if (cached) {
-    data = cached;
+    data = hydrate(cached);
     dataVersion = profileStorage.get("version") || 0;
     render();
   }
