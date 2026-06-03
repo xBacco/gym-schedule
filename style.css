@@ -47,7 +47,7 @@
   --fail-bg:rgba(224,132,63,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{margin:0;padding:0;}
+html,body{margin:0;padding:0;overscroll-behavior-x:none;overflow-x:hidden;}
 body{background:var(--frame);color:var(--ink);font-family:var(--mono);
   display:flex;justify-content:center;min-height:100vh;font-size:15px;line-height:1.45;}
 .mono{font-family:"JetBrains Mono",monospace;}
