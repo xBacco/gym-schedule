@@ -779,7 +779,12 @@ body.timer-on .focus-body{padding-bottom:160px;}
 .cal-mbody.cal-boot .cl.in { opacity: 1; transform: none; transition: opacity .2s ease, transform .2s ease; }
 
 /* ---- Gestore schede multiple ---- */
-.sheets-body{padding:14px 14px 28px;max-width:480px;margin:0 auto;}
+.sheets-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 28px;max-width:480px;margin:0 auto;width:100%;}
+/* Solo l'overlay Schede: poche card → centrate in verticale. Con tante card
+   il margin:auto collassa e si torna a scorrere dall'alto. Il DB esercizi
+   (stesso .sheets-body) resta ancorato in alto, così la barra grep resta su. */
+#sheetsOverlay .sheets-body{display:flex;flex-direction:column;}
+.sheets-inner{margin:auto;width:100%;}
 .sheet-card{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px;}
 .sheet-card.active{border-color:var(--acc);box-shadow:0 0 0 1.5px var(--acc) inset;background:var(--acc-soft);}
 .sheet-nm{display:flex;align-items:center;gap:8px;}
@@ -1155,7 +1160,12 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 
 /* ===== Splash d'apertura — set.log (power-on + wordmark + prompt) ======== */
 #splash{ position:fixed; inset:0; z-index:1000; background:var(--bg); color:var(--tx);
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent; }
+/* hint discreto "tocca per saltare", in basso; sparisce col reduced-motion */
+#splash::after{ content:"tocca per saltare"; position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 22px);
+  font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--dim); opacity:0;
+  animation:sp-fade .4s ease-out 2.2s forwards; }
 #splash.splash-out{ opacity:0; transition:opacity .44s ease; pointer-events:none; }
 /* badge logo: centro chiaro → lati più scuri (vignette media), si "accende" */
 #splash .sp-badge{ width:120px; height:120px; border-radius:28px; display:grid; place-items:center;

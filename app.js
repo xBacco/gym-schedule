@@ -281,6 +281,13 @@ function renderSheets() {
   document.getElementById("sheetsSub").textContent =
     `${sums.length} scheda${sums.length === 1 ? "" : "e"} · attiva + archivio`;
 
+  // Wrapper centrabile: con poche schede `.sheets-inner` si centra in verticale
+  // (margin:auto); quando le card riempiono lo schermo il margin collassa a 0 e
+  // il body torna a scorrere normalmente. Niente clipping (a differenza di
+  // justify-content:center su un contenitore con overflow).
+  const inner = document.createElement("div");
+  inner.className = "sheets-inner";
+
   for (const s of sums) {
     const card = document.createElement("div");
     card.className = "sheet-card" + (s.active ? " active" : "");
@@ -320,14 +327,15 @@ function renderSheets() {
       acts.appendChild(mkBtn("🗑", "dl", () => deleteSheetConfirm(s)));
     }
     card.appendChild(acts);
-    body.appendChild(card);
+    inner.appendChild(card);
   }
 
   const newrow = document.createElement("div");
   newrow.className = "sheet-newrow";
   newrow.appendChild(mkBtn("+ Nuova vuota", "empty", () => mutateSheets((b) => addSheet(b, { duplicateActive: false }))));
   newrow.appendChild(mkBtn("⧉ Duplica attiva", "dup", () => mutateSheets((b) => addSheet(b, { duplicateActive: true }))));
-  body.appendChild(newrow);
+  inner.appendChild(newrow);
+  body.appendChild(inner);
 }
 
 function mkBtn(label, cls, onClick) {
@@ -3220,7 +3228,10 @@ async function reconcileFromRemote() {
 // sicurezza se il boot si blocca. `splashBootReady()` è chiamata da boot().
 let resolveSplashReady = () => {};
 function splashBootReady() { resolveSplashReady(); }
+let splashDismissed = false;
 function dismissSplash() {
+  if (splashDismissed) return;
+  splashDismissed = true;
   const el = document.getElementById("splash");
   if (!el) return;
   el.classList.add("splash-out");
@@ -3237,6 +3248,9 @@ function dismissSplash() {
     const minDelay = new Promise((r) => setTimeout(r, minMs));
     const safety = new Promise((r) => setTimeout(r, 7000));
     Promise.race([Promise.all([ready, minDelay]), safety]).then(dismissSplash);
+    // Skip al tap/click: chi conosce già l'intro la salta subito. `once` così
+    // non resta appeso; dismissSplash è idempotente (splashDismissed).
+    splash.addEventListener("click", dismissSplash, { once: true });
   }
 }
 
