@@ -169,3 +169,28 @@ test("sheetSummaries: conta giorni, esercizi, settimane, ultima data", () => {
     { id: undefined, name: "Vuota", active: false, days: 0, exercises: 0, weeks: 0, lastDate: null }
   );
 });
+
+// Task catalog — hydrate/dehydrate trasportano il campo catalog
+test("hydrate: trasporta catalog popolato dal blob", () => {
+  const blob = {
+    schema: 6, updatedAt: "2026-01-01T00:00:00.000Z", activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
+    catalog: [{ id: "c1", name: "Panca piana bilanciere", muscle: "Petto", note: "" }],
+  };
+  assert.deepEqual(hydrate(blob).catalog, blob.catalog);
+});
+
+test("hydrate: catalog vuoto [] resta vuoto (niente seed)", () => {
+  const blob = { schema: 6, updatedAt: null, activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }], catalog: [] };
+  assert.deepEqual(hydrate(blob).catalog, []);
+});
+
+test("dehydrate∘hydrate: round-trip stabile con catalog", () => {
+  const blob = {
+    schema: 6, updatedAt: "2026-01-02T00:00:00.000Z", activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
+    catalog: [{ id: "c1", name: "Squat bilanciere", muscle: "Gambe", note: "schiena neutra" }],
+  };
+  assert.deepEqual(dehydrate(hydrate(blob)), blob);
+});

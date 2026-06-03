@@ -56,7 +56,7 @@ export function activeSheet(blob) {
 export function hydrate(input) {
   const blob = toSheetsBlob(input);
   const act = activeSheet(blob);
-  return {
+  const mem = {
     schema: blob.schema,
     updatedAt: blob.updatedAt ?? null,
     activeSheetId: blob.activeSheetId,
@@ -64,6 +64,8 @@ export function hydrate(input) {
     plan: structuredClone(act.plan ?? []),
     weeks: structuredClone(act.weeks ?? {}),
   };
+  if (blob.catalog !== undefined) mem.catalog = structuredClone(blob.catalog);
+  return mem;
 }
 
 // Forma in-memory → blob normalizzato: i plan/weeks top-level (la scheda attiva)
@@ -77,6 +79,8 @@ export function dehydrate(data) {
     activeSheetId: data.activeSheetId ?? base.activeSheetId,
     sheets: structuredClone(data.sheets ?? base.sheets),
   };
+  const rawCatalog = data.catalog ?? base.catalog;
+  if (rawCatalog !== undefined) out.catalog = structuredClone(rawCatalog);
   const ids = out.sheets.map((s) => s.id);
   if (!ids.includes(out.activeSheetId)) out.activeSheetId = out.sheets[0].id;
   const act = out.sheets.find((s) => s.id === out.activeSheetId);
