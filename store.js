@@ -279,7 +279,18 @@ export function mergeBlobs(local, remote) {
   const ids = sheets.map((s) => s.id);
   let activeSheetId = (lUpd ?? "") >= (rUpd ?? "") ? L.activeSheetId : R.activeSheetId;
   if (!ids.includes(activeSheetId)) activeSheetId = ids[0];
-  return { schema: 6, updatedAt, activeSheetId, sheets };
+
+  const lCat = Array.isArray(L.catalog) ? L.catalog : [];
+  const rCat = Array.isArray(R.catalog) ? R.catalog : [];
+  const newerWins = (lUpd ?? "") >= (rUpd ?? "");
+  const loser = newerWins ? rCat : lCat;
+  const winner = newerWins ? lCat : rCat;
+  const catMap = new Map();
+  for (const e of loser) catMap.set(e.id, structuredClone(e));
+  for (const e of winner) catMap.set(e.id, structuredClone(e)); // a parità di id, il più recente sovrascrive
+  const catalog = [...catMap.values()];
+
+  return { schema: 6, updatedAt, activeSheetId, sheets, catalog };
 }
 
 export class ConflictError extends Error {

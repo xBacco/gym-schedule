@@ -136,3 +136,25 @@ test("mergeBlobs: retro-compat — fonde un blob schema 5 con uno schema 6", () 
   assert.ok(Array.isArray(merged.sheets));
   assert.equal(merged.sheets.length, 2); // id legacy diversi => due schede (comportamento atteso)
 });
+
+test("mergeBlobs: unione catalog, voci solo-locale e solo-remote conservate", () => {
+  const local = { schema: 6, updatedAt: "2026-01-01T00:00:00.000Z", activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
+    catalog: [{ id: "c1", name: "Panca", muscle: "Petto", note: "" }] };
+  const remote = { schema: 6, updatedAt: "2026-01-02T00:00:00.000Z", activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
+    catalog: [{ id: "c2", name: "Squat", muscle: "Gambe", note: "" }] };
+  const ids = mergeBlobs(local, remote).catalog.map((e) => e.id).sort();
+  assert.deepEqual(ids, ["c1", "c2"]);
+});
+
+test("mergeBlobs: a parità di id vince il lato con updatedAt più recente", () => {
+  const local = { schema: 6, updatedAt: "2026-01-01T00:00:00.000Z", activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
+    catalog: [{ id: "c1", name: "Panca", muscle: "Petto", note: "vecchia" }] };
+  const remote = { schema: 6, updatedAt: "2026-01-09T00:00:00.000Z", activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
+    catalog: [{ id: "c1", name: "Panca", muscle: "Petto", note: "nuova" }] };
+  const merged = mergeBlobs(local, remote).catalog.find((e) => e.id === "c1");
+  assert.equal(merged.note, "nuova");
+});
