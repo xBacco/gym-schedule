@@ -25,7 +25,7 @@
   --warm-surf:#f0e6cc; /* box "caldi" (nutrizione)    */
   --rpe-easy:#2f6f9a;  --rpe-easy-bd:#a9cbe0;  --rpe-easy-bg:rgba(47,111,154,.12);
   --rpe-ok-bg:rgba(176,114,17,.12);
-  --rpe-hard:#b8642a;  --rpe-hard-bg:rgba(184,100,42,.12);
+  --rpe-hard:#c0442e;  --rpe-hard-bg:rgba(192,68,46,.12);
   --fail-bg:rgba(192,68,46,.10);
   /* alias per la schermata auth (usava nomi propri non definiti) */
   --accent:var(--acc); --card:var(--surf); --border:var(--line); --bg-input:var(--field);
@@ -43,7 +43,7 @@
   --acc-soft:#2e2516; --line-acc:#4a3a1e; --line-warm:#5a3a28; --warm-surf:#1c1608;
   --rpe-easy:#7FC8FF; --rpe-easy-bd:#244a63; --rpe-easy-bg:rgba(127,200,255,.07);
   --rpe-ok-bg:rgba(232,169,60,.07);
-  --rpe-hard:#FFB37F; --rpe-hard-bg:rgba(255,179,127,.07);
+  --rpe-hard:#e0705a; --rpe-hard-bg:rgba(224,112,90,.07);
   --fail-bg:rgba(224,132,63,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
