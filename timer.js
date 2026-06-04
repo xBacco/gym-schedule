@@ -93,7 +93,7 @@ export class RestTimer {
 // sequenze non alfanumeriche → "_", max 24 char. Fallback "esercizio".
 export function goSlug(name) {
   const s = String(name ?? "")
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .normalize("NFD").replace(/[\u0300-\u036F]/g, "")
     .toLowerCase().replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 24).replace(/_+$/, "");

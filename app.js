@@ -2865,12 +2865,7 @@ function wireTimerControls() {
   document.getElementById("tStop").addEventListener("click", () => {
     timer.stop();
     hideFeelAsk();
-    document.getElementById("timerBar").classList.add("hidden");
-    document.getElementById("timerBar").classList.remove("go-on");
-    document.getElementById("timerGo").classList.add("hidden");
-    document.getElementById("timerRun").classList.remove("hidden");
-    document.body.classList.remove("timer-on");
-    wakeLock.disable();
+    dismissTimerGo();
   });
   document.getElementById("timerGo").addEventListener("click", dismissTimerGo);
   document.getElementById("tToggle").addEventListener("click", (e) => {
