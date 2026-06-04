@@ -1307,3 +1307,7 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 #dbOverlay .db-det .dacts .del{color:var(--down,#c0442e);}
 #dbOverlay .db-nores{color:var(--dim);text-align:center;padding:30px 0;font-size:12px;}
 #dbOverlay .db-nores .mk{margin-top:12px;background:var(--acc);color:var(--bg);border:none;border-radius:8px;font:700 11px var(--mono);padding:9px 16px;cursor:pointer;}
+/* ---- A11y: focus ring tastiera sugli header accordion (gestore + catalogo).
+   :focus-visible → visibile solo navigando da tastiera, design al tocco invariato. */
+.sh-h:focus-visible,#dbOverlay .db-ghd:focus-visible,#dbOverlay .db-krow:focus-visible{
+  outline:1px solid var(--acc);outline-offset:2px;border-radius:4px;}
