@@ -214,7 +214,7 @@ input.num::-webkit-outer-spin-button,input.num::-webkit-inner-spin-button{-webki
   font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;min-height:44px;}
 
 /* Stato GO a fine recupero: boot-log persistente, tocca per chiudere */
-.timerbar.go-on{background:var(--field);border-top:2px solid var(--acc);position:relative;}
+.timerbar.go-on{background:var(--field);border-top:2px solid var(--acc);}
 .t-go{cursor:pointer;font-family:"JetBrains Mono",monospace;-webkit-user-select:none;user-select:none;}
 .t-go .g1{font-size:13px;color:var(--ink);}
 .t-go .g1 .g-ok{color:var(--ok);font-weight:700;}
