@@ -400,12 +400,6 @@
     <div id="chartRange" class="chart-range"></div>
   </dialog>
 
-  <!-- Striscia sensazione durante il recupero -->
-  <div id="feelAsk" class="feelask hidden">
-    <div class="q">Serie <span id="feelAskN"></span> · <b>com'è andata?</b></div>
-    <div id="feelAskBar"></div>
-  </div>
-
   <!-- Menu drawer in fondo -->
   <div id="drawerScrim" class="drawer-scrim hidden"></div>
   <div id="menuDrawer" class="drawer" aria-hidden="true">
@@ -420,6 +414,15 @@
       <button class="dr-item" data-act="calendar" role="menuitem"><span class="e">📅</span><span class="t">Calendario</span></button>
       <button class="dr-item" data-act="settings" role="menuitem"><span class="e">⚙</span><span class="t">Impostazioni</span></button>
     </div>
+  </div>
+
+  <!-- Stack fisso in basso: striscia giudizio sopra, barra timer sotto (mai sovrapposte) -->
+  <div id="bottomStack">
+
+  <!-- Striscia sensazione durante il recupero -->
+  <div id="feelAsk" class="feelask hidden">
+    <div class="q">Serie <span id="feelAskN"></span> · <b>com'è andata?</b></div>
+    <div id="feelAskBar"></div>
   </div>
 
   <!-- Rest timer: riga 1 = nome esercizio + chiudi; riga 2 = tempo + controlli -->
@@ -443,6 +446,7 @@
       <div class="g2"><span class="g-chev">&gt;</span> <span id="goVerb">vai</span> <span id="goPath" class="g-path"></span><span class="g-cursor"></span></div>
     </div>
   </div>
+  </div><!-- /bottomStack -->
   </div>
 
   <script type="module" src="./app.js"></script>
