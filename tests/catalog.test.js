@@ -4,6 +4,7 @@ import {
   addCatalogEntry, renameCatalogEntry, deleteCatalogEntry, setCatalogNote,
   seedCatalog, seedCatalogIfAbsent,
   groupedCatalog, MUSCLE_GROUPS,
+  migrateExerciseName,
 } from "../catalog.js";
 
 const base = () => ({
@@ -161,4 +162,39 @@ test("catalogUsage: best match = scheda con la settimana loggata più recente", 
   const u = catalogUsage(blob, "Panca");
   assert.equal(u.usedIn.length, 2);       // appare in entrambe
   assert.equal(u.lastKg, 80);             // serie dalla scheda più recente (W05)
+});
+
+test("migrateExerciseName: rinomina nel catalogo (id invariato)", () => {
+  const blob = { catalog: [{ id: "seed-2", name: "Croci ai cavi", muscle: "Petto", note: "" }], sheets: [] };
+  const out = migrateExerciseName(blob, "Croci ai cavi", "Croci ai cavi in piedi");
+  assert.equal(out.catalog[0].name, "Croci ai cavi in piedi");
+  assert.equal(out.catalog[0].id, "seed-2");
+});
+
+test("migrateExerciseName: rinomina negli esercizi delle schede (match case-insensitive)", () => {
+  const blob = { catalog: [], sheets: [{ name: "S1", plan: [{ day: "A", exercises: [
+    { id: "e1", name: "croci AI cavi " }, { id: "e2", name: "Panca piana" },
+  ] }] }] };
+  const out = migrateExerciseName(blob, "Croci ai cavi", "Croci ai cavi in piedi");
+  assert.equal(out.sheets[0].plan[0].exercises[0].name, "Croci ai cavi in piedi");
+  assert.equal(out.sheets[0].plan[0].exercises[0].id, "e1");       // id intatto → log agganciato
+  assert.equal(out.sheets[0].plan[0].exercises[1].name, "Panca piana"); // altri intatti
+});
+
+test("migrateExerciseName: nessun match → STESSO riferimento (niente save inutile)", () => {
+  const blob = { catalog: [{ id: "c1", name: "Dips", muscle: "Petto", note: "" }], sheets: [] };
+  assert.equal(migrateExerciseName(blob, "Croci ai cavi", "Croci ai cavi in piedi"), blob);
+});
+
+test("migrateExerciseName: idempotente (secondo run → stesso riferimento)", () => {
+  const blob = { catalog: [{ id: "c1", name: "Croci ai cavi", muscle: "Petto", note: "" }], sheets: [] };
+  const once = migrateExerciseName(blob, "Croci ai cavi", "Croci ai cavi in piedi");
+  const twice = migrateExerciseName(once, "Croci ai cavi", "Croci ai cavi in piedi");
+  assert.equal(twice, once);
+});
+
+test("migrateExerciseName: non muta l'input", () => {
+  const blob = { catalog: [{ id: "c1", name: "Croci ai cavi", muscle: "Petto", note: "" }], sheets: [] };
+  migrateExerciseName(blob, "Croci ai cavi", "Croci ai cavi in piedi");
+  assert.equal(blob.catalog[0].name, "Croci ai cavi");
 });

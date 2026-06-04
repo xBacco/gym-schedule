@@ -14,7 +14,7 @@ export const MUSCLE_GROUPS = ["Petto", "Dorso", "Spalle", "Bicipiti", "Tricipiti
 
 // Seed iniziale: 8 gruppi fissi (stesso ordine di index.html) → esercizi.
 const SEED_BY_GROUP = {
-  Petto: ["Panca piana bilanciere", "Spinte inclinata manubri", "Croci ai cavi", "Dips", "Pectoral machine", "Chest press", "Panca declinata", "Push-up"],
+  Petto: ["Panca piana bilanciere", "Spinte inclinata manubri", "Croci ai cavi in piedi", "Dips", "Pectoral machine", "Chest press", "Panca declinata", "Push-up"],
   Dorso: ["Stacco da terra", "Stacco rumeno", "Rematore bilanciere", "Rematore manubrio", "Pulldown presa larga", "Lat machine presa stretta", "Pullover", "Pulley basso", "Trazioni", "Rematore al cavo", "Hyperextension"],
   Spalle: ["Lento avanti bilanciere", "Lento avanti manubri", "Alzate laterali", "Alzate posteriori", "Face pull", "Arnold press", "Tirate al mento", "Scrollate"],
   Bicipiti: ["Curl bilanciere", "Curl manubri", "Curl alla Scott", "Curl concentrato", "Hammer curl", "Curl ai cavi", "Curl EZ"],
@@ -76,6 +76,29 @@ export function renameCatalogEntry(blob, id, { name, muscle }) {
 export function deleteCatalogEntry(blob, id) {
   const out = clone(blob);
   out.catalog = cat(out).filter((e) => e.id !== id);
+  return out;
+}
+
+// Migrazione one-shot di un nome esercizio: rinomina nel catalogo E in tutte le
+// schede (match case-insensitive + trim). Gli id restano intatti → lo storico
+// log resta agganciato. Ritorna lo STESSO riferimento se non c'è nulla da
+// rinominare (confronto per riferimento a monte → niente save inutile).
+export function migrateExerciseName(blob, from, to) {
+  const f = norm(from);
+  const hitCat = cat(blob).some((e) => norm(e.name) === f);
+  const sheets = Array.isArray(blob.sheets) ? blob.sheets : [];
+  const hitPlan = sheets.some((s) => (Array.isArray(s.plan) ? s.plan : []).some(
+    (d) => (Array.isArray(d.exercises) ? d.exercises : []).some((ex) => norm(ex.name) === f)));
+  if (!hitCat && !hitPlan) return blob;
+  const out = clone(blob);
+  out.catalog = cat(out).map((e) => (norm(e.name) === f ? { ...e, name: to } : e));
+  for (const s of (Array.isArray(out.sheets) ? out.sheets : [])) {
+    for (const d of (Array.isArray(s.plan) ? s.plan : [])) {
+      for (const ex of (Array.isArray(d.exercises) ? d.exercises : [])) {
+        if (norm(ex.name) === f) ex.name = to;
+      }
+    }
+  }
   return out;
 }
 

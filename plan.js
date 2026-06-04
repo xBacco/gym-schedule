@@ -10,7 +10,7 @@ export const PLAN = [
     exercises: [
       { name: "Panca piana bilanciere", setsReps: "3 × 6-8", recText: "2 min", restSeconds: 120, superset: false, muscle: "Petto" },
       { name: "Lento avanti manubri", setsReps: "3 × 8-10", recText: "2 min", restSeconds: 120, superset: false, muscle: "Spalle" },
-      { name: "Croci ai cavi", setsReps: "3 × 12-15", recText: "75 sec", restSeconds: 75, superset: false, muscle: "Petto" },
+      { name: "Croci ai cavi in piedi", setsReps: "3 × 12-15", recText: "75 sec", restSeconds: 75, superset: false, muscle: "Petto" },
       { name: "Dips", setsReps: "3 × 8-12", recText: "90 sec", restSeconds: 90, superset: false, muscle: "Petto" },
       { name: "Pulldown presa larga", setsReps: "3 × 10-12", recText: "90 sec", restSeconds: 90, superset: false, muscle: "Dorso" },
       { name: "Pushdown tricipiti + Curl manubri", setsReps: "3 × 10 / 3 × 10", recText: "75 sec", restSeconds: 75, superset: true, muscle: "Tricipiti", muscleB: "Bicipiti" },

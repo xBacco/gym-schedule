@@ -10,7 +10,7 @@ import {
 } from "./sheets.js";
 import {
   addCatalogEntry, renameCatalogEntry, deleteCatalogEntry, setCatalogNote,
-  groupedCatalog, catalogUsage, MUSCLE_GROUPS, seedCatalogIfAbsent,
+  groupedCatalog, catalogUsage, MUSCLE_GROUPS, seedCatalogIfAbsent, migrateExerciseName,
 } from "./catalog.js";
 import { supabase } from "./supabase-client.js";
 import { bindAuthScreen, hideAuthScreen, signOut } from "./auth.js";
@@ -3046,7 +3046,10 @@ async function boot() {
     // il reconcile garantisce il seed una volta sola e mai sopra un remote esistente.
     // Trade-off accettato: un first-run OFFLINE vede "0 rec" finché non va online.
     const _blob = dehydrate(data);
-    const _maybe = seedCatalogIfAbsent(_blob);
+    let _maybe = seedCatalogIfAbsent(_blob);
+    // Migrazione nome one-shot (2026-06: variante eseguita in piedi). Idempotente:
+    // dopo il primo run non matcha più nulla e ritorna lo stesso riferimento.
+    _maybe = migrateExerciseName(_maybe, "Croci ai cavi", "Croci ai cavi in piedi");
     if (_maybe !== _blob) { data = hydrate(_maybe); scheduleSave(); }
     render();
     setStatus("ok ✓", "ok");
