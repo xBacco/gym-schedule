@@ -203,3 +203,13 @@ export function patchPlanV5(data) {
 export function keepLocalPlan(merged, localPlan) {
   return Array.isArray(localPlan) && localPlan.length ? { ...merged, plan: localPlan } : merged;
 }
+
+// Mini-etichetta per le tab dell'editor: titolo giorno abbreviato, una riga.
+// "Petto · Tricipiti · Laterali" → "petto·trici·later". Display-only;
+// l'ellipsis CSS copre i casi ancora troppo lunghi.
+export function tabMiniLabel(title) {
+  const t = String(title ?? "").trim().toLowerCase();
+  if (!t) return "";
+  return t.split(/[/·,+]/).map((p) => p.trim()).filter(Boolean)
+    .map((p) => p.slice(0, 5)).join("·");
+}

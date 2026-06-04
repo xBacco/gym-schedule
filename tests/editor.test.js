@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { genId, addExercise, removeExercise, reorderExercise, updateExercise, migrate, backfillMuscles, patchPlanV4, patchPlanV5, keepLocalPlan, addDay, nextDayCode, renameDay, removeDay } from "../editor.js";
+import { genId, addExercise, removeExercise, reorderExercise, updateExercise, migrate, backfillMuscles, patchPlanV4, patchPlanV5, keepLocalPlan, addDay, nextDayCode, renameDay, removeDay, tabMiniLabel } from "../editor.js";
 
 const samplePlan = () => [
   { day: "A", title: "A", exercises: [
@@ -346,4 +346,16 @@ test("removeDay: day inesistente -> plan invariato (copia)", () => {
   const plan = [{ day: "A", title: "Petto", exercises: [] }];
   const out = removeDay(plan, "Z");
   assert.deepEqual(out, plan);
+});
+
+test("tabMiniLabel: split su separatori, tronca a 5, join '·'", () => {
+  assert.equal(tabMiniLabel("Petto · Tricipiti · Laterali"), "petto·trici·later");
+  assert.equal(tabMiniLabel("Dorso/Bicipiti"), "dorso·bicip");
+  assert.equal(tabMiniLabel("Gambe"), "gambe");
+});
+
+test("tabMiniLabel: vuoto/assente → stringa vuota", () => {
+  assert.equal(tabMiniLabel(""), "");
+  assert.equal(tabMiniLabel(null), "");
+  assert.equal(tabMiniLabel("  "), "");
 });
