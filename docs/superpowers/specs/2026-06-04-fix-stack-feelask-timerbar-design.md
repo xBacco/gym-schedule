@@ -34,7 +34,7 @@ Il contenuto interno dei due blocchi non cambia di una virgola.
 - `.timerbar` (`:200`): perde `position/left/transform/bottom/width/max-width`; restano sfondo, bordo, padding, `backdrop-filter`. La regola `.timerbar{z-index:60}` (`:492`) si elimina (la z la dà lo stack). Stato `go-on` (`:217`) invariato.
 - **Spazio riservato nel focus:** oggi `body.timer-on .focus-body{padding-bottom:196px}` (`:597`). Con lo stack le altezze si sommano (barra ~100px + striscia ~85px, ~120px su superset). Nuove regole:
   - `body.timer-on .focus-body{padding-bottom:196px}` — invariata (solo timer);
-  - `body.feel-on .focus-body{padding-bottom:140px}` — sola striscia;
+  - `body.feel-on .focus-body{padding-bottom:160px}` — sola striscia (la striscia superset a due tracce è ~150px reali);
   - `body.timer-on.feel-on .focus-body{padding-bottom:300px}` — entrambi visibili.
 
 ### JS (`app.js`)
