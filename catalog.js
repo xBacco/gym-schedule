@@ -24,6 +24,45 @@ const SEED_BY_GROUP = {
   Core: ["Crunch a terra", "Plank", "Russian twist", "Leg raise", "Crunch inverso", "Plank laterale", "Ab wheel", "Hanging leg raise", "Mountain climber"],
 };
 
+// Secondari del seed (solo le voci dove ha senso; assente = []). Gli avambracci
+// non hanno gruppo → i curl restano senza secondari.
+const SEED_SECONDARY = {
+  "Panca piana bilanciere": ["Spalle", "Tricipiti"],
+  "Spinte inclinata manubri": ["Spalle", "Tricipiti"],
+  "Croci ai cavi in piedi": ["Spalle"],
+  "Dips": ["Tricipiti", "Spalle"],
+  "Chest press": ["Spalle", "Tricipiti"],
+  "Panca declinata": ["Tricipiti"],
+  "Push-up": ["Spalle", "Tricipiti", "Core"],
+  "Stacco da terra": ["Gambe", "Core"],
+  "Stacco rumeno": ["Gambe"],
+  "Rematore bilanciere": ["Bicipiti"],
+  "Rematore manubrio": ["Bicipiti"],
+  "Pulldown presa larga": ["Bicipiti"],
+  "Lat machine presa stretta": ["Bicipiti"],
+  "Pullover": ["Petto", "Tricipiti"],
+  "Pulley basso": ["Bicipiti"],
+  "Trazioni": ["Bicipiti"],
+  "Rematore al cavo": ["Bicipiti"],
+  "Hyperextension": ["Gambe"],
+  "Lento avanti bilanciere": ["Tricipiti"],
+  "Lento avanti manubri": ["Tricipiti"],
+  "Alzate posteriori": ["Dorso"],
+  "Face pull": ["Dorso"],
+  "Arnold press": ["Tricipiti"],
+  "Tirate al mento": ["Dorso"],
+  "Scrollate": ["Dorso"],
+  "Dips alle parallele": ["Petto", "Spalle"],
+  "Squat bilanciere": ["Core"],
+  "Affondi manubri": ["Core"],
+  "Bulgarian split squat": ["Core"],
+  "Goblet squat": ["Core"],
+  "Stacco sumo": ["Dorso"],
+  "Plank": ["Spalle"],
+  "Ab wheel": ["Dorso", "Spalle"],
+  "Mountain climber": ["Spalle"],
+};
+
 // Lista seed deterministica: id `seed-${i}` con i contatore 0-based globale.
 // Niente Date/random → stabile. Ogni chiamata costruisce voci nuove.
 export function seedCatalog() {
@@ -31,10 +70,25 @@ export function seedCatalog() {
   let i = 0;
   for (const [muscle, names] of Object.entries(SEED_BY_GROUP)) {
     for (const name of names) {
-      out.push({ id: `seed-${i}`, name, muscle, note: "" });
+      out.push({ id: `seed-${i}`, name, muscle, note: "",
+        secondary: SEED_SECONDARY[name] ?? [], img: "" });
       i += 1;
     }
   }
+  return out;
+}
+
+// Backfill one-shot per i cataloghi esistenti (seminati PRIMA dei secondari):
+// riempie `secondary` SOLO dove è undefined (mai sopra una scelta utente),
+// usando la tabella del seed per nome (case-insensitive); non-seed → [].
+// Stesso riferimento se nulla da fare → niente save inutile (pattern seed).
+export function backfillCatalogSecondaries(blob) {
+  const list = cat(blob);
+  if (!list.length || list.every((e) => e.secondary !== undefined)) return blob;
+  const byName = new Map(Object.entries(SEED_SECONDARY).map(([k, v]) => [norm(k), v]));
+  const out = clone(blob);
+  out.catalog = cat(out).map((e) => e.secondary !== undefined ? e :
+    { ...e, secondary: cleanSecondary(byName.get(norm(e.name)) ?? [], e.muscle) });
   return out;
 }
 
@@ -54,22 +108,36 @@ export function catalogHasDup(blob, name, muscle, exceptId = null) {
     (e) => e.id !== exceptId && e.muscle === muscle && norm(e.name) === norm(name));
 }
 
-export function addCatalogEntry(blob, { name, muscle, note = "" }) {
+// Secondari validi: dedup, solo gruppi noti, mai il primario.
+const cleanSecondary = (secondary, muscle) =>
+  [...new Set((Array.isArray(secondary) ? secondary : [])
+    .filter((g) => MUSCLE_GROUPS.includes(g) && g !== muscle))];
+
+export function addCatalogEntry(blob, { name, muscle, note = "", secondary = [], img = "" }) {
   const n = String(name ?? "").trim();
   if (!n) return blob;
   if (catalogHasDup(blob, n, muscle)) return blob;
   const out = clone(blob);
   const id = genId(cat(out).map((e) => e.id));
-  out.catalog = [...cat(out), { id, name: n, muscle, note: String(note ?? "").trim() }];
+  out.catalog = [...cat(out), { id, name: n, muscle, note: String(note ?? "").trim(),
+    secondary: cleanSecondary(secondary, muscle), img: String(img ?? "").trim() }];
   return out;
 }
 
-export function renameCatalogEntry(blob, id, { name, muscle }) {
+export function renameCatalogEntry(blob, id, { name, muscle, secondary, img }) {
   const n = String(name ?? "").trim();
   if (!n) return blob;
   if (catalogHasDup(blob, n, muscle, id)) return blob;
   const out = clone(blob);
-  out.catalog = cat(out).map((e) => (e.id === id ? { ...e, name: n, muscle } : e));
+  out.catalog = cat(out).map((e) => {
+    if (e.id !== id) return e;
+    const next = { ...e, name: n, muscle };
+    // secondary/img espliciti → aggiornati; impliciti → conservati ma ripuliti
+    // (il nuovo primario non può restare tra i secondari).
+    next.secondary = cleanSecondary(secondary !== undefined ? secondary : e.secondary, muscle);
+    if (img !== undefined) next.img = String(img ?? "").trim();
+    return next;
+  });
   return out;
 }
 

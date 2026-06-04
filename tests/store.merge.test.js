@@ -175,3 +175,18 @@ test("mergeBlobs: catalog presente da un lato sopravvive se l'altro è assente",
     sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }] };
   assert.deepEqual(mergeBlobs(without, withCat).catalog.map((e) => e.id), ["c1"]);
 });
+
+test("mergeBlobs: conserva secondary e img delle voci catalogo", () => {
+  const L = { schema: 6, updatedAt: "2026-06-04T10:00:00Z", activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
+    catalog: [{ id: "c1", name: "Panca", muscle: "Petto", note: "",
+      secondary: ["Spalle"], img: "https://x/y.png" }] };
+  const R = { schema: 6, updatedAt: "2026-06-03T10:00:00Z", activeSheetId: "s1",
+    sheets: [{ id: "s1", name: "A", plan: [], weeks: {} }],
+    catalog: [{ id: "c2", name: "Squat", muscle: "Gambe", note: "" }] };
+  const out = mergeBlobs(L, R);
+  const c1 = out.catalog.find((e) => e.id === "c1");
+  assert.deepEqual(c1.secondary, ["Spalle"]);
+  assert.equal(c1.img, "https://x/y.png");
+  assert.ok(out.catalog.find((e) => e.id === "c2"));
+});

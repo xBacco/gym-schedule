@@ -5,6 +5,7 @@ import {
   seedCatalog, seedCatalogIfAbsent,
   groupedCatalog, MUSCLE_GROUPS,
   migrateExerciseName,
+  backfillCatalogSecondaries,
 } from "../catalog.js";
 
 const base = () => ({
@@ -197,4 +198,74 @@ test("migrateExerciseName: non muta l'input", () => {
   const blob = { catalog: [{ id: "c1", name: "Croci ai cavi", muscle: "Petto", note: "" }], sheets: [] };
   migrateExerciseName(blob, "Croci ai cavi", "Croci ai cavi in piedi");
   assert.equal(blob.catalog[0].name, "Croci ai cavi");
+});
+
+// ---- secondary / img (heatmap anatomica) ----
+
+test("addCatalogEntry: salva secondary validi e img; scarta gruppo primario e ignoti", () => {
+  const out = addCatalogEntry(base(), { name: "Chest press", muscle: "Petto",
+    secondary: ["Spalle", "Petto", "Tricipiti", "Spalle", "Marziani"], img: " https://x/y.png " });
+  const e = out.catalog.find((x) => x.name === "Chest press");
+  assert.deepEqual(e.secondary, ["Spalle", "Tricipiti"]); // dedup, no primario, no ignoti
+  assert.equal(e.img, "https://x/y.png");
+});
+
+test("addCatalogEntry: default secondary [] e img \"\"", () => {
+  const out = addCatalogEntry(base(), { name: "Croci", muscle: "Petto" });
+  const e = out.catalog.find((x) => x.name === "Croci");
+  assert.deepEqual(e.secondary, []);
+  assert.equal(e.img, "");
+});
+
+test("renameCatalogEntry: aggiorna secondary/img e ripulisce il nuovo primario", () => {
+  const blob = { ...base(), catalog: [{ id: "c1", name: "Panca", muscle: "Petto",
+    note: "cue", secondary: ["Spalle", "Tricipiti"], img: "u" }] };
+  const out = renameCatalogEntry(blob, "c1", { name: "Panca", muscle: "Tricipiti",
+    secondary: ["Spalle", "Tricipiti"], img: "u2" });
+  const e = out.catalog[0];
+  assert.deepEqual(e.secondary, ["Spalle"]); // Tricipiti ora è il primario
+  assert.equal(e.img, "u2");
+  assert.equal(e.note, "cue");
+});
+
+test("renameCatalogEntry: senza secondary/img espliciti conserva gli esistenti", () => {
+  const blob = { ...base(), catalog: [{ id: "c1", name: "Panca", muscle: "Petto",
+    note: "", secondary: ["Spalle"], img: "u" }] };
+  const out = renameCatalogEntry(blob, "c1", { name: "Panca larga", muscle: "Petto" });
+  assert.deepEqual(out.catalog[0].secondary, ["Spalle"]);
+  assert.equal(out.catalog[0].img, "u");
+});
+
+test("voci legacy senza secondary/img restano valide nelle letture", () => {
+  // groupedCatalog e catalogUsage non devono rompersi su voci vecchie
+  const blob = base(); // la voce di base() non ha secondary/img
+  assert.ok(groupedCatalog(blob).length >= 1);
+});
+
+test("seedCatalog: voci con secondary sensati e img vuota", () => {
+  const seed = seedCatalog();
+  const panca = seed.find((e) => e.name === "Panca piana bilanciere");
+  assert.deepEqual(panca.secondary, ["Spalle", "Tricipiti"]);
+  assert.equal(panca.img, "");
+  const curl = seed.find((e) => e.name === "Curl bilanciere");
+  assert.deepEqual(curl.secondary, []);
+  for (const e of seed) assert.ok(Array.isArray(e.secondary) && typeof e.img === "string");
+});
+
+test("backfillCatalogSecondaries: riempie SOLO le voci con secondary undefined", () => {
+  const blob = { ...base(), catalog: [
+    { id: "c1", name: "panca piana bilanciere", muscle: "Petto", note: "" },     // match seed (case-ins)
+    { id: "c2", name: "Curl bilanciere", muscle: "Bicipiti", note: "", secondary: ["Spalle"] }, // scelta utente: intatta
+    { id: "c3", name: "Esercizio mio", muscle: "Dorso", note: "" },              // non-seed → []
+  ] };
+  const out = backfillCatalogSecondaries(blob);
+  assert.deepEqual(out.catalog[0].secondary, ["Spalle", "Tricipiti"]);
+  assert.deepEqual(out.catalog[1].secondary, ["Spalle"]);
+  assert.deepEqual(out.catalog[2].secondary, []);
+});
+
+test("backfillCatalogSecondaries: idempotente, stesso riferimento se nulla da fare", () => {
+  const done = backfillCatalogSecondaries({ ...base(), catalog: [
+    { id: "c1", name: "X", muscle: "Petto", note: "", secondary: [], img: "" }] });
+  assert.equal(backfillCatalogSecondaries(done), done); // niente save inutile
 });
