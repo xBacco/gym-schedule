@@ -582,7 +582,11 @@ function renderCatalog() {
     const hd = document.createElement("div");
     hd.className = "db-ghd";
     hd.innerHTML = `<span class="car">${isOpen ? "▾" : "▸"}</span><span class="nm">${muscle.toLowerCase()}</span><span class="fill"></span><span class="ct">${String(items.length).padStart(2, "0")}</span>`;
-    if (!f) hd.onclick = () => { dbOpenGroups[muscle] = !(dbOpenGroups[muscle] !== false); renderCatalog(); };
+    if (!f) {
+      hd.onclick = () => { dbOpenGroups[muscle] = !(dbOpenGroups[muscle] !== false); renderCatalog(); };
+      hd.dataset.muscle = muscle;
+      a11yToggle(hd, isOpen, `#dbTree .db-ghd[data-muscle="${muscle}"]`);
+    }
     node.appendChild(hd);
     const kids = document.createElement("div");
     kids.className = "db-kids";
@@ -595,7 +599,10 @@ function renderCatalog() {
       k.innerHTML = `<div class="db-krow"><span class="br">${last ? "└─" : "├─"}</span>` +
         `<span class="knm">${dbHL(entry.name)}${noteDot}</span><span class="car2">▸</span></div>` +
         (isExOpen ? dbDetHTML(entry) : "");
-      k.querySelector(".db-krow").onclick = () => { dbOpenEx = isExOpen ? null : entry.id; renderCatalog(); };
+      const krow = k.querySelector(".db-krow");
+      krow.onclick = () => { dbOpenEx = isExOpen ? null : entry.id; renderCatalog(); };
+      krow.dataset.id = entry.id;
+      a11yToggle(krow, isExOpen, `#dbTree .db-krow[data-id="${entry.id}"]`);
       if (isExOpen) wireDetail(k, entry);
       kids.appendChild(k);
     });
@@ -608,6 +615,7 @@ function renderCatalog() {
       `<button class="mk" id="dbMkNew">+ aggiungi "${dbEsc(dbFilter)}"</button></div>`;
     document.getElementById("dbMkNew").onclick = () => openCatalogForm(null, dbFilter);
   }
+  a11yRestoreFocus();
 }
 
 // Aggancia gli handler del dettaglio inline (nota + azioni). La modale è il Task 10.
