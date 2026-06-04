@@ -27,7 +27,9 @@ const front = parseParts(fs.readFileSync(path.join(src, "bh-front.ts"), "utf8"))
 const back = parseParts(fs.readFileSync(path.join(src, "bh-back.ts"), "utf8"));
 const wrapper = fs.readFileSync(path.join(src, "bh-wrapper.tsx"), "utf8");
 // Le prime due path d="..." del wrapper sono le silhouette fronte e retro.
-const [baseFront, baseBack] = [...wrapper.matchAll(/d="([^"]+)"/g)].map((m) => m[1]);
+const dPaths = [...wrapper.matchAll(/d="([^"]+)"/g)].map((m) => m[1]);
+if (dPaths.length < 2) { console.error("wrapper: attesi >= 2 path d=, trovati", dPaths.length); process.exit(1); }
+const [baseFront, baseBack] = dPaths;
 const license = fs.readFileSync(path.join(src, "bh-LICENSE"), "utf8").trim()
   .split(/\r?\n/).map((l) => "// " + l).join("\n");
 
