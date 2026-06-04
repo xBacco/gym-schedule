@@ -299,7 +299,7 @@ function renderSheets() {
   body.innerHTML = "";
   const sums = sortSheetSummaries(sheetSummaries(dehydrate(data)));
   document.getElementById("sheetsSub").textContent =
-    `${sums.length} scheda${sums.length === 1 ? "" : "e"} · attiva + archivio`;
+    `${sums.length} sched${sums.length === 1 ? "a" : "e"} · attiva + archivio`;
   const todayIso = new Date().toISOString().slice(0, 10);
   const ultTxt = (s) => (s.lastDate ? `ult ${fmtSheetDate(s.lastDate, todayIso)}` : fmtSheetDate(null, todayIso));
   // null → default (attiva espansa); "" → tutte chiuse; altrimenti id della scheda espansa.
