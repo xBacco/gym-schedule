@@ -44,3 +44,20 @@ export function heatByGroup(contribs, catalog = []) {
   }
   return { groups, zones };
 }
+
+// Fasce freschezza dalla mappa gruppo→data ISO dell'ultima sessione:
+// 0–1 giorni 0.95 · 2–3 0.6 · 4–5 0.25 · ≥6 spento (gruppo in warnGroups) ·
+// assente = mai allenato (zone in `never` → tratteggio rosso nel render).
+export function freshnessByGroup(lastByGroup, todayIso) {
+  const days = (iso) => Math.round((Date.parse(todayIso) - Date.parse(iso)) / 86400000);
+  const zones = {}, never = new Set(), warnGroups = [], neverGroups = [];
+  for (const [g, zs] of Object.entries(GROUP_ZONES)) {
+    const last = lastByGroup?.[g];
+    if (!last) { neverGroups.push(g); zs.forEach((z) => never.add(z)); continue; }
+    const d = days(last);
+    const h = d <= 1 ? 0.95 : d <= 3 ? 0.6 : d <= 5 ? 0.25 : 0;
+    if (h === 0) { warnGroups.push(g); continue; } // spento + ⚠ in legenda
+    for (const z of zs) zones[z] = Math.max(zones[z] ?? 0, h);
+  }
+  return { zones, never, warnGroups, neverGroups };
+}

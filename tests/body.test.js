@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { FRONT_PARTS, BACK_PARTS, BASE_FRONT, BASE_BACK } from "../body-data.js";
-import { GROUP_ZONES, heatByGroup } from "../body.js";
+import { GROUP_ZONES, heatByGroup, freshnessByGroup } from "../body.js";
 import { MUSCLE_GROUPS } from "../catalog.js";
 
 test("body-data: parti fronte/retro presenti e con path", () => {
@@ -69,4 +69,41 @@ test("heatByGroup: gruppo ignoto o volume 0 ignorati", () => {
     { muscle: "Petto", name: "W", volume: 50 },
   ], []);
   assert.deepEqual(groups, { Petto: 1 });
+});
+
+test("freshnessByGroup: fasce ieri/2-3g/4-5g/≥6g/mai", () => {
+  const today = "2026-06-04";
+  const last = {
+    Petto: "2026-06-04",     // oggi → 0.95
+    Dorso: "2026-06-03",     // ieri → 0.95
+    Spalle: "2026-06-01",    // 3g → 0.6
+    Bicipiti: "2026-05-31",  // 4g → 0.25
+    Tricipiti: "2026-05-29", // 6g → spento + ⚠
+    // Gambe/Polpacci/Core assenti → mai → tratteggio
+  };
+  const { zones, warnGroups, neverGroups } = freshnessByGroup(last, today);
+  assert.equal(zones.chest, 0.95);
+  assert.equal(zones["upper-back"], 0.95);
+  assert.equal(zones.deltoids, 0.6);
+  assert.equal(zones.biceps, 0.25);
+  assert.equal(zones.triceps, undefined);            // spento
+  assert.deepEqual(warnGroups, ["Tricipiti"]);
+  assert.deepEqual([...neverGroups].sort(), ["Core", "Gambe", "Polpacci"]);
+  assert.equal(zones.calves, undefined);
+});
+
+test("freshnessByGroup: never → set di zone cold per il render", () => {
+  const { never } = freshnessByGroup({}, "2026-06-04");
+  assert.ok(never.has("chest") && never.has("calves") && never.has("abs"));
+});
+
+test("heatByGroup: primario e secondario si accumulano sullo stesso gruppo", () => {
+  const catalog = [{ id: "c1", name: "Panca piana bilanciere", muscle: "Petto",
+    note: "", secondary: ["Tricipiti"], img: "" }];
+  const { groups } = heatByGroup([
+    { muscle: "Petto", name: "Panca piana bilanciere", volume: 1000 },
+    { muscle: "Tricipiti", name: "Pushdown", volume: 100 },
+  ], catalog);
+  assert.equal(groups.Petto, 1);
+  assert.equal(groups.Tricipiti, 0.6); // 100 diretto + 500 da secondario
 });
