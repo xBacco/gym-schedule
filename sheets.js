@@ -192,3 +192,16 @@ export function sheetSummaries(blob) {
     };
   });
 }
+
+// Ordinamento per il gestore: la scheda attiva sempre prima, poi l'archivio per
+// ultima sessione decrescente; le mai usate (lastDate null) in fondo. Non muta
+// l'input. Le date ISO (YYYY-MM-DD) si confrontano come stringhe.
+export function sortSheetSummaries(sums) {
+  return [...(sums ?? [])].sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    if (a.lastDate === b.lastDate) return 0;
+    if (a.lastDate === null) return 1;
+    if (b.lastDate === null) return -1;
+    return a.lastDate < b.lastDate ? 1 : -1;
+  });
+}

@@ -1,7 +1,7 @@
 // tests/sheets.test.js
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SHEETS_SCHEMA, defaultSheetName, toSheetsBlob, hydrate, dehydrate } from "../sheets.js";
+import { SHEETS_SCHEMA, defaultSheetName, toSheetsBlob, hydrate, dehydrate, sortSheetSummaries } from "../sheets.js";
 
 test("SHEETS_SCHEMA è 6", () => {
   assert.equal(SHEETS_SCHEMA, 6);
@@ -257,4 +257,22 @@ test("sheetSummaries: dayLines con day/title/count per scheda", () => {
 test("sheetSummaries: dayLines di una scheda senza plan è []", () => {
   const blob = { schema: 6, activeSheetId: "s1", sheets: [{ id: "s1", name: "X", plan: [], weeks: {} }] };
   assert.deepEqual(sheetSummaries(blob)[0].dayLines, []);
+});
+
+test("sortSheetSummaries: attiva prima, archivio per lastDate desc, null in fondo", () => {
+  const sums = [
+    { id: "a", active: false, lastDate: "2026-05-26" },
+    { id: "b", active: false, lastDate: null },
+    { id: "c", active: true, lastDate: "2026-01-01" },
+    { id: "d", active: false, lastDate: "2026-06-01" },
+  ];
+  assert.deepEqual(sortSheetSummaries(sums).map((s) => s.id), ["c", "d", "a", "b"]);
+});
+
+test("sortSheetSummaries: non muta l'input e regge input nullo", () => {
+  const sums = [{ id: "a", active: false, lastDate: null }, { id: "b", active: true, lastDate: null }];
+  const before = sums.map((s) => s.id);
+  sortSheetSummaries(sums);
+  assert.deepEqual(sums.map((s) => s.id), before);
+  assert.deepEqual(sortSheetSummaries(null), []);
 });
