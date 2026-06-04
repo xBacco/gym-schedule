@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { FRONT_PARTS, BACK_PARTS, BASE_FRONT, BASE_BACK } from "../body-data.js";
-import { GROUP_ZONES, heatByGroup, freshnessByGroup } from "../body.js";
+import { GROUP_ZONES, heatByGroup, freshnessByGroup, renderBody, dayCoverage } from "../body.js";
 import { MUSCLE_GROUPS } from "../catalog.js";
 
 test("body-data: parti fronte/retro presenti e con path", () => {
@@ -102,4 +102,49 @@ test("freshnessByGroup: confini esatti d=2 (→0.6) e d=5 (→0.25)", () => {
   assert.equal(r2.zones.chest, 0.6);   // 2 giorni: prima fascia finita
   const r5 = freshnessByGroup({ Petto: "2026-05-30" }, "2026-06-04");
   assert.equal(r5.zones.chest, 0.25);  // 5 giorni: ultima fascia accesa
+});
+
+test("renderBody: SVG fronte+retro con silhouette e zone attive", () => {
+  const html = renderBody({ zones: { chest: 1, biceps: 0.5 } });
+  assert.ok(html.includes("<svg"));
+  assert.equal((html.match(/<svg/g) || []).length, 2); // fronte + retro
+  assert.ok(html.includes('viewBox="0 0 724 1448"'));
+  assert.ok(html.includes('viewBox="724 0 724 1448"'));
+  assert.ok(html.includes("#f0a73c"));     // ambra attiva
+  assert.ok(html.includes("feGaussianBlur")); // alone
+});
+
+test("renderBody: secondari blu e cold tratteggiato", () => {
+  const html = renderBody({ zones: {}, secondaries: new Set(["deltoids"]), cold: new Set(["calves"]) });
+  assert.ok(html.includes("#7FC8FF"));
+  assert.ok(html.includes("stroke-dasharray"));
+});
+
+test("renderBody: id filtri univoci tra due render nella stessa pagina", () => {
+  const ids = (h) => [...h.matchAll(/filter id="([^"]+)"/g)].map((m) => m[1]);
+  const a = ids(renderBody({ zones: { chest: 1 } }));
+  const b = ids(renderBody({ zones: { chest: 1 } }));
+  assert.ok(a.length >= 2 && b.length >= 2);
+  for (const id of a) assert.ok(!b.includes(id), `id duplicato: ${id}`);
+});
+
+test("dayCoverage: presenze → primario 1, secondario 0.5, fuori catalogo solo primario", () => {
+  const catalog = [{ id: "c1", name: "Panca piana bilanciere", muscle: "Petto",
+    note: "", secondary: ["Tricipiti"], img: "" }];
+  const dp = { day: "A", exercises: [
+    { id: "e1", name: "Panca piana bilanciere", muscle: "Petto" },
+    { id: "e2", name: "Squat al volo", muscle: "Gambe" },
+  ] };
+  const { groups } = dayCoverage(dp, catalog);
+  assert.equal(groups.Petto, 1);
+  assert.equal(groups.Gambe, 1);
+  assert.equal(groups.Tricipiti, 0.5);
+});
+
+test("dayCoverage: superset spalmato su muscle e muscleB", () => {
+  const dp = { day: "A", exercises: [
+    { id: "e1", name: "Plank + Crunch a terra", muscle: "Core", muscleB: "Core", superset: true },
+  ] };
+  const { groups } = dayCoverage(dp, []);
+  assert.deepEqual(groups, { Core: 1 });
 });

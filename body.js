@@ -61,3 +61,60 @@ export function freshnessByGroup(lastByGroup, todayIso) {
   }
   return { zones, never, warnGroups, neverGroups };
 }
+
+// ---- Render SVG (stringhe; niente DOM, testabile in Node). Palette X-ray
+//      FISSA fuori dai temi: il pannello è un "monitor incassato". ----
+const X = {
+  sil: "#0c0f12", neutral: "#161a1e", off: "#1c2127", offLine: "#2c343c",
+  amber: "#f0a73c", blue: "#7FC8FF", down: "#e0705a", ink: "#3a4148",
+};
+// Zone senza gruppo muscolare: sempre neutre (più scure dei muscoli spenti).
+const NEUTRAL_ZONES = new Set(["head", "hair", "neck", "hands", "feet",
+  "ankles", "knees", "forearm", "tibialis"]);
+
+let uid = 0; // contatore per id filtri univoci (più figure nella stessa pagina)
+
+function fig(parts, baseD, viewBox, { zones = {}, secondaries = new Set(), cold = new Set(), w = 86 }) {
+  const g = "bx" + (uid++);
+  const defs = `<filter id="${g}" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="20"/></filter>`;
+  const base = `<path d="${baseD}" fill="${X.sil}" fill-opacity=".82" stroke="${X.ink}" stroke-width="2.5"/>`;
+  let z = "";
+  for (const p of parts) {
+    const h = zones[p.slug] ?? 0;
+    let attrs, halo = "";
+    if (NEUTRAL_ZONES.has(p.slug)) attrs = `fill="${X.neutral}"`;
+    else if (cold.has(p.slug)) attrs = `fill="${X.off}" stroke="${X.down}" stroke-width="4" stroke-dasharray="10 8"`;
+    else if (secondaries.has(p.slug)) {
+      for (const d of p.paths) halo += `<path d="${d}" fill="${X.blue}" fill-opacity=".6" filter="url(#${g})"/>`;
+      attrs = `fill="${X.blue}" fill-opacity=".32" stroke="${X.blue}" stroke-width="1.5" stroke-opacity=".7"`;
+    } else if (h > 0) {
+      for (const d of p.paths) halo += `<path d="${d}" fill="${X.amber}" fill-opacity="${(0.35 + h * 0.6).toFixed(2)}" filter="url(#${g})"/>`;
+      attrs = `fill="${X.amber}" fill-opacity="${(0.22 + h * 0.58).toFixed(2)}" stroke="${X.amber}" stroke-width="1.5" stroke-opacity="${(h * 0.9).toFixed(2)}"`;
+    } else attrs = `fill="${X.off}" stroke="${X.offLine}" stroke-width="1.5"`;
+    z += halo;
+    for (const d of p.paths) z += `<path d="${d}" ${attrs}/>`;
+  }
+  return `<svg viewBox="${viewBox}" style="width:${w}px;height:auto;flex:none"><defs>${defs}</defs>${base}${z}</svg>`;
+}
+
+// Coppia fronte+retro. opts: { zones: {zona:0..1}, secondaries: Set<zona>,
+// cold: Set<zona> (tratteggio rosso "mai"), w: px per figura }.
+export function renderBody(opts = {}) {
+  return `<div class="bd-pair">${fig(FRONT_PARTS, BASE_FRONT, VIEWBOX_FRONT, opts)}${fig(BACK_PARTS, BASE_BACK, VIEWBOX_BACK, opts)}</div>`;
+}
+
+// Copertura muscolare di un giorno di scheda (senza volumi, per l'editor):
+// ogni esercizio vale 1 sul primario (+0.5 sui secondari via catalogo).
+// Zone non coperte restano spente normali, MAI rosse.
+export function dayCoverage(dayPlan, catalog = []) {
+  const contribs = [];
+  for (const ex of dayPlan?.exercises ?? []) {
+    const name = String(ex?.name ?? "");
+    if (ex?.superset) {
+      const [nameA, nameB] = name.includes(" + ") ? name.split(" + ") : [name, name];
+      contribs.push({ muscle: ex.muscle, name: nameA, volume: 1 },
+        { muscle: ex.muscleB, name: nameB, volume: 1 });
+    } else contribs.push({ muscle: ex?.muscle, name, volume: 1 });
+  }
+  return heatByGroup(contribs, catalog);
+}
