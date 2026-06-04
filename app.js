@@ -320,6 +320,8 @@ function renderSheets() {
     const ar = document.createElement("span"); ar.className = "sh-ar"; ar.textContent = open ? "▸" : "▹";
     const nm = document.createElement("span"); nm.className = "sh-nm"; nm.textContent = sheetSlug(s.name) + "/";
     h.append(ar, nm);
+    h.dataset.id = s.id;
+    a11yToggle(h, open, `#sheetsBody .sh-h[data-id="${s.id}"]`);
     if (s.active) {
       const tag = document.createElement("span"); tag.className = "sh-tag"; tag.textContent = "attiva";
       h.appendChild(tag);
@@ -379,6 +381,7 @@ function renderSheets() {
   newrow.appendChild(mkNew("importa", importSheetPrompt));
   inner.appendChild(newrow);
   body.appendChild(inner);
+  a11yRestoreFocus();
 }
 
 // Bottone azione dei blocchi scheda. stopPropagation: il tap sul bottone non
