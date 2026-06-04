@@ -7,6 +7,7 @@ import {
 } from "./store.js";
 import {
   hydrate, dehydrate, addSheet, importSheet, renameSheet, deleteSheet, setActiveSheet, sheetSummaries,
+  sortSheetSummaries, sheetSlug, fmtSheetDate,
 } from "./sheets.js";
 import {
   addCatalogEntry, renameCatalogEntry, deleteCatalogEntry, setCatalogNote,
@@ -250,9 +251,11 @@ function calShiftMonth(delta) {
 // ---- Gestore schede: overlay a schermo intero (stessa logica history degli altri). ----
 let sheetsOpen = false;
 let sheetsPending = null; // azione da eseguire dopo la chiusura del gestore schede
+let sheetsExpandedId = null; // id scheda espansa nell'accordion (null → default: l'attiva)
 
 function openSheets() {
   sheetsOpen = true;
+  sheetsExpandedId = null; // a ogni apertura riparte con l'attiva espansa
   history.pushState({ gymSheets: true }, "");
   renderSheets();
 }
@@ -278,73 +281,117 @@ function renderSheets() {
   ov.classList.remove("hidden"); ov.setAttribute("aria-hidden", "false");
   const body = document.getElementById("sheetsBody");
   body.innerHTML = "";
-  const sums = sheetSummaries(dehydrate(data));
+  const sums = sortSheetSummaries(sheetSummaries(dehydrate(data)));
   document.getElementById("sheetsSub").textContent =
     `${sums.length} scheda${sums.length === 1 ? "" : "e"} · attiva + archivio`;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const ultTxt = (s) => (s.lastDate ? `ult ${fmtSheetDate(s.lastDate, todayIso)}` : fmtSheetDate(null, todayIso));
+  // null → default (attiva espansa); "" → tutte chiuse; altrimenti id della scheda espansa.
+  const expandedId = sheetsExpandedId ?? (sums.find((s) => s.active) || {}).id;
 
-  // Wrapper centrabile: con poche schede `.sheets-inner` si centra in verticale
-  // (margin:auto); quando le card riempiono lo schermo il margin collassa a 0 e
-  // il body torna a scorrere normalmente. Niente clipping (a differenza di
-  // justify-content:center su un contenitore con overflow).
   const inner = document.createElement("div");
   inner.className = "sheets-inner";
+  inner.appendChild(mkPrompt("$", "ls schede/ --sort=ultima"));
 
   for (const s of sums) {
-    const card = document.createElement("div");
-    card.className = "sheet-card" + (s.active ? " active" : "");
+    const open = s.id === expandedId;
+    const blk = document.createElement("div");
+    blk.className = "sh-blk" + (s.active ? " active" : "") + (open ? " open" : "");
+    blk.addEventListener("click", () => { sheetsExpandedId = open ? "" : s.id; renderSheets(); });
 
-    const head = document.createElement("div");
-    head.className = "sheet-nm";
-    const nm = document.createElement("span");
-    nm.className = "sheet-name";
-    nm.textContent = s.name;
-    head.appendChild(nm);
+    const h = document.createElement("div");
+    h.className = "sh-h";
+    const ar = document.createElement("span"); ar.className = "sh-ar"; ar.textContent = open ? "▸" : "▹";
+    const nm = document.createElement("span"); nm.className = "sh-nm"; nm.textContent = sheetSlug(s.name) + "/";
+    h.append(ar, nm);
     if (s.active) {
-      const badge = document.createElement("span");
-      badge.className = "sheet-badge";
-      badge.textContent = "attiva";
-      head.appendChild(badge);
+      const tag = document.createElement("span"); tag.className = "sh-tag"; tag.textContent = "attiva";
+      h.appendChild(tag);
+    } else if (!open) {
+      const mt = document.createElement("span"); mt.className = "sh-mt";
+      mt.textContent = `${s.days}g · ${s.exercises} es · ${ultTxt(s)}`;
+      h.appendChild(mt);
     }
-    card.appendChild(head);
+    blk.appendChild(h);
 
-    const meta = document.createElement("div");
-    meta.className = "sheet-meta";
-    const last = s.lastDate ? `ult. ${s.lastDate}` : "mai usata";
-    meta.textContent = `${s.days} giorni · ${s.exercises} es · ${s.weeks} sett. · ${last}`;
-    card.appendChild(meta);
+    if (open) {
+      const x = document.createElement("div");
+      x.className = "sh-x";
 
-    const acts = document.createElement("div");
-    acts.className = "sheet-acts";
+      const days = document.createElement("div");
+      days.className = "sh-days";
+      for (const dl of s.dayLines) {
+        const ln = document.createElement("div");
+        const L = document.createElement("span"); L.className = "L"; L.textContent = dl.day;
+        const n = document.createElement("span"); n.className = "n"; n.textContent = ` ${dl.count} es`;
+        ln.append(L, document.createTextNode(dl.title.toLowerCase()), n);
+        days.appendChild(ln);
+      }
+      x.appendChild(days);
 
-    if (s.active) {
-      acts.appendChild(mkBtn("✎ Modifica scheda", "edit", () => { sheetsPending = openPlanEditor; closeSheets(); }));
+      const meta = document.createElement("div");
+      meta.className = "sh-meta";
+      meta.textContent =
+        `${ultTxt(s)} · ${s.weeks} settiman${s.weeks === 1 ? "a" : "e"} loggat${s.weeks === 1 ? "a" : "e"}`;
+      x.appendChild(meta);
+
+      const acts = document.createElement("div");
+      acts.className = "sh-acts";
+      if (s.active) {
+        acts.appendChild(mkBtn("✎ modifica", "p", () => { sheetsPending = openPlanEditor; closeSheets(); }));
+      } else {
+        acts.appendChild(mkBtn("↪ attiva", "p", () => mutateSheets((b) => setActiveSheet(b, s.id))));
+      }
       acts.appendChild(mkBtn("rinomina", "", () => renameSheetPrompt(s)));
-    } else {
-      acts.appendChild(mkBtn("↪ attiva", "go", () => mutateSheets((b) => setActiveSheet(b, s.id))));
-      acts.appendChild(mkBtn("rinomina", "", () => renameSheetPrompt(s)));
-      acts.appendChild(mkBtn("⧉ duplica", "", () => mutateSheets((b) => addSheet(setActiveSheet(b, s.id), { duplicateActive: true }))));
+      acts.appendChild(mkBtn("⧉ duplica", "", () =>
+        mutateSheets((b) => s.active
+          ? addSheet(b, { duplicateActive: true })
+          : addSheet(setActiveSheet(b, s.id), { duplicateActive: true }))));
+      if (sums.length > 1) acts.appendChild(mkBtn("rm", "r", () => deleteSheetConfirm(s)));
+      x.appendChild(acts);
+      blk.appendChild(x);
     }
-    if (sums.length > 1) {
-      acts.appendChild(mkBtn("🗑", "dl", () => deleteSheetConfirm(s)));
-    }
-    card.appendChild(acts);
-    inner.appendChild(card);
+    inner.appendChild(blk);
   }
 
+  inner.appendChild(mkPrompt("›", "tap su una scheda per aprirla"));
+
   const newrow = document.createElement("div");
-  newrow.className = "sheet-newrow";
-  newrow.appendChild(mkBtn("+ Nuova vuota", "empty", () => mutateSheets((b) => addSheet(b, { duplicateActive: false }))));
-  newrow.appendChild(mkBtn("⧉ Duplica attiva", "dup", () => mutateSheets((b) => addSheet(b, { duplicateActive: true }))));
-  newrow.appendChild(mkBtn("📥 Importa", "imp", importSheetPrompt));
+  newrow.className = "sh-newrow";
+  newrow.appendChild(mkNew("nuova", () => mutateSheets((b) => addSheet(b, { duplicateActive: false }))));
+  newrow.appendChild(mkNew("duplica", () => mutateSheets((b) => addSheet(b, { duplicateActive: true }))));
+  newrow.appendChild(mkNew("importa", importSheetPrompt));
   inner.appendChild(newrow);
   body.appendChild(inner);
 }
 
+// Bottone azione dei blocchi scheda. stopPropagation: il tap sul bottone non
+// deve far collassare/espandere il blocco (il click-handler è sul blocco).
 function mkBtn(label, cls, onClick) {
   const b = document.createElement("button");
   b.type = "button";
-  b.className = "sheet-btn" + (cls ? " " + cls : "");
+  b.className = "sh-bb" + (cls ? " " + cls : "");
   b.textContent = label;
+  b.addEventListener("click", (e) => { e.stopPropagation(); onClick(e); });
+  return b;
+}
+
+// Riga prompt stile terminale ("$ comando" / "› hint").
+function mkPrompt(sym, text) {
+  const p = document.createElement("div");
+  p.className = "sh-prompt";
+  const d = document.createElement("span"); d.className = "d"; d.textContent = sym;
+  p.append(d, document.createTextNode(" " + text));
+  return p;
+}
+
+// Bottone della riga nuova in fondo ("$ nuova" / "$ duplica" / "$ importa").
+function mkNew(label, onClick) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "sh-new";
+  const d = document.createElement("span"); d.className = "d"; d.textContent = "$";
+  b.append(d, document.createTextNode(" " + label));
   b.addEventListener("click", onClick);
   return b;
 }
