@@ -932,26 +932,43 @@ function closeCalDay() {
   if (dlg.open) dlg.close();
 }
 
-// Riga esercizio nell'editor: grip drag, nome+sub, modifica, elimina.
+// Riga esercizio nell'editor: numero, grip drag, nome+sub, modifica, elimina.
 function buildPlanRow(ex, i, count) {
   const row = document.createElement("div");
-  row.className = "pe-row";
+  row.className = "pe-row" + (ex.superset ? " ss" : "");
   row.dataset.idx = String(i);
+  const ix = document.createElement("span"); ix.className = "pe-ix";
+  ix.textContent = String(i + 1).padStart(2, "0");
   const grip = document.createElement("span"); grip.className = "pe-grip"; grip.textContent = "⠿";
   const meta = document.createElement("div"); meta.className = "pe-meta";
-  const nm = document.createElement("div"); nm.className = "pe-name"; nm.textContent = ex.name;
-  if (ex.superset) { const b = document.createElement("span"); b.className = "pe-badge"; b.textContent = "SUPERSET"; nm.appendChild(b); }
+  const nm = document.createElement("div"); nm.className = "pe-name";
+  // Superset: il "+" nel nome è renderizzato in accent ("Pushdown ＋ Curl").
+  if (ex.superset && String(ex.name).includes("+")) {
+    String(ex.name).split("+").map((p) => p.trim()).forEach((p, k) => {
+      if (k > 0) { const sep = document.createElement("span"); sep.className = "pe-ssb"; sep.textContent = " ＋ "; nm.appendChild(sep); }
+      nm.appendChild(document.createTextNode(p));
+    });
+  } else {
+    nm.textContent = ex.name;
+  }
+  if (ex.superset) { const b = document.createElement("span"); b.className = "pe-badge"; b.textContent = "SS"; nm.appendChild(b); }
   const sub = document.createElement("div"); sub.className = "pe-sub";
-  sub.textContent = `${ex.setsReps} · ${ex.recText}`
-    + (ex.bar ? ` · bilanciere ${ex.bar}kg` : "")
-    + (isDumbbell(ex.name) ? " · vol ×2" : "")
-    + (ex.unit === "sec" || ex.unitB === "sec" ? " · a tempo" : "");
+  // rec sempre da restSeconds (m:ss); fallback recText per piani importati senza
+  // restSeconds numerico; se mancano entrambi il segmento è omesso.
+  const rec = Number.isFinite(ex.restSeconds) ? `rec ${formatTime(ex.restSeconds)}`
+    : (ex.recText ? `rec ${ex.recText}` : "");
+  sub.textContent = [
+    ex.setsReps, rec,
+    ex.bar ? `bilanciere ${ex.bar}kg` : "",
+    isDumbbell(ex.name) ? "vol ×2" : "",
+    (ex.unit === "sec" || ex.unitB === "sec") ? "a tempo" : "",
+  ].filter(Boolean).join(" · ");
   meta.append(nm, sub);
   const edit = document.createElement("button"); edit.type = "button"; edit.className = "pe-ic"; edit.textContent = "✎";
   edit.addEventListener("click", () => openExDialog(planEditDay, ex.id));
   const del = document.createElement("button"); del.type = "button"; del.className = "pe-ic del"; del.textContent = "🗑";
   del.addEventListener("click", () => deletePlanExercise(planEditDay, ex.id, ex.name));
-  row.append(grip, meta, edit, del);
+  row.append(ix, grip, meta, edit, del);
   attachDragHandle(row, grip, planEditDay);
   return row;
 }
