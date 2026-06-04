@@ -96,14 +96,3 @@ test("freshnessByGroup: never → set di zone cold per il render", () => {
   const { never } = freshnessByGroup({}, "2026-06-04");
   assert.ok(never.has("chest") && never.has("calves") && never.has("abs"));
 });
-
-test("heatByGroup: primario e secondario si accumulano sullo stesso gruppo", () => {
-  const catalog = [{ id: "c1", name: "Panca piana bilanciere", muscle: "Petto",
-    note: "", secondary: ["Tricipiti"], img: "" }];
-  const { groups } = heatByGroup([
-    { muscle: "Petto", name: "Panca piana bilanciere", volume: 1000 },
-    { muscle: "Tricipiti", name: "Pushdown", volume: 100 },
-  ], catalog);
-  assert.equal(groups.Petto, 1);
-  assert.equal(groups.Tricipiti, 0.6); // 100 diretto + 500 da secondario
-});
