@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design finale — Gestore + Editor</title>
+<style>
+  /* ===== Palette reali dell'app: Graphite (default qui) e Carta ===== */
+  .theme-graphite{
+    --bg:#131517; --surf:#1b1e22; --surf2:#202428; --line:#2e343a;
+    --ink:#b6bcc4; --tx:#eef1f4; --dim:#7a828c; --faint:#565d66;
+    --acc:#f0a73c; --acc-ink:#1a1205; --ok:#7fd08a; --down:#e0705a;
+    --acc-soft:#2e2516; --line-acc:#4a3a1e; --field:#0f1113;
+  }
+  .theme-carta{
+    --bg:#ece3d0; --surf:#f5eedc; --surf2:#efe7d2; --line:#d8caa8;
+    --ink:#4a3f28; --tx:#2f2614; --dim:#8a7a58; --faint:#b0a07e;
+    --acc:#b07211; --acc-ink:#fff7e6; --ok:#3f7d2e; --down:#c0442e;
+    --acc-soft:#ecdcad; --line-acc:#cdb47a; --field:#f9f3e3;
+  }
+  :root{
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"JetBrains Mono",monospace;
+    --page:#0b0c0e; --page-ink:#b6bcc4; --page-tx:#eef1f4; --page-dim:#7a828c;
+    --page-line:#2e343a; --page-acc:#f0a73c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--page);color:var(--page-ink);font-family:var(--mono);padding:26px 18px 60px;}
+  h1{color:var(--page-tx);font-size:19px;font-weight:800;margin-bottom:4px;}
+  .sub{color:var(--page-dim);font-size:12.5px;margin-bottom:18px;line-height:1.55;}
+
+  /* ===== toolbar scelte ===== */
+  .bar{display:flex;gap:22px;flex-wrap:wrap;align-items:center;margin-bottom:22px;}
+  .seg{display:flex;align-items:center;gap:8px;}
+  .seg .lbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--page-dim);}
+  .seg .grp{display:flex;border:1px solid var(--page-line);border-radius:9px;overflow:hidden;}
+  .seg button{background:transparent;border:none;color:var(--page-ink);font:600 11.5px var(--mono);
+    padding:8px 14px;cursor:pointer;}
+  .seg button.on{background:var(--page-acc);color:#1a1205;font-weight:700;}
+
+  /* ===== frame telefono ===== */
+  .frames{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;align-items:flex-start;}
+  .col{width:392px;}
+  .ctitle{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--page-dim);margin-bottom:8px;}
+  .ctitle b{color:var(--page-acc);}
+  .phone{background:var(--bg);border:1px solid var(--page-line);border-radius:16px;overflow:hidden;
+    color:var(--ink);font-family:var(--mono);}
+  .phead{display:flex;align-items:center;gap:11px;padding:12px 13px;border-bottom:1px solid var(--line);}
+  .pback{width:32px;height:32px;border:1px solid var(--line);border-radius:9px;display:flex;align-items:center;
+    justify-content:center;color:var(--ink);font-size:15px;background:var(--surf);flex:none;}
+  .ptit{font-weight:800;color:var(--tx);font-size:15px;line-height:1.2;}
+  .psub{font-size:10px;color:var(--dim);}
+  .pbody{padding:14px 13px 18px;display:flex;flex-direction:column;gap:10px;min-height:580px;}
+
+  /* ===== GESTORE — B terminale ===== */
+  .prompt{font-size:11.5px;color:var(--dim);padding:2px 1px 2px;}
+  .prompt .d{color:var(--acc);}
+  .blk{background:var(--surf);border:1px solid var(--line);border-radius:11px;overflow:hidden;cursor:pointer;}
+  .blk.attiva.open{border-color:var(--acc);
+    background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 8%,transparent),transparent 55%),var(--surf);}
+  .blk-h{display:flex;align-items:baseline;gap:8px;padding:13px 12px;}
+  .blk.open .blk-h{padding-bottom:0;}
+  .blk-h .ar{color:var(--faint);font-size:12px;flex:none;}
+  .blk.open .blk-h .ar{color:var(--acc);}
+  .blk-h .nm{font-weight:800;font-size:15px;color:var(--tx);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .blk-h .tag{font-size:9px;color:var(--acc);border:1px solid var(--line-acc);border-radius:5px;padding:2px 6px;
+    letter-spacing:.1em;text-transform:uppercase;font-weight:700;flex:none;}
+  .blk-h .mt{color:var(--faint);font-size:10px;flex:none;}
+  .blk-x{display:none;padding:0 12px 12px;}
+  .blk.open .blk-x{display:block;}
+  .days{margin:10px 0 8px;font-size:11.5px;line-height:1.85;color:var(--ink);}
+  .days .L{color:var(--acc);font-weight:800;margin-right:8px;}
+  .days .n{color:var(--faint);font-size:10px;}
+  .meta{font-size:10px;color:var(--faint);border-top:1px dashed var(--line);padding-top:8px;margin-bottom:9px;}
+  .acts{display:flex;gap:7px;flex-wrap:wrap;}
+  .bb{background:var(--field);border:1px solid var(--line);color:var(--ink);font:600 10.5px var(--mono);
+    padding:8px 11px;border-radius:7px;cursor:pointer;}
+  .bb.p{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:700;}
+  .bb.r{color:var(--down);border-color:color-mix(in srgb,var(--down) 40%,transparent);}
+  .newrow{display:flex;gap:8px;margin-top:auto;}
+  .new{flex:1;background:var(--field);border:1px dashed var(--line);border-radius:9px;color:var(--dim);
+    font:600 10.5px var(--mono);padding:10px 4px;text-align:center;cursor:pointer;}
+  .new .d{color:var(--acc);}
+
+  /* ===== EDITOR — 1 tab evolute ===== */
+  .t-tabs{display:flex;gap:6px;}
+  .t-tab{flex:1;border:1px solid var(--line);border-radius:10px;background:var(--surf);padding:7px 4px 6px;text-align:center;cursor:pointer;}
+  .t-tab .L{font-weight:800;font-size:14px;color:var(--ink);}
+  .t-tab .mm{font-size:8px;color:var(--faint);margin-top:1px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .t-tab.on{background:var(--acc);border-color:var(--acc);}
+  .t-tab.on .L{color:var(--acc-ink);}
+  .t-tab.on .mm{color:var(--acc-ink);opacity:.75;}
+  .t-tab.add{flex:0 0 38px;color:var(--acc);font-size:16px;display:flex;align-items:center;justify-content:center;}
+  .t-daybar{display:flex;align-items:center;gap:8px;padding:2px 1px;}
+  .t-dayname{flex:1;font-size:11px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .t-dayname b{color:var(--tx);}
+  .t-mini{font-size:10px;color:var(--dim);border:1px solid var(--line);border-radius:7px;padding:5px 9px;background:var(--field);cursor:pointer;}
+  .t-mini.del{color:var(--down);}
+  .ex{display:flex;align-items:center;gap:8px;background:var(--surf);border:1px solid var(--line);
+    border-radius:10px;padding:9px 10px;}
+  .ex .ix{color:var(--faint);font-size:10px;width:16px;text-align:right;flex:none;}
+  .ex .grip{color:var(--acc);font-size:15px;padding:0 1px;cursor:grab;flex:none;}
+  .ex .m{flex:1;min-width:0;}
+  .ex .nm{color:var(--tx);font-size:13px;font-weight:600;}
+  .ex .sb{color:var(--dim);font-size:10.5px;margin-top:2px;}
+  .ex .ic{color:var(--acc);font-size:13px;padding:3px 5px;cursor:pointer;flex:none;}
+  .ex .ic.del{color:var(--down);opacity:.8;}
+  .ex.ss{border-color:var(--line-acc);
+    background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 6%,transparent),transparent 60%),var(--surf);}
+  .ssbadge{font-size:8px;color:var(--acc);border:1px solid var(--line-acc);border-radius:4px;padding:1px 4px;
+    margin-left:6px;letter-spacing:.08em;font-weight:700;vertical-align:2px;}
+  .ssb{color:var(--acc);font-weight:400;}
+  .t-add{border:1px dashed var(--line);border-radius:10px;color:var(--acc);font-size:11.5px;padding:11px;text-align:center;cursor:pointer;}
+
+  /* ===== note sotto i frame ===== */
+  .notes{margin-top:14px;font-size:11px;line-height:1.7;color:var(--page-ink);}
+  .notes .k{color:var(--page-acc);font-weight:700;}
+  .hint{margin-top:28px;text-align:center;color:var(--page-dim);font-size:11.5px;line-height:1.6;}
+</style>
+</head>
+<body>
+<h1>Design finale — Gestore <span style="color:var(--page-acc)">B·terminale</span> + Editor <span style="color:var(--page-acc)">1·tab evolute</span></h1>
+<p class="sub">Le due varianti scelte, consolidate e provabili. <b>Tap sulle schede del gestore per espandere/chiudere</b> (accordion: una aperta alla volta, l'attiva parte aperta). Cambia tema e stile nomi qui sotto — i frame si aggiornano dal vivo.</p>
+
+<div class="bar">
+  <div class="seg">
+    <span class="lbl">tema</span>
+    <div class="grp">
+      <button id="thG" class="on" onclick="setTheme('graphite')">graphite</button>
+      <button id="thC" onclick="setTheme('carta')">carta</button>
+    </div>
+  </div>
+  <div class="seg">
+    <span class="lbl">nomi schede — clicca per scegliere</span>
+    <div class="grp">
+      <button id="nmS" class="on" data-choice="nomi-slug" onclick="setNames('slug');toggleSelect(this)">slug (focus-alto/)</button>
+      <button id="nmR" data-choice="nomi-reali" onclick="setNames('reali');toggleSelect(this)">reali (Focus alto)</button>
+    </div>
+  </div>
+</div>
+
+<div class="frames theme-graphite" id="frames">
+
+  <!-- ================= GESTORE ================= -->
+  <div class="col">
+    <div class="ctitle">▮ gestore schede — <b>B terminale</b></div>
+    <div class="phone">
+      <div class="phead">
+        <div class="pback">←</div>
+        <div><div class="ptit">Schede</div><div class="psub">2 schede · attiva + archivio</div></div>
+      </div>
+      <div class="pbody">
+        <div class="prompt"><span class="d">$</span> ls schede/ --sort=ultima</div>
+
+        <div class="blk attiva open" onclick="toggleBlk(this)">
+          <div class="blk-h">
+            <span class="ar">▸</span>
+            <span class="nm" data-slug="focus-alto/" data-real="Focus alto">focus-alto/</span>
+            <span class="tag">attiva</span>
+          </div>
+          <div class="blk-x">
+            <div class="days">
+              <span class="L">A</span>petto · tricipiti · laterali <span class="n">7 es</span><br>
+              <span class="L">B</span>dorso · bicipiti · corsa <span class="n">8 es</span><br>
+              <span class="L">C</span>spalle · braccia <span class="n">7 es</span>
+            </div>
+            <div class="meta">ult oggi · 1 settimana loggata</div>
+            <div class="acts">
+              <button class="bb p" onclick="event.stopPropagation()">✎ modifica</button>
+              <button class="bb" onclick="event.stopPropagation()">rinomina</button>
+              <button class="bb" onclick="event.stopPropagation()">⧉ duplica</button>
+              <button class="bb r" onclick="event.stopPropagation()">rm</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="blk" onclick="toggleBlk(this)">
+          <div class="blk-h">
+            <span class="ar">▹</span>
+            <span class="nm" data-slug="scheda-1/" data-real="Scheda 1">scheda-1/</span>
+            <span class="mt">3g · 20 es · ult 26.05</span>
+          </div>
+          <div class="blk-x">
+            <div class="days">
+              <span class="L">A</span>petto · spalle · tricipiti <span class="n">7 es</span><br>
+              <span class="L">B</span>dorso · bicipiti <span class="n">7 es</span><br>
+              <span class="L">C</span>gambe · core <span class="n">6 es</span>
+            </div>
+            <div class="meta">ult 26.05 · 4 settimane loggate</div>
+            <div class="acts">
+              <button class="bb p" onclick="event.stopPropagation()">↪ attiva</button>
+              <button class="bb" onclick="event.stopPropagation()">rinomina</button>
+              <button class="bb" onclick="event.stopPropagation()">⧉ duplica</button>
+              <button class="bb r" onclick="event.stopPropagation()">rm</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="prompt" style="margin-top:2px"><span class="d">›</span> tap su una scheda per aprirla</div>
+
+        <div class="newrow">
+          <div class="new"><span class="d">$</span> nuova</div>
+          <div class="new"><span class="d">$</span> duplica</div>
+          <div class="new"><span class="d">$</span> importa</div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <span class="k">›</span> archivio ordinato per ultima sessione (più recente in alto), attiva sempre prima<br>
+      <span class="k">›</span> giorni = titolo del giorno in minuscolo + n° esercizi (dati veri della scheda)<br>
+      <span class="k">›</span> «rm» chiede conferma; sparisce se resta una sola scheda
+    </div>
+  </div>
+
+  <!-- ================= EDITOR ================= -->
+  <div class="col">
+    <div class="ctitle">▮ editor scheda — <b>1 tab evolute</b></div>
+    <div class="phone">
+      <div class="phead">
+        <div class="pback">←</div>
+        <div><div class="ptit">Modifica scheda</div><div class="psub"><span class="nm-inline" data-slug="focus-alto" data-real="Focus alto">focus-alto</span> · 3 giorni · 22 es</div></div>
+      </div>
+      <div class="pbody">
+        <div class="t-tabs">
+          <div class="t-tab on"><div class="L">A</div><div class="mm">petto·tric·lat</div></div>
+          <div class="t-tab"><div class="L">B</div><div class="mm">dorso·bic·corsa</div></div>
+          <div class="t-tab"><div class="L">C</div><div class="mm">spalle·braccia</div></div>
+          <div class="t-tab add">＋</div>
+        </div>
+        <div class="t-daybar">
+          <div class="t-dayname"><b>A</b> — Petto · Tricipiti · Laterali</div>
+          <div class="t-mini">✎</div><div class="t-mini del">🗑</div>
+        </div>
+        <div class="ex"><span class="ix">01</span><span class="grip">⠿</span><div class="m"><div class="nm">Panca piana</div><div class="sb">4×6-8 · rec 2:30 · bilanciere 10kg</div></div><span class="ic">✎</span><span class="ic del">🗑</span></div>
+        <div class="ex"><span class="ix">02</span><span class="grip">⠿</span><div class="m"><div class="nm">Panca inclinata manubri</div><div class="sb">3×8-10 · rec 2:00 · vol ×2</div></div><span class="ic">✎</span><span class="ic del">🗑</span></div>
+        <div class="ex"><span class="ix">03</span><span class="grip">⠿</span><div class="m"><div class="nm">Croci ai cavi in piedi</div><div class="sb">3×12-15 · rec 1:30</div></div><span class="ic">✎</span><span class="ic del">🗑</span></div>
+        <div class="ex"><span class="ix">04</span><span class="grip">⠿</span><div class="m"><div class="nm">Dips</div><div class="sb">3×max · rec 2:00</div></div><span class="ic">✎</span><span class="ic del">🗑</span></div>
+        <div class="ex"><span class="ix">05</span><span class="grip">⠿</span><div class="m"><div class="nm">Alzate laterali</div><div class="sb">3×12-15 · rec 1:30 · vol ×2</div></div><span class="ic">✎</span><span class="ic del">🗑</span></div>
+        <div class="ex ss"><span class="ix">06</span><span class="grip">⠿</span><div class="m"><div class="nm">Pushdown <span class="ssb">＋</span> Curl inclinata<span class="ssbadge">SS</span></div><div class="sb">3×10-12 · rec 1:30</div></div><span class="ic">✎</span><span class="ic del">🗑</span></div>
+        <div class="ex ss"><span class="ix">07</span><span class="grip">⠿</span><div class="m"><div class="nm">Crunch <span class="ssb">＋</span> Plank<span class="ssbadge">SS</span></div><div class="sb">3×15 / 30s · rec 1:00 · a tempo</div></div><span class="ic">✎</span><span class="ic del">🗑</span></div>
+        <div class="t-add">＋ aggiungi esercizio</div>
+      </div>
+    </div>
+    <div class="notes">
+      <span class="k">›</span> tab = lettera + titolo giorno abbreviato; sotto, titolo intero + rinomina/elimina compatti<br>
+      <span class="k">›</span> righe numerate; sub-riga: serie×reps · rec (da restSeconds) · bilanciere · vol ×2 · a tempo<br>
+      <span class="k">›</span> grip ⠿, drag-riordino e dialog esercizio restano quelli attuali
+    </div>
+  </div>
+
+</div>
+
+<p class="hint">Prova l'accordion del gestore e i due temi. Clicca lo stile nomi che preferisci qui sopra,<br>poi scrivimi in chat cosa sistemare — o dammi l'ok per lo spec.</p>
+
+<script>
+  function setTheme(t){
+    const f = document.getElementById('frames');
+    f.classList.toggle('theme-graphite', t==='graphite');
+    f.classList.toggle('theme-carta', t==='carta');
+    document.getElementById('thG').classList.toggle('on', t==='graphite');
+    document.getElementById('thC').classList.toggle('on', t==='carta');
+  }
+  function setNames(mode){
+    document.querySelectorAll('[data-slug]').forEach(el=>{
+      el.textContent = mode==='slug' ? el.dataset.slug : el.dataset.real;
+    });
+    document.getElementById('nmS').classList.toggle('on', mode==='slug');
+    document.getElementById('nmR').classList.toggle('on', mode==='reali');
+  }
+  function toggleBlk(el){
+    const wasOpen = el.classList.contains('open');
+    el.parentElement.querySelectorAll('.blk').forEach(b=>{
+      b.classList.remove('open');
+      b.querySelector('.ar').textContent='▹';
+    });
+    if(!wasOpen){ el.classList.add('open'); el.querySelector('.ar').textContent='▸'; }
+  }
+</script>
+</body>
+</html>
