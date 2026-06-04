@@ -1189,6 +1189,10 @@ const timer = new RestTimer({
     }
   },
   onEnd: (label) => {
+    // Giudizio ultima serie ancora in finestra 1.2s: l'avanzamento non va perso
+    // quando la scadenza del recupero chiude il feel-ask al posto del timeout.
+    const _adv = (scheduleFeelAskClose._t != null && scheduleFeelAskClose._info?.last)
+      ? scheduleFeelAskClose._info.idx : null;
     hideFeelAsk();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     beep();
@@ -1199,6 +1203,7 @@ const timer = new RestTimer({
       }).catch(() => {});
     }
     showTimerGo(label); // persistente: si chiude solo col tap (anche tornando dall'app in background)
+    if (_adv !== null) advanceAfterExercise(_adv);
   },
 });
 const wakeLock = new ScreenWakeLock();
@@ -1872,7 +1877,10 @@ let lastDone = null;
 // riparte il timer. Sull'ultima serie chiude anche l'esercizio e avanza.
 function scheduleFeelAskClose(info) {
   clearTimeout(scheduleFeelAskClose._t);
+  scheduleFeelAskClose._info = info;
   scheduleFeelAskClose._t = setTimeout(() => {
+    scheduleFeelAskClose._t = null;
+    scheduleFeelAskClose._info = null;
     hideFeelAsk();
     if (info.last) advanceAfterExercise(info.idx);
   }, 1200);
@@ -1897,6 +1905,8 @@ function advanceAfterExercise(idx) {
 // una sensazione diversa a ciascuna traccia. La selezione corrente è evidenziata.
 function showFeelAsk(info) {
   clearTimeout(scheduleFeelAskClose._t); // riapertura: annulla l'auto-chiusura pendente del giudizio precedente
+  scheduleFeelAskClose._t = null;
+  scheduleFeelAskClose._info = null;
   lastDone = info;
   const exId = exIdAt(info.idx);
   const labelN = document.getElementById("feelAskN");
@@ -1946,6 +1956,8 @@ function showFeelAsk(info) {
 
 function hideFeelAsk() {
   clearTimeout(scheduleFeelAskClose._t);
+  scheduleFeelAskClose._t = null;
+  scheduleFeelAskClose._info = null;
   document.getElementById("feelAsk").classList.add("hidden");
   lastDone = null;
 }
