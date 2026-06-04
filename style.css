@@ -596,8 +596,10 @@ dialog#settingsDialog.settings-v2-host::backdrop{
   color:inherit;font-size:13px;line-height:1;opacity:.75;}
 .sc-x:hover,.sc-x:focus-visible{opacity:1;}
 
-/* il timer (fixed) non deve più coprire le note del focus */
+/* lo stack in basso (timer e/o striscia giudizio) non deve coprire le note del focus */
 body.timer-on .focus-body{padding-bottom:196px;}
+body.feel-on .focus-body{padding-bottom:140px;}
+body.timer-on.feel-on .focus-body{padding-bottom:300px;}
 
 /* ---- Lotto 2 Task 4: serie non riuscita ---- */
 /* Badge rosso "✗ non riuscita" nella riga serie */

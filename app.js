@@ -1952,6 +1952,7 @@ function showFeelAsk(info) {
   };
   paint();
   document.getElementById("feelAsk").classList.remove("hidden");
+  document.body.classList.add("feel-on"); // padding extra nel focus: lo stack ora è più alto
 }
 
 function hideFeelAsk() {
@@ -1959,6 +1960,7 @@ function hideFeelAsk() {
   scheduleFeelAskClose._t = null;
   scheduleFeelAskClose._info = null;
   document.getElementById("feelAsk").classList.add("hidden");
+  document.body.classList.remove("feel-on");
   lastDone = null;
 }
 
