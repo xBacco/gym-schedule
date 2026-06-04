@@ -1037,7 +1037,7 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .srow .v{ color:var(--tx); flex:1; } .srow .v .u, .srow .v .x{ color:var(--dim); } .srow .v .svol{ color:var(--ac2); font-size:11px; }
 .srow.cur{ border-color:var(--ctc); }
 .srow .chk{ color:var(--ok); }
-.srow .rpe{ color:var(--ac2); font-size:11px; } .srow .rpe.fail{ color:var(--down); }
+.srow .rpe{ color:var(--ac2); font-size:11px; } .srow .rpe.hard{ color:var(--rpe-hard); } .srow .rpe.fail{ color:var(--down); }
 .srow .tag{ color:var(--ok); font-size:11px; } .srow .tag.down{ color:var(--down); }
 .srow .editset, .srow .rm{ color:var(--dim); cursor:pointer; }
 .srow .wbadge{ color:var(--ac2); font-size:9px; letter-spacing:.1em; }
