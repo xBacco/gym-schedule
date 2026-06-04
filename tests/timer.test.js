@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatTime, remainingSeconds, withoutSession } from "../timer.js";
+import { formatTime, remainingSeconds, withoutSession, goSlug } from "../timer.js";
 
 test("formatTime renders m:ss and clamps negatives to 0:00", () => {
   assert.equal(formatTime(0), "0:00");
@@ -36,4 +36,19 @@ test("withoutSession: chiave assente -> copia invariata", () => {
 test("withoutSession: input non-oggetto -> {}", () => {
   assert.deepEqual(withoutSession(null, "k"), {});
   assert.deepEqual(withoutSession(undefined, "k"), {});
+});
+
+test("goSlug: minuscole, accenti normalizzati, non-alfanumerici → _", () => {
+  assert.equal(goSlug("Pushdown + Curl panca"), "pushdown_curl_panca");
+  assert.equal(goSlug("Più forza così"), "piu_forza_cosi");
+});
+
+test("goSlug: trim di _ ai bordi e taglio a 24 char", () => {
+  assert.equal(goSlug("  Croci ai cavi in piedi (chiusura petto)  ").length <= 24, true);
+  assert.equal(goSlug("---Dips---"), "dips");
+});
+
+test("goSlug: vuoto/garbage → fallback 'esercizio'", () => {
+  assert.equal(goSlug(""), "esercizio");
+  assert.equal(goSlug("→★"), "esercizio");
 });

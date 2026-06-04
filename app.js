@@ -26,7 +26,7 @@ import {
   lastWorkingSet,
   isDumbbell, volumeMeta, exerciseVolume, setVolume,
 } from "./session.js";
-import { RestTimer, formatTime, withoutSession } from "./timer.js";
+import { RestTimer, formatTime, withoutSession, goSlug } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
 import { renderNutritionGuide } from "./nutrition.js";
 import { createPusher } from "./sync.js";
@@ -1171,21 +1171,10 @@ function cueWarning() { tone(523, 0.25); tone(523, 0.25, 0.35); if (navigator.vi
 function cueCountdown() { tone(659, 0.18); }
 let lastTickSecond = null;
 
-function showRestDoneBanner() {
-  const b = document.getElementById("restDoneBanner");
-  if (!b) return;
-  b.classList.remove("hidden");
-  clearTimeout(showRestDoneBanner._t);
-  showRestDoneBanner._t = setTimeout(() => b.classList.add("hidden"), 2500);
-}
-
-function hideRestDoneBanner() {
-  const b = document.getElementById("restDoneBanner");
-  clearTimeout(showRestDoneBanner._t);
-  if (b) b.classList.add("hidden");
-}
-
 // ---- Timer wiring ----
+// Contesto dell'ultimo recupero per lo stato GO: durata impostata + comando da
+// mostrare allo 0:00 ({fine:true} | {slug, serie}). Settato da startRest.
+let restCtx = null;
 const timer = new RestTimer({
   onTick: (remaining, label) => {
     document.getElementById("timerTime").textContent = formatTime(remaining);
@@ -1208,20 +1197,48 @@ const timer = new RestTimer({
         body: (label ? label + " · " : "") + "prossima serie",
         tag: "rest-done", renotify: true, vibrate: [200, 100, 200], icon: "./icon.svg",
       }).catch(() => {});
-    } else if (!document.hidden) {
-      showRestDoneBanner();
     }
-    setTimeout(() => {
-      document.getElementById("timerBar").classList.add("hidden");
-      document.body.classList.remove("timer-on");
-    }, 1500);
+    showTimerGo(label); // persistente: si chiude solo col tap (anche tornando dall'app in background)
   },
 });
 const wakeLock = new ScreenWakeLock();
-function startRest(seconds, label) {
+
+// Trasforma la barra nello stato GO "boot log". Resta finché non viene toccata.
+function showTimerGo(label) {
+  const go = restCtx?.go;
+  document.getElementById("goRest").textContent = formatTime(restCtx?.seconds ?? 0);
+  if (go?.fine) {
+    document.getElementById("goVerb").textContent = "fine";
+    document.getElementById("goPath").textContent = "./sessione --done";
+  } else {
+    document.getElementById("goVerb").textContent = "vai";
+    document.getElementById("goPath").textContent =
+      `./${go?.slug ?? goSlug(label)} --serie ${go?.serie ?? 1}`;
+  }
+  document.getElementById("timerTime").classList.remove("final");
+  document.getElementById("timerRun").classList.add("hidden");
+  document.getElementById("timerGo").classList.remove("hidden");
+  document.getElementById("timerBar").classList.add("go-on");
+}
+
+// Chiude lo stato GO e nasconde la barra (tap dell'utente).
+function dismissTimerGo() {
+  document.getElementById("timerGo").classList.add("hidden");
+  document.getElementById("timerRun").classList.remove("hidden");
+  document.getElementById("timerBar").classList.add("hidden");
+  document.getElementById("timerBar").classList.remove("go-on");
+  document.body.classList.remove("timer-on");
+  wakeLock.disable();
+}
+
+function startRest(seconds, label, go = null) {
   ensureAudio(); // unlock audio within the user gesture
   startSessionIfAbsent(); // primo recupero del giorno → avvia il cronometro sessione
   wakeLock.enable();
+  restCtx = { seconds, go };
+  document.getElementById("timerGo").classList.add("hidden");
+  document.getElementById("timerRun").classList.remove("hidden");
+  document.getElementById("timerBar").classList.remove("go-on");
   document.body.classList.add("timer-on");
   document.getElementById("timerBar").classList.remove("hidden");
   document.getElementById("tToggle").textContent = "⏸";
@@ -2132,7 +2149,11 @@ function renderFocusNormal(ex, idx, container, footer) {
       data = setEntry(data, currentWeek, currentDay, exId,
         withSet(v, curIdx, { reps: draft.reps, kg: draft.kg, done: true, feel: entry.sets[curIdx]?.feel ?? "", comments: draft.comments }), new Date().toISOString());
       persist(idx);
-      startRest(getRest(currentDay, exId, ex.restSeconds), ex.name);
+      const _nx = nextExercisePreview(dayPlan().exercises, idx);
+      const _go = (curIdx + 1 >= total)
+        ? (_nx.last ? { fine: true } : { slug: goSlug(_nx.name), serie: 1 })
+        : { slug: goSlug(ex.name), serie: curIdx + 2 };
+      startRest(getRest(currentDay, exId, ex.restSeconds), ex.name, _go);
       render();
       // Anche sull'ultima serie: mostra "com'è andata?" (prima si chiudeva il
       // focus e non si poteva valutare). Si torna alla lista con il tasto ←.
@@ -2346,7 +2367,12 @@ function renderFocusSuperset(ex, idx, container, footer) {
       nv = withSupersetSet(nv, "b", b.curIdx, { reps: draftB.reps, kg: draftB.kg, done: true, feel: e.b.sets[b.curIdx]?.feel ?? "", comments: draftB.comments });
       data = setEntry(data, currentWeek, currentDay, exId, nv, new Date().toISOString());
       persist(idx);
-      startRest(getRest(currentDay, exId, ex.restSeconds), ex.name);
+      const _doneAll = isEntryComplete(getEntry(data, currentWeek, currentDay, exId), ex);
+      const _nx = nextExercisePreview(dayPlan().exercises, idx);
+      const _go = _doneAll
+        ? (_nx.last ? { fine: true } : { slug: goSlug(_nx.name), serie: 1 })
+        : { slug: goSlug(ex.name), serie: a.curIdx + 2 };
+      startRest(getRest(currentDay, exId, ex.restSeconds), ex.name, _go);
       render();
       // Due barre A/B separate (sensazione indipendente per traccia); resta
       // aperto anche sull'ultima serie. Si torna alla lista con il tasto ←.
@@ -2839,10 +2865,14 @@ function wireTimerControls() {
   document.getElementById("tStop").addEventListener("click", () => {
     timer.stop();
     hideFeelAsk();
-    hideRestDoneBanner();
     document.getElementById("timerBar").classList.add("hidden");
+    document.getElementById("timerBar").classList.remove("go-on");
+    document.getElementById("timerGo").classList.add("hidden");
+    document.getElementById("timerRun").classList.remove("hidden");
     document.body.classList.remove("timer-on");
+    wakeLock.disable();
   });
+  document.getElementById("timerGo").addEventListener("click", dismissTimerGo);
   document.getElementById("tToggle").addEventListener("click", (e) => {
     if (timer.paused) { timer.resume(); e.target.textContent = "⏸"; }
     else { timer.pause(); e.target.textContent = "▶"; }

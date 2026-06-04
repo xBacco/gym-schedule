@@ -213,6 +213,24 @@ input.num::-webkit-outer-spin-button,input.num::-webkit-inner-spin-button{-webki
 .t-btn{background:transparent;border:1px solid var(--line);border-radius:10px;padding:11px 16px;
   font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;min-height:44px;}
 
+/* Stato GO a fine recupero: boot-log persistente, tocca per chiudere */
+.timerbar.go-on{background:var(--field);border-top:2px solid var(--acc);position:relative;}
+.t-go{cursor:pointer;font-family:"JetBrains Mono",monospace;-webkit-user-select:none;user-select:none;}
+.t-go .g1{font-size:13px;color:var(--ink);}
+.t-go .g1 .g-ok{color:var(--ok);font-weight:700;}
+.t-go .g2{font-size:19px;font-weight:800;color:var(--acc);margin-top:4px;display:flex;align-items:baseline;gap:7px;}
+.t-go .g2 .g-chev{color:var(--faint);font-weight:400;}
+.t-go .g2 .g-path{font-weight:400;font-size:13px;color:var(--dim);}
+.t-go .g2 .g-cursor{display:inline-block;width:11px;height:19px;background:var(--acc);
+  align-self:center;animation:g-blink 1s steps(1) infinite;}
+@keyframes g-blink{0%,100%{opacity:1}50%{opacity:0}}
+/* Graphite: glow fosforo + scanline CRT leggera */
+:root[data-theme="graphite"] .t-go .g2{text-shadow:0 0 8px rgba(240,167,60,.5),0 0 20px rgba(240,167,60,.22);}
+:root[data-theme="graphite"] .t-go .g2 .g-path{text-shadow:none;}
+:root[data-theme="graphite"] .t-go .g2 .g-cursor{box-shadow:0 0 8px rgba(240,167,60,.55);}
+:root[data-theme="graphite"] .timerbar.go-on::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);}
+
 /* settings dialog */
 dialog{border:none;border-radius:16px;padding:18px;max-width:340px;background:var(--surf);color:var(--ink);margin:auto;}
 dialog::backdrop{background:rgba(0,0,0,.6);}
@@ -574,12 +592,6 @@ dialog#settingsDialog.settings-v2-host::backdrop{
   min-width:24px;min-height:24px;padding:2px 4px;border:0;background:none;cursor:pointer;
   color:inherit;font-size:13px;line-height:1;opacity:.75;}
 .sc-x:hover,.sc-x:focus-visible{opacity:1;}
-
-.restdone{position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:70;
-  background:var(--acc);color:var(--acc-ink);font-weight:800;font-size:18px;
-  letter-spacing:.04em;padding:16px 26px;border-radius:14px;
-  box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;}
-.restdone.hidden{display:none;}
 
 /* il timer (fixed) non deve più coprire le note del focus */
 body.timer-on .focus-body{padding-bottom:196px;}

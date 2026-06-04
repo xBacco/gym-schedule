@@ -89,6 +89,17 @@ export class RestTimer {
   }
 }
 
+// Slug "da comando" per il boot-log della barra: minuscole, accenti rimossi,
+// sequenze non alfanumeriche → "_", max 24 char. Fallback "esercizio".
+export function goSlug(name) {
+  const s = String(name ?? "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 24).replace(/_+$/, "");
+  return s || "esercizio";
+}
+
 // Ritorna una nuova mappa-sessione (gymsched_session) senza `key`, senza mutare
 // l'input. Robusta a `map` null/non-oggetto (ritorna {}).
 export function withoutSession(map, key) {
