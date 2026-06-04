@@ -184,6 +184,11 @@ export function sheetSummaries(blob) {
       exercises,
       weeks: weekKeys.length,
       lastDate,
+      dayLines: plan.map((d) => ({
+        day: d.day,
+        title: (d.title && String(d.title).trim()) || d.day,
+        count: Array.isArray(d.exercises) ? d.exercises.length : 0,
+      })),
     };
   });
 }

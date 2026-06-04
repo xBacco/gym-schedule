@@ -201,12 +201,12 @@ test("sheetSummaries: conta giorni, esercizi, settimane, ultima data", () => {
   assert.equal(sums.length, 2);
   assert.deepEqual(
     { ...sums[0], id: undefined },
-    { id: undefined, name: "PPL", active: true, days: 2, exercises: 3, weeks: 2, lastDate: "2026-01-12" }
+    { id: undefined, name: "PPL", active: true, days: 2, exercises: 3, weeks: 2, lastDate: "2026-01-12", dayLines: [{ day: "A", title: "A", count: 2 }, { day: "B", title: "B", count: 1 }] }
   );
   assert.equal(sums[0].id, "a");
   assert.deepEqual(
     { ...sums[1], id: undefined },
-    { id: undefined, name: "Vuota", active: false, days: 0, exercises: 0, weeks: 0, lastDate: null }
+    { id: undefined, name: "Vuota", active: false, days: 0, exercises: 0, weeks: 0, lastDate: null, dayLines: [] }
   );
 });
 
@@ -233,4 +233,28 @@ test("dehydrate∘hydrate: round-trip stabile con catalog", () => {
     catalog: [{ id: "c1", name: "Squat bilanciere", muscle: "Gambe", note: "schiena neutra" }],
   };
   assert.deepEqual(dehydrate(hydrate(blob)), blob);
+});
+
+test("sheetSummaries: dayLines con day/title/count per scheda", () => {
+  const blob = {
+    schema: 6, activeSheetId: "s1",
+    sheets: [{
+      id: "s1", name: "Focus alto",
+      plan: [
+        { day: "A", title: "Petto · Tricipiti", exercises: [{ id: "e1", name: "Panca" }, { id: "e2", name: "Dips" }] },
+        { day: "B", title: "", exercises: [] },
+      ],
+      weeks: {},
+    }],
+  };
+  const [s] = sheetSummaries(blob);
+  assert.deepEqual(s.dayLines, [
+    { day: "A", title: "Petto · Tricipiti", count: 2 },
+    { day: "B", title: "B", count: 0 },
+  ]);
+});
+
+test("sheetSummaries: dayLines di una scheda senza plan è []", () => {
+  const blob = { schema: 6, activeSheetId: "s1", sheets: [{ id: "s1", name: "X", plan: [], weeks: {} }] };
+  assert.deepEqual(sheetSummaries(blob)[0].dayLines, []);
 });
