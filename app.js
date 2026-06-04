@@ -1,5 +1,5 @@
 import { PLAN } from "./plan.js";
-import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan, addDay, renameDay, removeDay } from "./editor.js";
+import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan, addDay, renameDay, removeDay, tabMiniLabel } from "./editor.js";
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
@@ -137,7 +137,13 @@ function renderPlanEditor() {
     const b = document.createElement("button");
     b.type = "button";
     b.dataset.day = d.day;
-    b.textContent = d.title || d.day;
+    const L = document.createElement("span"); L.className = "pt-L"; L.textContent = d.day;
+    b.appendChild(L);
+    const mm = tabMiniLabel(d.title);
+    if (mm && mm !== String(d.day).toLowerCase()) {
+      const m = document.createElement("span"); m.className = "pt-mm"; m.textContent = mm;
+      b.appendChild(m);
+    }
     if (d.day === planEditDay) b.classList.add("on");
     b.addEventListener("click", () => { planEditDay = d.day; renderPlanEditor(); });
     tabs.appendChild(b);
@@ -150,21 +156,30 @@ function renderPlanEditor() {
   addTab.addEventListener("click", addPlanDay);
   tabs.appendChild(addTab);
 
-  document.getElementById("planSub").textContent = dp ? `giorno ${dp.title || dp.day}` : "nessun giorno";
+  const totEx = plan.reduce((n, d) => n + (Array.isArray(d.exercises) ? d.exercises.length : 0), 0);
+  const sheetName = ((data.sheets || []).find((s) => s.id === data.activeSheetId) || {}).name || "scheda";
+  document.getElementById("planSub").textContent =
+    `${sheetSlug(sheetName)} · ${plan.length} giorn${plan.length === 1 ? "o" : "i"} · ${totEx} es`;
 
   const body = document.getElementById("planBody");
   body.textContent = "";
   if (dp) {
-    // Toolbar rinomina/elimina per il giorno corrente.
+    // Barra giorno: titolo intero + rinomina/elimina compatti.
     const bar = document.createElement("div");
     bar.className = "pe-daybar";
+    const ttl = document.createElement("div");
+    ttl.className = "pe-daytitle";
+    const bL = document.createElement("b"); bL.textContent = dp.day;
+    ttl.append(bL, document.createTextNode(` — ${dp.title || dp.day}`));
     const ren = document.createElement("button");
-    ren.type = "button"; ren.className = "pe-daybtn"; ren.textContent = "✎ Rinomina";
+    ren.type = "button"; ren.className = "pe-daybtn"; ren.textContent = "✎";
+    ren.setAttribute("aria-label", "Rinomina giorno");
     ren.addEventListener("click", renamePlanDay);
     const del = document.createElement("button");
-    del.type = "button"; del.className = "pe-daybtn pe-daybtn-del"; del.textContent = "🗑 Elimina";
+    del.type = "button"; del.className = "pe-daybtn pe-daybtn-del"; del.textContent = "🗑";
+    del.setAttribute("aria-label", "Elimina giorno");
     del.addEventListener("click", deletePlanDay);
-    bar.appendChild(ren); bar.appendChild(del);
+    bar.append(ttl, ren, del);
     body.appendChild(bar);
 
     dp.exercises.forEach((ex, i) => body.appendChild(buildPlanRow(ex, i, dp.exercises.length)));
@@ -175,7 +190,8 @@ function renderPlanEditor() {
   } else {
     const hint = document.createElement("p");
     hint.className = "pe-empty-hint";
-    hint.textContent = "Nessun giorno. Tocca ＋ per aggiungerne uno.";
+    const d = document.createElement("span"); d.className = "d"; d.textContent = "$";
+    hint.append(d, document.createTextNode(" nessun giorno — tocca ＋ per aggiungerne uno"));
     body.appendChild(hint);
   }
   ov.classList.remove("hidden");
