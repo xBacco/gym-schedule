@@ -16,7 +16,14 @@ allenato (ispirazione: body heatmap di Hevy), declinata su tre superfici:
    movimento);
 3. l'**editor scheda** (cosa copre un giorno).
 
-In più, un **calcolatore dischi** richiamabile dalla sessione di allenamento.
+Tutta la schermata Scan opera sulla **scheda attiva** (stessa base dati del
+calendario, anch'esso sulla scheda attiva).
+
+> **Nota (2026-06-04, in fase di piano):** la sezione "Calcolatore dischi"
+> è stata rimossa: l'app ha già `platesPerSide` in `store.js` (testato), la
+> riga "per lato: …" sotto lo stepper kg in sessione, il bilanciere
+> per-esercizio (`exerciseBar`) e l'inventario dischi nelle Impostazioni.
+> YAGNI confermato con l'utente.
 
 ## Stile visivo (trasversale a tutte le superfici)
 
@@ -115,7 +122,7 @@ Le zone della figura non mappate (es. avambracci) restano sempre spente.
     (suffisso contatore): più figure nella stessa pagina non collidono.
 - La figura è un **riepilogo**: nessun tap sul singolo muscolo.
 - **Service worker**: i file nuovi (`body.js`, `body-data.js`,
-  `media-map.js`, `plates.js`) entrano nella lista cache + bump versione.
+  `media-map.js`) entrano nella lista cache + bump versione.
 
 ## Superfici UI
 
@@ -125,10 +132,15 @@ Le zone della figura non mappate (es. avambracci) restano sempre spente.
   voci**: Schede, Database esercizi, Scan (3ª), Calendario (4ª), Impostazioni
   (5ª, a tutta larghezza in fondo).
 - Pannello grande (con righello) + due tab:
-  - **SETTIMANA** — heat dai volumi della settimana corrente.
+  - **SETTIMANA** — heat dai volumi della settimana corrente (quella
+    selezionata in home) della scheda attiva. I secondari pesano 0.5.
   - **FRESCHEZZA** — fasce su "ultima volta allenato": ieri **0.95** /
     2–3 giorni **0.6** / 4–5 giorni **0.25** / ≥6 giorni **spento + ⚠** /
-    mai allenato **tratteggio rosso**. Stessa fonte date del calendario.
+    mai allenato **tratteggio rosso**. Stessa fonte date del calendario
+    (`weeks[*].dates`, scheda attiva). "Allenato" = almeno una serie done
+    non-warmup, anche a corpo libero o a tempo (i kg non c'entrano).
+    Conta solo il gruppo **primario** (i secondari pesano solo sulla
+    vista settimana).
 - Legenda sotto la figura (scala poco→tanto, non allenato, mai).
 
 ### Database esercizi
@@ -161,26 +173,6 @@ Le zone della figura non mappate (es. avambracci) restano sempre spente.
   brightness(.95) contrast(1.2) drop-shadow(0 0 5px rgba(240,167,60,.55));
   mix-blend-mode: screen`.
 
-## Calcolatore dischi
-
-- **Dove**: icona ⚖ accanto al campo kg di ogni serie nella sessione. Tap →
-  overlay CRT (stesso pattern dell'overlay catalogo), pre-caricato col valore
-  del campo (o l'ultimo carico noto).
-- **`plates.js`** — modulo puro. Input: kg target (**totale**, bilanciere
-  incluso — coerente con come si logga il kg), peso bilanciere (default 20),
-  inventario dischi per lato (default: 25 / 20 / 15 / 10 / 5 / 2.5 / 1.25).
-  Calcolo: `(target − bilanciere) / 2`, riempimento greedy.
-  - Target esatto non raggiungibile → combinazione più vicina per difetto e
-    per eccesso col delta (`94 → 93.5 (−0.5) | 95 (+1)`).
-  - Target < bilanciere → "solo bilanciere (20 kg)".
-- **UI overlay**: barra orizzontale con dischi impilati in resa blueprint,
-  etichetta `LATO·SX ≡ LATO·DX`, lista testuale `2×25 + 1×10 + 1×2.5`.
-  Bilanciere e inventario modificabili nell'overlay (chips on/off sui
-  dischi), persistiti come le altre preferenze locali (localStorage, fuori
-  dal blob sync).
-- **Fuori scope**: nessun aggancio automatico al tipo di esercizio — lo si
-  apre quando serve (manubri/corpo libero: semplicemente non si apre).
-
 ## Piano test
 
 Tutti con `node --test`, solo moduli puri (zero DOM, come gli esistenti):
@@ -190,11 +182,9 @@ Tutti con `node --test`, solo moduli puri (zero DOM, come gli esistenti):
    `freshnessByGroup`: le fasce; `renderBody`: la stringa SVG contiene i
    path attesi e due render nella stessa pagina hanno id filtri diversi.
 2. **`media-map.js`** — lookup nome→id, override `img`, fallback assente.
-3. **`plates.js`** — decomposizione esatta, per difetto/eccesso, target
-   sotto-bilanciere, decimali (2.5/1.25), inventario ridotto.
-4. **`catalog.js`** — migrazione: voci senza `secondary`/`img` restano valide
+3. **`catalog.js`** — migrazione: voci senza `secondary`/`img` restano valide
    e si normalizzano; `hydrate`/`dehydrate`/`mergeBlobs` conservano i campi.
-5. **Freschezza** — dato un log con date note, le fasce escono giuste
+4. **Freschezza** — dato un log con date note, le fasce escono giuste
    (ieri / 2–3g / 4–5g / ≥6g / mai), stessa fonte date del calendario.
 
 ## Fuori scope (YAGNI)
@@ -202,4 +192,3 @@ Tutti con `node --test`, solo moduli puri (zero DOM, come gli esistenti):
 - Pesi dei secondari per-esercizio (il fattore è fisso a 0.5).
 - Cache offline delle illustrazioni wger.
 - Tap sul singolo muscolo / drill-down dalla figura.
-- Aggancio del calcolatore dischi al tipo di esercizio.
