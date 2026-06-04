@@ -622,7 +622,12 @@ function renderCatalog() {
 function wireDetail(k, entry) {
   const ta = k.querySelector(".note");
   ta.onclick = (e) => e.stopPropagation();
-  ta.onblur = () => mutateCatalog((b) => setCatalogNote(b, entry.id, ta.value));
+  // Salva (e ri-renderizza) solo se la nota è cambiata: il re-render al blur
+  // distruggerebbe i bottoni del dettaglio a metà Tab da tastiera.
+  ta.onblur = () => {
+    if (ta.value === (entry.note || "")) return;
+    mutateCatalog((b) => setCatalogNote(b, entry.id, ta.value));
+  };
   k.querySelector(".edit").onclick = (e) => { e.stopPropagation(); openCatalogForm(entry); };
   k.querySelector(".del").onclick = (e) => { e.stopPropagation(); openCatalogDelete(entry); };
 }
