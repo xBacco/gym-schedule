@@ -399,8 +399,11 @@ let a11yRefocus = null;
 
 // Rende un div clickable azionabile da tastiera (header accordion):
 // role/tabindex/aria-expanded + Enter/Spazio che riusa il click-handler già
-// presente via el.click(). refocusSel: selettore per ritrovare l'header dopo
-// il re-render (ancorato al contenitore, vedi spec).
+// presente via el.click() (diretto, o via bubbling se l'handler è sul parent,
+// es. .sh-h → .sh-blk). refocusSel: selettore per ritrovare l'header dopo il
+// re-render (ancorato al contenitore, vedi spec).
+// PRECONDIZIONE: el è un elemento fresco (appena ricostruito dal render);
+// su elementi riusati i keydown-listener si accumulerebbero.
 function a11yToggle(el, expanded, refocusSel) {
   el.setAttribute("role", "button");
   el.setAttribute("tabindex", "0");
