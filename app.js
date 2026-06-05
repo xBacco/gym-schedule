@@ -2409,6 +2409,55 @@ function scheduleSave() {
   pusher.schedule();
 }
 
+// Voce di catalogo con lo stesso nome (normalizzato) dell'esercizio, per
+// l'override img per-voce. Null se assente.
+function catalogByName(name) {
+  const n = String(name ?? "").trim().toLowerCase();
+  return (dehydrate(data).catalog ?? []).find((e) => String(e.name ?? "").trim().toLowerCase() === n) ?? null;
+}
+
+// Pannello in testa al focus (spec §2, mockup focus-media.html variante A):
+// chip REC/VOL×2 + i 2 frame wger se disponibili. Null se non c'è nulla.
+function buildFocusTop(ex) {
+  const wrap = document.createElement("div");
+  wrap.className = "focus-top";
+  const chips = document.createElement("div");
+  chips.className = "f-chips";
+  const rec = Number.isFinite(ex.restSeconds) ? formatTime(ex.restSeconds) : (ex.recText || "");
+  if (rec) {
+    const c = document.createElement("span"); c.className = "f-chip rec";
+    c.textContent = `REC ${rec}`; chips.appendChild(c);
+  }
+  const addVol = (label) => {
+    const c = document.createElement("span"); c.className = "f-chip";
+    c.textContent = label; chips.appendChild(c);
+  };
+  if (ex.superset) {
+    if (volumeMeta(ex, "a").factor === 2) addVol("A ×2");
+    if (volumeMeta(ex, "b").factor === 2) addVol("B ×2");
+  } else if (volumeMeta(ex, null).factor === 2) addVol("VOL ×2");
+  if (chips.children.length) wrap.appendChild(chips);
+
+  // Media: prova ogni traccia (superset "A + B"), primo hit vince.
+  const names = ex.superset && String(ex.name).includes(" + ")
+    ? String(ex.name).split(" + ") : [ex.name];
+  for (const nm of names) {
+    const m = mediaFor(catalogByName(nm) ?? { name: nm });
+    if (!m) continue;
+    const box = document.createElement("div");
+    box.className = "f-media";
+    for (const src of [m.img1, m.img2].filter(Boolean)) {
+      const img = document.createElement("img");
+      img.src = src; img.loading = "lazy"; img.alt = nm; img.decoding = "async";
+      img.addEventListener("error", () => box.remove()); // hotlink rotto → via tutto
+      box.appendChild(img);
+    }
+    wrap.appendChild(box);
+    break;
+  }
+  return wrap.children.length ? wrap : null;
+}
+
 function renderFocusNormal(ex, idx, container, footer) {
   const exId = exIdAt(idx);
   const v = getEntry(data, currentWeek, currentDay, exId);
@@ -2430,6 +2479,9 @@ function renderFocusNormal(ex, idx, container, footer) {
       _key: draftKey,
     };
   }
+
+  const top = buildFocusTop(ex);
+  if (top) container.appendChild(top);
 
   const trendRow = buildTrendRow(exerciseTrend(data, currentDay, exId, currentWeek, 3), currentWeek);
   if (trendRow) container.appendChild(trendRow);
@@ -2695,6 +2747,9 @@ function renderFocusSuperset(ex, idx, container, footer) {
   const tgt = parseTarget(ex.setsReps, true);
   const [nameA, nameB] = ex.name.includes(" + ") ? ex.name.split(" + ") : [ex.name, ex.name];
   const prev = previousSupersetSets(currentWeek, currentDay, exId);
+
+  const top = buildFocusTop(ex);
+  if (top) container.appendChild(top);
 
   // sotto-tab A / B
   const tabs = document.createElement("div");

@@ -1392,3 +1392,12 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .srow .cmt-btn{opacity:.28;font-size:12px;cursor:pointer;padding:4px 6px;
   margin-left:4px;min-width:28px;text-align:center;-webkit-user-select:none;user-select:none;}
 .srow .cmt-btn.on{opacity:.95;}
+/* Batch sessione-ux: testa del focus con chip e media wger */
+.focus-top{margin-bottom:10px;}
+.focus-top .f-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.focus-top .f-chip{border:1px solid var(--line);border-radius:3px;padding:2px 7px;
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.08em;color:var(--dim);}
+.focus-top .f-chip.rec{border-color:var(--acc);color:var(--acc);}
+.focus-top .f-media{display:flex;gap:8px;}
+.focus-top .f-media img{flex:1;min-width:0;aspect-ratio:4/3;object-fit:contain;
+  background:#101418;border:1px solid var(--line);border-radius:6px;}
