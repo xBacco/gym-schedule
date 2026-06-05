@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { FRONT_PARTS, BACK_PARTS, BASE_FRONT, BASE_BACK } from "../body-data.js";
-import { GROUP_ZONES, heatByGroup, freshnessByGroup, renderBody, dayCoverage } from "../body.js";
+import { GROUP_ZONES, heatByGroup, freshnessByGroup, renderBody, dayCoverage, scanBootLog } from "../body.js";
 import { MUSCLE_GROUPS } from "../catalog.js";
 
 test("body-data: parti fronte/retro presenti e con path", () => {
@@ -147,4 +147,26 @@ test("dayCoverage: superset spalmato su muscle e muscleB", () => {
   ] };
   const { groups } = dayCoverage(dp, []);
   assert.deepEqual(groups, { Core: 1 });
+});
+
+// ---- Batch sessione-ux: boot-log esplicativo per Scan vuoto ----
+test("scanBootLog week: comando, stato e spiegazione reset lunedì", () => {
+  const html = scanBootLog("week", { wTag: "W23" });
+  assert.ok(html.includes("$ scan --week W23"));
+  assert.ok(html.includes("0 serie loggate"));
+  assert.ok(html.includes("lunedì"));
+  assert.ok(html.includes("scan-boot")); // classe contenitore
+});
+
+test("scanBootLog fresh: spiega acceso/spento e tratteggio mai allenato", () => {
+  const html = scanBootLog("fresh", {});
+  assert.ok(html.includes("$ scan --fresh"));
+  assert.ok(html.includes("mai allenato"));
+  assert.ok(html.includes("tratteggio"));
+});
+
+test("scanBootLog: include la mini legenda primario/secondario", () => {
+  const html = scanBootLog("week", { wTag: "W01" });
+  assert.ok(html.includes("primario"));
+  assert.ok(html.includes("secondario"));
 });

@@ -118,3 +118,29 @@ export function dayCoverage(dayPlan, catalog = []) {
   }
   return heatByGroup(contribs, catalog);
 }
+
+// Boot-log esplicativo per lo Scan senza dati (mockup scan-empty.html variante B).
+// Stringa HTML pura; palette X-ray fissa coerente col pannello. Il chiamante lo
+// mostra SOLO quando il tab è vuoto e attenua la figura.
+export function scanBootLog(tab, { wTag = "" } = {}) {
+  const cmd = tab === "week" ? `$ scan --week ${wTag}` : "$ scan --fresh";
+  const stato = tab === "week"
+    ? `<span class="sb-amber">▸ 0 serie loggate</span> <span class="sb-dim">— figura in standby</span>`
+    : `<span class="sb-amber">▸ nessuno storico recente</span> <span class="sb-dim">— figura in standby</span>`;
+  const corpo = tab === "week"
+    ? `<span class="sb-dim">▸ come funziona:</span><br>` +
+      `&nbsp;&nbsp;completa una serie → il muscolo si accende<br>` +
+      `&nbsp;&nbsp;<span class="sb-amber">ambra</span> = volume della settimana <span class="sb-dim">(reset lunedì)</span><br>` +
+      `&nbsp;&nbsp;<span class="sb-blue">blu</span> = lavoro secondario`
+    : `<span class="sb-dim">▸ come funziona:</span><br>` +
+      `&nbsp;&nbsp;acceso = allenato da poco · spento = sta recuperando<br>` +
+      `&nbsp;&nbsp;tratteggio rosso = gruppo mai allenato`;
+  const legenda =
+    `<div class="sb-leg">` +
+    `<span><i class="sb-dot" style="background:${X.amber}"></i>primario</span>` +
+    `<span><i class="sb-dot" style="background:${X.blue}"></i>secondario</span>` +
+    `<span><i class="sb-dot" style="border:1px dashed ${X.down}"></i>mai</span>` +
+    `</div>`;
+  return `<div class="scan-boot"><div class="sb-cmd">${cmd}</div>` +
+    `<div class="sb-body">${stato}<br>${corpo}</div>${legenda}</div>`;
+}
