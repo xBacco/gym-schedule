@@ -3311,11 +3311,11 @@ function wireTimerControls() {
   document.getElementById("tStop").addEventListener("click", () => {
     timer.stop();
     hideFeelAsk();
-    document.body.classList.remove("scroll-lock");
     dismissTimerGo();
   });
   document.getElementById("timerGo").addEventListener("click", dismissTimerGo);
   document.getElementById("tToggle").addEventListener("click", (e) => {
+    // NB: tToggle è raggiungibile solo con #timerRun visibile (mai in stato GO).
     if (timer.paused) { timer.resume(); e.target.textContent = "⏸"; document.body.classList.add("scroll-lock"); }
     else { timer.pause(); e.target.textContent = "▶"; document.body.classList.remove("scroll-lock"); }
   });
@@ -3423,6 +3423,7 @@ async function boot() {
   document.getElementById("btnForceUpdate").addEventListener("click", forceAppUpdate);
 
   // Altezza reale dello stack fisso in basso → CSS var per i padding (fix overlap).
+  // Observer mai disconnesso: bottomStack vive quanto l'app.
   const _bs = document.getElementById("bottomStack");
   new ResizeObserver(() => {
     document.documentElement.style.setProperty("--bottom-pad", _bs.offsetHeight + "px");
