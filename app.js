@@ -29,7 +29,7 @@ import {
   volumeMeta, platesOn, exerciseVolume, setVolume,
   muscleContributions, lastTrainedByGroup,
 } from "./session.js";
-import { renderBody, heatByGroup, freshnessByGroup, dayCoverage, GROUP_ZONES } from "./body.js";
+import { renderBody, heatByGroup, freshnessByGroup, dayCoverage, GROUP_ZONES, scanBootLog } from "./body.js";
 import { mediaFor } from "./media-map.js";
 import { RestTimer, formatTime, withoutSession, goSlug, VisibleCountdown } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -805,22 +805,25 @@ function renderScan() {
     const { zones } = heatByGroup(contribs, catalog);
     const wTag = currentWeek.split("-")[1] || currentWeek; // "2026-W23" → "W23"
     document.getElementById("scanSub").textContent = `◈ SCAN · settimana ${wTag}`;
+    const empty = contribs.length === 0;
     body.innerHTML =
-      `<div class="crt-panel big">${CRT_RULER}${renderBody({ zones, w: 108 })}` +
+      `<div class="crt-panel big${empty ? " scan-dim" : ""}">${CRT_RULER}${renderBody({ zones, w: 108 })}` +
       `${scanLegendWeek()}${CRT_CORNERS}<span class="crt-tag">SCAN·${wTag}</span></div>` +
-      (contribs.length ? "" : `<div class="scan-cap">nessuna serie loggata questa settimana</div>`);
+      (empty ? scanBootLog("week", { wTag }) : "");
   } else {
     const todayIso = new Date().toISOString().slice(0, 10);
-    const { zones, never, warnGroups, neverGroups } = freshnessByGroup(lastTrainedByGroup(data), todayIso);
+    const lastBy = lastTrainedByGroup(data);
+    const { zones, never, warnGroups, neverGroups } = freshnessByGroup(lastBy, todayIso);
     document.getElementById("scanSub").textContent = "◈ SCAN · freschezza";
     const warnTxt = warnGroups.length
       ? `<div class="bd-leg"><span class="warn">⚠ fermi da ≥6 giorni: ${warnGroups.map((g) => g.toLowerCase()).join(" · ")}</span></div>` : "";
     const neverTxt = neverGroups.length
       ? `<div class="bd-leg"><span class="warn"><span class="sw" style="border:1px dashed #e0705a"></span> mai allenato: ${neverGroups.map((g) => g.toLowerCase()).join(" · ")}</span></div>` : "";
+    const emptyF = Object.keys(lastBy).length === 0;
     body.innerHTML =
-      `<div class="crt-panel big">${CRT_RULER}${renderBody({ zones, cold: never, w: 108 })}` +
+      `<div class="crt-panel big${emptyF ? " scan-dim" : ""}">${CRT_RULER}${renderBody({ zones, cold: never, w: 108 })}` +
       `${warnTxt}${neverTxt}${CRT_CORNERS}<span class="crt-tag">SCAN·FRESH</span></div>` +
-      `<div class="scan-cap">acceso = allenato da poco · spento = sta recuperando</div>`;
+      (emptyF ? scanBootLog("fresh", {}) : `<div class="scan-cap">acceso = allenato da poco · spento = sta recuperando</div>`);
   }
   ov.classList.remove("hidden");
   ov.setAttribute("aria-hidden", "false");

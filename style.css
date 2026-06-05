@@ -1409,3 +1409,17 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .g-drain i{display:block;height:100%;width:100%;background:var(--acc);}
 /* scroll bloccato mentre il countdown del recupero corre */
 body.scroll-lock{overflow:hidden;}
+
+/* Batch sessione-ux: empty-state Scan a boot-log */
+.crt-panel.scan-dim .bd-pair{opacity:.3;}
+.scan-boot{margin-top:10px;border:1px solid #2c343c;border-radius:8px;background:#06080a;
+  padding:12px;font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.8;}
+.scan-boot .sb-cmd{color:#4a545e;}
+.scan-boot .sb-body{color:#69d18b;}
+.scan-boot .sb-dim{color:#4a545e;}
+.scan-boot .sb-amber{color:#f0a73c;}
+.scan-boot .sb-blue{color:#7FC8FF;}
+.scan-boot .sb-leg{display:flex;gap:14px;justify-content:center;margin-top:8px;
+  font-size:9.5px;color:#6b7682;}
+.scan-boot .sb-dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+  vertical-align:middle;margin-right:4px;}
