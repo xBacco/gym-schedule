@@ -109,3 +109,48 @@ export function withoutSession(map, key) {
   }
   return out;
 }
+
+// ---- Countdown "a tempo visibile": scade dopo durationMs di schermo acceso.
+//      hide() congela il residuo (document.hidden), show() riparte. Side effect
+//      e clock iniettabili per i test. Usato per l'auto-dismiss dello stato GO. ----
+export class VisibleCountdown {
+  constructor({ durationMs = 8000, onDone = () => {}, now = () => Date.now(),
+    setTimer = (fn, ms) => setTimeout(fn, ms), clearTimer = (id) => clearTimeout(id) } = {}) {
+    this.durationMs = durationMs;
+    this.onDone = onDone;
+    this._now = now; this._setTimer = setTimer; this._clearTimer = clearTimer;
+    this.remaining = durationMs;
+    this.active = false;
+    this._startedAt = null;
+    this._id = null;
+  }
+
+  start(visible = true) {
+    this.cancel();
+    this.active = true;
+    this.remaining = this.durationMs;
+    if (visible) this._resume();
+  }
+
+  show() { if (this.active && this._startedAt === null) this._resume(); }
+
+  hide() {
+    if (!this.active || this._startedAt === null) return;
+    this.remaining = Math.max(0, this.remaining - (this._now() - this._startedAt));
+    this._startedAt = null;
+    if (this._id !== null) { this._clearTimer(this._id); this._id = null; }
+  }
+
+  cancel() {
+    if (this._id !== null) this._clearTimer(this._id);
+    this._id = null; this._startedAt = null; this.active = false;
+  }
+
+  _resume() {
+    this._startedAt = this._now();
+    this._id = this._setTimer(() => {
+      this._id = null; this._startedAt = null; this.active = false;
+      this.onDone();
+    }, this.remaining);
+  }
+}

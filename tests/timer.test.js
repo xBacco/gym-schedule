@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatTime, remainingSeconds, withoutSession, goSlug } from "../timer.js";
+import { formatTime, remainingSeconds, withoutSession, goSlug, VisibleCountdown } from "../timer.js";
 
 test("formatTime renders m:ss and clamps negatives to 0:00", () => {
   assert.equal(formatTime(0), "0:00");
@@ -51,4 +51,64 @@ test("goSlug: trim di _ ai bordi e taglio a 24 char", () => {
 test("goSlug: vuoto/garbage → fallback 'esercizio'", () => {
   assert.equal(goSlug(""), "esercizio");
   assert.equal(goSlug("→★"), "esercizio");
+});
+
+// ---- Batch sessione-ux: VisibleCountdown (auto-dismiss GO) ----
+// Fake timer: cattura callback+delay, fire manuale.
+function fakeTimers() {
+  const pending = new Map();
+  let seq = 0;
+  return {
+    setTimer: (fn, ms) => { const id = ++seq; pending.set(id, { fn, ms }); return id; },
+    clearTimer: (id) => pending.delete(id),
+    pending,
+    fire(id) { const p = pending.get(id); pending.delete(id); p.fn(); },
+  };
+}
+
+test("VisibleCountdown: scade dopo durationMs se visibile", () => {
+  const ft = fakeTimers();
+  let done = 0;
+  const c = new VisibleCountdown({ durationMs: 8000, onDone: () => done++,
+    now: () => 1000, setTimer: ft.setTimer, clearTimer: ft.clearTimer });
+  c.start(true);
+  assert.equal(ft.pending.size, 1);
+  const [[id, p]] = ft.pending.entries();
+  assert.equal(p.ms, 8000);
+  ft.fire(id);
+  assert.equal(done, 1);
+  assert.equal(c.active, false);
+});
+
+test("VisibleCountdown: hide congela il tempo residuo, show riparte da lì", () => {
+  const ft = fakeTimers();
+  let t = 1000;
+  let done = 0;
+  const c = new VisibleCountdown({ durationMs: 8000, onDone: () => done++,
+    now: () => t, setTimer: ft.setTimer, clearTimer: ft.clearTimer });
+  c.start(true);
+  t = 4000; // 3 s passati
+  c.hide();
+  assert.equal(ft.pending.size, 0); // timer cancellato
+  assert.equal(c.remaining, 5000);
+  assert.equal(done, 0);
+  t = 99000; // il tempo nascosto NON conta
+  c.show();
+  assert.equal(ft.pending.size, 1);
+  const [[, p]] = ft.pending.entries();
+  assert.equal(p.ms, 5000);
+});
+
+test("VisibleCountdown: start(false) parte in pausa; cancel azzera", () => {
+  const ft = fakeTimers();
+  const c = new VisibleCountdown({ durationMs: 8000, onDone: () => {},
+    now: () => 0, setTimer: ft.setTimer, clearTimer: ft.clearTimer });
+  c.start(false); // schermo nascosto al via
+  assert.equal(ft.pending.size, 0);
+  assert.equal(c.active, true);
+  c.show();
+  assert.equal(ft.pending.size, 1);
+  c.cancel();
+  assert.equal(ft.pending.size, 0);
+  assert.equal(c.active, false);
 });
