@@ -1351,7 +1351,11 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .bd-leg{display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap;
   row-gap:4px;font-size:9px;color:#9aa3ad;margin-top:9px;position:relative;white-space:nowrap;}
 .bd-leg .sw{display:inline-block;width:10px;height:10px;border-radius:2.5px;vertical-align:-1px;}
-.bd-leg .warn{color:#e0705a;}
+/* Le righe-prosa "⚠ fermi da…" / "mai allenato: …" sono un singolo item
+   lungo: serve il wrap interno, altrimenti su viewport strette sbordano
+   e l'overflow:hidden del pannello le clippa. Il nowrap del contenitore
+   resta per le legende a chip corte. */
+.bd-leg .warn{color:#e0705a;white-space:normal;text-align:center;}
 
 /* Illustrazioni wger in resa "fosforo" sul pannello blueprint */
 .bd-frames{display:flex;position:relative;}
