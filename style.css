@@ -1311,3 +1311,71 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
    :focus-visible → visibile solo navigando da tastiera, design al tocco invariato. */
 .sh-h:focus-visible,#dbOverlay .db-ghd:focus-visible,#dbOverlay .db-krow:focus-visible{
   outline:1px solid var(--acc);outline-offset:2px;border-radius:4px;}
+
+/* ==== Scan / heatmap anatomica ==================================== */
+/* Pannello CRT blueprint: palette FISSA fuori dai temi (un "monitor
+   incassato" — scuro anche su tema Carta). Griglia doppia in ::before,
+   scanline in ::after; parentesi angolari e targhetta sono markup
+   (CRT_CORNERS / .crt-tag in app.js). REGOLA: la targhetta ha la sua
+   fascia riservata (padding-bottom 24px) — il contenuto non la tocca mai. */
+.crt-panel{position:relative;overflow:hidden;background:#0c0e11;
+  border:1px solid #2e343a;border-radius:11px;padding:12px 8px 24px;}
+.crt-panel.big{padding:16px 8px 24px;}
+.crt-panel::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(240,167,60,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(240,167,60,.05) 1px,transparent 1px),
+    linear-gradient(rgba(240,167,60,.12) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(240,167,60,.12) 1px,transparent 1px);
+  background-size:14px 14px,14px 14px,70px 70px,70px 70px;}
+.crt-panel::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.045) 0 1px,transparent 1px 3px);}
+.crt-tag{position:absolute;bottom:5px;right:22px;font-size:8px;
+  letter-spacing:.16em;color:#f0a73c;opacity:.75;z-index:1;}
+.crt-c{position:absolute;width:12px;height:12px;border:0 solid #f0a73c;opacity:.7;z-index:1;}
+.crt-c.tl{top:5px;left:5px;border-width:2px 0 0 2px;}
+.crt-c.tr{top:5px;right:5px;border-width:2px 2px 0 0;}
+.crt-c.bl{bottom:5px;left:5px;border-width:0 0 2px 2px;}
+.crt-c.br{bottom:5px;right:5px;border-width:0 2px 2px 0;}
+/* Righello con coordinate: SOLO sui pannelli grandi (schermata Scan). */
+.crt-ruler-x{position:absolute;top:1px;left:22px;right:8px;display:flex;
+  justify-content:space-between;font-size:6.5px;color:#f0a73c;opacity:.5;z-index:1;}
+.crt-ruler-y{position:absolute;top:12px;bottom:28px;left:3px;display:flex;
+  flex-direction:column;justify-content:space-between;font-size:6.5px;
+  color:#f0a73c;opacity:.5;z-index:1;}
+
+/* Figura fronte+retro (stringa SVG da renderBody) */
+.bd-pair{display:flex;gap:8px;justify-content:center;align-items:flex-start;position:relative;}
+/* Legenda sotto la figura: palette fissa come il pannello */
+.bd-leg{display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap;
+  row-gap:4px;font-size:9px;color:#9aa3ad;margin-top:9px;position:relative;white-space:nowrap;}
+.bd-leg .sw{display:inline-block;width:10px;height:10px;border-radius:2.5px;vertical-align:-1px;}
+.bd-leg .warn{color:#e0705a;}
+
+/* Illustrazioni wger in resa "fosforo" sul pannello blueprint */
+.bd-frames{display:flex;position:relative;}
+.bd-frames img{flex:1;width:50%;display:block;
+  filter:invert(1) grayscale(1) sepia(1) saturate(3) hue-rotate(-14deg)
+    brightness(.95) contrast(1.2) drop-shadow(0 0 5px rgba(240,167,60,.55));
+  mix-blend-mode:screen;}
+.bd-frames img:only-child{width:70%;flex:none;margin:0 auto;}
+
+/* Tabs della schermata Scan (stile plan-tabs ma 2 voci fisse) */
+.scan-tabs{display:flex;gap:8px;margin-bottom:12px;}
+.scan-tabs button{flex:1;padding:9px 8px;background:var(--surf2);color:var(--ink);
+  border:1px solid var(--line);border-radius:10px;font:inherit;font-size:12px;
+  font-weight:700;letter-spacing:.08em;cursor:pointer;}
+.scan-tabs button.on{border-color:var(--acc);color:var(--acc);}
+.scan-cap{font-size:10.5px;color:var(--dim,#7a828c);text-align:center;margin-top:10px;}
+
+/* Pannello copertura giorno nell'editor scheda */
+.pe-scan{margin:10px 0 4px;}
+
+/* Chips multi-select dei secondari nel form catalogo */
+.db-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px;}
+.db-chips .chip{padding:5px 10px;border:1px solid var(--line);border-radius:999px;
+  background:var(--surf2);color:var(--ink);font:inherit;font-size:11.5px;cursor:pointer;}
+.db-chips .chip.on{border-color:var(--acc);color:var(--acc);font-weight:700;}
+.db-chips .chip.dis{opacity:.35;pointer-events:none;}
+
+/* 5ª voce del drawer (Impostazioni) a tutta larghezza */
+#drawerPanel .dr-item:nth-child(5){grid-column:1 / -1;}
