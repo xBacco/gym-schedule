@@ -309,6 +309,16 @@ export function volumeMeta(ex, track) {
   return { factor, unit };
 }
 
+// True se la traccia mostra la riga "per lato" (calcolo dischi). Override
+// esplicito ex.plates / ex.platesB; assente -> bar impostato oppure nome
+// traccia che indica un bilanciere (bilanciere/stacco/squat/EZ).
+export function platesOn(ex, track) {
+  const ov = track === "b" ? ex?.platesB : ex?.plates;
+  if (typeof ov === "boolean") return ov;
+  if (typeof ex?.bar === "number" && Number.isFinite(ex.bar) && ex.bar > 0) return true;
+  return /bilancier|stacco|squat|\bez\b/i.test(trackName(ex, track));
+}
+
 // Volume di una singola serie (reps*kg*fattore). 0 se a tempo (sec), non done,
 // warmup o failed, o senza valori numerici.
 export function setVolume(set, { factor = 1, unit = "reps" } = {}) {

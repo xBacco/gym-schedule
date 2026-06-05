@@ -6,7 +6,7 @@ import { bestKg, bestKgBefore, isWeekRecord, isSetRecord, progressionDelta, with
 import { historyIsBodyweight, bestReps, bestRepsBefore } from "../session.js";
 import { sessionDates, monthGrid, sessionHasDoneSet } from "../session.js";
 import { muscleContributions, lastTrainedByGroup } from "../session.js";
-import { isDumbbell, volumeMeta, exerciseVolume, setVolume } from "../session.js";
+import { isDumbbell, volumeMeta, exerciseVolume, setVolume, platesOn } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
 test("sessionDates: estrae le date da weeks[].dates, ordinate per data", () => {
@@ -1033,4 +1033,29 @@ test("volumeMeta: vol2B override sulla traccia B del superset", () => {
   const ex = { name: "Pushdown + Curl a corpo libero", superset: true, vol2B: true };
   assert.equal(volumeMeta(ex, "a").factor, 1);
   assert.equal(volumeMeta(ex, "b").factor, 2);
+});
+
+// ---- Task 2 batch sessione-ux: platesOn ----
+test("platesOn: derivazione dal nome (bilanciere/stacco/squat/EZ)", () => {
+  assert.equal(platesOn({ name: "Panca piana bilanciere" }, null), true);
+  assert.equal(platesOn({ name: "Stacco rumeno" }, null), true);
+  assert.equal(platesOn({ name: "Squat" }, null), true);
+  assert.equal(platesOn({ name: "Curl EZ" }, null), true);
+  assert.equal(platesOn({ name: "Pulldown presa larga" }, null), false);
+  assert.equal(platesOn({ name: "Lento avanti manubri" }, null), false);
+});
+
+test("platesOn: bar impostato -> true anche senza match sul nome", () => {
+  assert.equal(platesOn({ name: "Curl strano", bar: 10 }, null), true);
+});
+
+test("platesOn: override esplicito vince su derivazione", () => {
+  assert.equal(platesOn({ name: "Panca piana bilanciere", plates: false }, null), false);
+  assert.equal(platesOn({ name: "Affondo bulgaro", plates: true }, null), true);
+});
+
+test("platesOn: traccia B del superset con platesB", () => {
+  const ex = { name: "Pushdown + Skullcrusher", superset: true, platesB: true };
+  assert.equal(platesOn(ex, "a"), false);
+  assert.equal(platesOn(ex, "b"), true);
 });
