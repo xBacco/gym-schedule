@@ -2296,7 +2296,7 @@ function buildNoteField(superset, idx) {
   return wrap;
 }
 
-function setRow(i, set, prev, isCurrent, onRemove, onOpen, meta = { factor: 1, unit: "reps" }) {
+function setRow(i, set, prev, isCurrent, onRemove, onOpen, meta = { factor: 1, unit: "reps" }, onComment = null) {
   const isSec = meta.unit === "sec";
   const row = document.createElement("div");
   row.className = "srow" + (isCurrent ? " cur" : "") + (set.warmup ? " warm" : "");
@@ -2362,6 +2362,14 @@ function setRow(i, set, prev, isCurrent, onRemove, onOpen, meta = { factor: 1, u
     const rm = document.createElement("span"); rm.className = "rm"; rm.textContent = "✕";
     rm.addEventListener("click", (e) => { e.stopPropagation(); onRemove(); });
     row.appendChild(rm);
+  }
+  if (set.done && !set.warmup && onComment) {
+    const cb = document.createElement("span");
+    cb.className = "cmt-btn" + ((set.comments && set.comments.length) ? " on" : "");
+    cb.textContent = "💬";
+    cb.title = "Commenti serie";
+    cb.addEventListener("click", (e) => { e.stopPropagation(); onComment(); });
+    row.appendChild(cb);
   }
   if (set.done && Array.isArray(set.comments) && set.comments.length) {
     const c = document.createElement("div"); c.className = "cmt";
@@ -2455,7 +2463,11 @@ function renderFocusNormal(ex, idx, container, footer) {
         persist(idx); render();
       },
     }) : null;
-    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen, meta));
+    const onCommentSet = set.done && !set.warmup ? () => openQcDialog((set.comments ?? []).slice(), (next) => {
+      data = setEntry(data, currentWeek, currentDay, exId, withSet(v, i, { comments: next }), new Date().toISOString());
+      persist(idx); render();
+    }) : null;
+    setsBox.appendChild(setRow(i, set, prev[i] || null, isCurrent, onRemove, onOpen, meta, onCommentSet));
   }
   container.appendChild(setsBox);
 
@@ -2625,7 +2637,13 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
       data = setEntry(data, currentWeek, currentDay, exId, withoutSupersetSet(getEntry(data, currentWeek, currentDay, exId), trackKey, i), new Date().toISOString());
       persist(idx); render();
     } : null;
-    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen, meta));
+    const onCommentSet = set.done && !set.warmup ? () => openQcDialog((set.comments ?? []).slice(), (next) => {
+      data = setEntry(data, currentWeek, currentDay, exId,
+        withSupersetSet(getEntry(data, currentWeek, currentDay, exId), trackKey, i, { comments: next }),
+        new Date().toISOString());
+      persist(idx); render();
+    }) : null;
+    setsBox.appendChild(setRow(i, set, prevSets[i] || null, i === curIdx, onRemove, onOpen, meta, onCommentSet));
   }
   wrap.appendChild(setsBox);
 

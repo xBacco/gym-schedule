@@ -1387,3 +1387,8 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
   padding:7px 10px;border-radius:4px;cursor:pointer;min-height:32px;}
 .ex-dialog .ex-chip.on{border-color:var(--acc);color:var(--acc);
   background:color-mix(in srgb,var(--acc) 12%,transparent);}
+
+/* Batch sessione-ux: 💬 fantasma sulle serie fatte */
+.srow .cmt-btn{opacity:.28;font-size:12px;cursor:pointer;padding:4px 6px;
+  margin-left:4px;min-width:28px;text-align:center;-webkit-user-select:none;user-select:none;}
+.srow .cmt-btn.on{opacity:.95;}
