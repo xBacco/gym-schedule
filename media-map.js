@@ -16,15 +16,13 @@ const MAP = {
   // --- petto ---
   "spinte manubri panca piana": "97/Dumbbell-bench-press",
   "spinte su panca inclinata (manubri)": "41/Incline-bench-press",
-  "croci ai cavi": "71/Cable-crossover",
-  "dips": "83/Bench-dips",
+  "croci ai cavi in piedi": "71/Cable-crossover",
 
   // --- schiena ---
   "rematore bilanciere": "109/Barbell-rear-delt-row",
-  "rematore al cavo": "143/Cable-seated-rows",
+  "rematore al cavo, presa neutra": "143/Cable-seated-rows",
 
   // --- gambe ---
-  "stacco rumeno": "161/Dead-lifts",
   "affondi con manubri": "113/Walking-lunges",
 
   // --- spalle ---
@@ -38,7 +36,8 @@ const MAP = {
   "curl concentrato": "193/Preacher-curl-3",
 
   // --- tricipiti ---
-  "skullcrusher/french press": "84/Lying-close-grip-triceps-press-to-chin",
+  "skullcrusher": "84/Lying-close-grip-triceps-press-to-chin",
+  "french press": "84/Lying-close-grip-triceps-press-to-chin",
 
   // --- core ---
   "leg raise": "125/Leg-raises",

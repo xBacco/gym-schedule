@@ -38,11 +38,9 @@ test("mediaFor: nuove voci MAP verificate HEAD 200", () => {
   const voci = [
     "spinte manubri panca piana",
     "spinte su panca inclinata (manubri)",
-    "croci ai cavi",
-    "dips",
+    "croci ai cavi in piedi",
     "rematore bilanciere",
-    "rematore al cavo",
-    "stacco rumeno",
+    "rematore al cavo, presa neutra",
     "affondi con manubri",
     "lento avanti bilanciere",
     "lento avanti manubri",
@@ -50,7 +48,8 @@ test("mediaFor: nuove voci MAP verificate HEAD 200", () => {
     "curl manubri",
     "curl ez",
     "curl concentrato",
-    "skullcrusher/french press",
+    "skullcrusher",
+    "french press",
     "leg raise",
   ];
   for (const nome of voci) {
