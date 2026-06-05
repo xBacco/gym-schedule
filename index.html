@@ -312,6 +312,24 @@
     </dialog>
   </div>
 
+  <!-- Scan: figura anatomica heatmap (overlay a schermo intero, stessa cornice) -->
+  <div id="scanOverlay" class="focus-ov hidden" aria-hidden="true">
+    <header class="focus-top">
+      <button id="scanBack" class="focus-back" aria-label="Chiudi scan">←</button>
+      <div class="focus-id">
+        <div class="fn">Scan</div>
+        <div id="scanSub" class="fs">—</div>
+      </div>
+    </header>
+    <div class="sheets-body">
+      <div class="scan-tabs" id="scanTabs">
+        <button type="button" data-tab="week" class="on">SETTIMANA</button>
+        <button type="button" data-tab="fresh">FRESCHEZZA</button>
+      </div>
+      <div id="scanBody"></div>
+    </div>
+  </div>
+
   <!-- Pop-up sessione completa del calendario (stile terminale) -->
   <dialog id="calDayDialog" class="cal-modal">
     <div class="cal-mbar"><span class="cal-dot"></span><span id="calDayTtl" class="cal-mttl">SESSIONE</span><button id="calDayClose" class="cal-x" type="button" aria-label="Chiudi">✕</button></div>
@@ -406,11 +424,12 @@
     <button id="drawerHandle" class="drawer-handle" aria-label="Menu" aria-expanded="false">
       <span class="dh-grab"></span>
       <span class="dh-lbl"><span class="dh-chev">⌃</span> MENU <span class="dh-chev">⌃</span></span>
-      <span class="dh-hint"><span>📒</span><span>🗂️</span><span>📅</span><span>⚙</span></span>
+      <span class="dh-hint"><span>📒</span><span>🗂️</span><span>🩻</span><span>📅</span><span>⚙</span></span>
     </button>
     <div id="drawerPanel" class="drawer-panel" role="menu">
       <button class="dr-item" data-act="sheets" role="menuitem"><span class="e">📒</span><span class="t">Schede</span></button>
       <button class="dr-item" data-act="catalog" role="menuitem"><span class="e">🗂️</span><span class="t">Database esercizi</span></button>
+      <button class="dr-item" data-act="scan" role="menuitem"><span class="e">🩻</span><span class="t">Scan</span></button>
       <button class="dr-item" data-act="calendar" role="menuitem"><span class="e">📅</span><span class="t">Calendario</span></button>
       <button class="dr-item" data-act="settings" role="menuitem"><span class="e">⚙</span><span class="t">Impostazioni</span></button>
     </div>

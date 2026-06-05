@@ -26,7 +26,10 @@ import {
   sessionDates, monthGrid, sessionHasDoneSet,
   lastWorkingSet,
   isDumbbell, volumeMeta, exerciseVolume, setVolume,
+  muscleContributions, lastTrainedByGroup,
 } from "./session.js";
+import { renderBody, heatByGroup, freshnessByGroup, dayCoverage } from "./body.js";
+import { mediaFor } from "./media-map.js";
 import { RestTimer, formatTime, withoutSession, goSlug } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
 import { renderNutritionGuide } from "./nutrition.js";
@@ -695,6 +698,76 @@ function openCatalogDelete(entry) {
     dbCloseModal();
   };
   if (!dlg.open) dlg.showModal();
+}
+
+// ---- Scan: figura anatomica heatmap (overlay, stessa logica history). ----
+let scanOpen = false;
+let scanTab = "week"; // "week" | "fresh"
+
+// Parentesi HUD angolari e righello: markup ripetuto dei pannelli CRT.
+const CRT_CORNERS = '<i class="crt-c tl"></i><i class="crt-c tr"></i><i class="crt-c bl"></i><i class="crt-c br"></i>';
+const CRT_RULER =
+  `<div class="crt-ruler-x">${[0, 10, 20, 30, 40, 50, 60].map((n) => `<span>${n}</span>`).join("")}</div>` +
+  `<div class="crt-ruler-y">${[0, 10, 20, 30].map((n) => `<span>${n}</span>`).join("")}</div>`;
+
+function openScan() {
+  scanOpen = true;
+  history.pushState({ gymScan: true }, "");
+  renderScan();
+}
+function closeScan() {
+  if (!scanOpen) return;
+  if (history.state && history.state.gymScan) history.back(); // → popstate chiude
+  else { scanOpen = false; renderScan(); }
+}
+
+// Legenda della vista settimana: scala poco→tanto + spento (palette fissa).
+function scanLegendWeek() {
+  const sw = (o) => `<span class="sw" style="background:#f0a73c;opacity:${o}"></span>`;
+  return `<div class="bd-leg">poco ${[0.3, 0.55, 0.8, 1].map(sw).join("")} tanto` +
+    `<span><span class="sw" style="background:#1c2127;border:1px solid #2c343c"></span> non allenato</span></div>`;
+}
+
+function renderScan() {
+  const ov = document.getElementById("scanOverlay");
+  if (!scanOpen) {
+    ov.classList.add("hidden");
+    ov.setAttribute("aria-hidden", "true");
+    if (openIndex === null && !nutritionOpen && !planOpen) document.body.style.overflow = "";
+    return;
+  }
+  for (const b of document.querySelectorAll("#scanTabs button")) {
+    b.classList.toggle("on", b.dataset.tab === scanTab);
+  }
+  const body = document.getElementById("scanBody");
+  const plan = Array.isArray(data.plan) ? data.plan : [];
+  const catalog = dehydrate(data).catalog ?? [];
+  if (scanTab === "week") {
+    // Heat dai volumi della settimana corrente (quella selezionata in home).
+    const contribs = plan.flatMap((d) => muscleContributions(data, currentWeek, d.day, d));
+    const { zones } = heatByGroup(contribs, catalog);
+    const wTag = currentWeek.split("-")[1] || currentWeek; // "2026-W23" → "W23"
+    document.getElementById("scanSub").textContent = `◈ SCAN · settimana ${wTag}`;
+    body.innerHTML =
+      `<div class="crt-panel big">${CRT_RULER}${renderBody({ zones, w: 108 })}` +
+      `${scanLegendWeek()}${CRT_CORNERS}<span class="crt-tag">SCAN·${wTag}</span></div>` +
+      (contribs.length ? "" : `<div class="scan-cap">nessuna serie loggata questa settimana</div>`);
+  } else {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const { zones, never, warnGroups, neverGroups } = freshnessByGroup(lastTrainedByGroup(data), todayIso);
+    document.getElementById("scanSub").textContent = "◈ SCAN · freschezza";
+    const warnTxt = warnGroups.length
+      ? `<div class="bd-leg"><span class="warn">⚠ fermi da ≥6 giorni: ${warnGroups.map((g) => g.toLowerCase()).join(" · ")}</span></div>` : "";
+    const neverTxt = neverGroups.length
+      ? `<div class="bd-leg"><span class="warn"><span class="sw" style="border:1px dashed #e0705a"></span> mai allenato: ${neverGroups.map((g) => g.toLowerCase()).join(" · ")}</span></div>` : "";
+    body.innerHTML =
+      `<div class="crt-panel big">${CRT_RULER}${renderBody({ zones, cold: never, w: 108 })}` +
+      `${warnTxt}${neverTxt}${CRT_CORNERS}<span class="crt-tag">SCAN·FRESH</span></div>` +
+      `<div class="scan-cap">acceso = allenato da poco · spento = sta recuperando</div>`;
+  }
+  ov.classList.remove("hidden");
+  ov.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
 }
 
 // ---- Menu drawer in fondo: stessa logica history degli overlay. ----
@@ -3077,7 +3150,7 @@ function wireDrawer() {
   document.getElementById("drawerPanel").addEventListener("click", (e) => {
     const b = e.target.closest(".dr-item");
     if (!b) return;
-    const map = { nutrition: openNutrition, calendar: openCalendar, sheets: openSheets, catalog: openCatalog, settings: openSettings };
+    const map = { nutrition: openNutrition, calendar: openCalendar, sheets: openSheets, catalog: openCatalog, settings: openSettings, scan: openScan };
     const fn = map[b.dataset.act];
     if (fn) drawerLaunch(fn);
   });
@@ -3170,6 +3243,11 @@ async function boot() {
   document.getElementById("calendarBack").addEventListener("click", closeCalendar);
   document.getElementById("sheetsBack").addEventListener("click", closeSheets);
   document.getElementById("dbBack").addEventListener("click", closeCatalog);
+  document.getElementById("scanBack").addEventListener("click", closeScan);
+  document.getElementById("scanTabs").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    scanTab = b.dataset.tab; renderScan();
+  });
   document.getElementById("dbQ").oninput = (e) => { dbFilter = e.target.value; renderCatalog(); };
   document.getElementById("dbAddInline").onclick = () => openCatalogForm(null, dbFilter);
   document.getElementById("dbMx").addEventListener("click", dbCloseModal);
@@ -3207,6 +3285,7 @@ async function boot() {
       else if (nutritionOpen) history.pushState({ gymNutrition: true }, "");
       else if (calendarOpen) history.pushState({ gymCalendar: true }, "");
       else if (catalogOpen) history.pushState({ gymCatalog: true }, "");
+      else if (scanOpen) history.pushState({ gymScan: true }, "");
       else if (openIndex !== null) history.pushState({ gymFocus: true }, "");
       return;
     }
@@ -3223,6 +3302,7 @@ async function boot() {
     if (calendarOpen) { calendarOpen = false; renderCalendar(); }
     if (sheetsOpen) { sheetsOpen = false; renderSheets(); const t = sheetsPending; sheetsPending = null; if (t) t(); }
     if (catalogOpen) { catalogOpen = false; renderCatalog(); }
+    if (scanOpen) { scanOpen = false; renderScan(); }
   });
 
   // 4. Carica dati: prima da localStorage (mostra subito), poi da remote.
