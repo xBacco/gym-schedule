@@ -2413,7 +2413,7 @@ function scheduleSave() {
 // l'override img per-voce. Null se assente.
 function catalogByName(name) {
   const n = String(name ?? "").trim().toLowerCase();
-  return (dehydrate(data).catalog ?? []).find((e) => String(e.name ?? "").trim().toLowerCase() === n) ?? null;
+  return (data.catalog ?? []).find((e) => String(e.name ?? "").trim().toLowerCase() === n) ?? null;
 }
 
 // Pannello in testa al focus (spec §2, mockup focus-media.html variante A):
@@ -2449,7 +2449,7 @@ function buildFocusTop(ex) {
     for (const src of [m.img1, m.img2].filter(Boolean)) {
       const img = document.createElement("img");
       img.src = src; img.loading = "lazy"; img.alt = nm; img.decoding = "async";
-      img.addEventListener("error", () => box.remove()); // hotlink rotto → via tutto
+      img.addEventListener("error", () => { if (box.isConnected) box.remove(); }); // hotlink rotto → via tutto
       box.appendChild(img);
     }
     wrap.appendChild(box);
