@@ -1808,7 +1808,7 @@ function buildTrendRow(trend, weekKey) {
 
 // Costruisce il blocco di editing per una serie. `state` = {kg, reps} mutato in place.
 // prev = {reps, kg} della volta scorsa per quella serie (o null). Ritorna l'elemento.
-function buildEditBlock(label, state, prev, bar = getBar(), unit = "reps") {
+function buildEditBlock(label, state, prev, bar = getBar(), unit = "reps", showPlates = true) {
   const isSec = unit === "sec"; // esercizio a tempo (plank): niente kg, si registrano i secondi
   const block = document.createElement("div");
   block.className = "editblock";
@@ -1834,16 +1834,19 @@ function buildEditBlock(label, state, prev, bar = getBar(), unit = "reps") {
     stepper.append(minus, valWrap, plus);
     block.appendChild(stepper);
 
-    const platesLine = document.createElement("div");
-    platesLine.className = "plates";
-    block.appendChild(platesLine);
-    const renderPlates = () => {
-      const n = parseFloat(String(state.kg).replace(",", "."));
-      if (!Number.isFinite(n) || n <= 0) { platesLine.textContent = ""; return; }
-      const { perSide, leftover } = platesPerSide(n, { bar, plates: getPlateSet() });
-      if (!perSide.length) { platesLine.textContent = `per lato: — (≤ bilanciere ${bar} kg)`; return; }
-      platesLine.textContent = `per lato: ${perSide.join(" + ")}` + (leftover > 0 ? `  (+${leftover} scoperto)` : "");
-    };
+    let renderPlates = () => {};
+    if (showPlates) {
+      const platesLine = document.createElement("div");
+      platesLine.className = "plates";
+      block.appendChild(platesLine);
+      renderPlates = () => {
+        const n = parseFloat(String(state.kg).replace(",", "."));
+        if (!Number.isFinite(n) || n <= 0) { platesLine.textContent = ""; return; }
+        const { perSide, leftover } = platesPerSide(n, { bar, plates: getPlateSet() });
+        if (!perSide.length) { platesLine.textContent = `per lato: — (≤ bilanciere ${bar} kg)`; return; }
+        platesLine.textContent = `per lato: ${perSide.join(" + ")}` + (leftover > 0 ? `  (+${leftover} scoperto)` : "");
+      };
+    }
 
     renderKg = ({ writeInput = true } = {}) => {
       const n = parseFloat(String(state.kg).replace(",", "."));
@@ -2458,7 +2461,7 @@ function renderFocusNormal(ex, idx, container, footer) {
 
   if (!allDone) {
     const editLabel = meta.unit === "sec" ? `Serie ${curIdx + 1} — secondi` : `Serie ${curIdx + 1} — carico · step 0.5 kg`;
-    const edit = buildEditBlock(editLabel, draft, prev[curIdx] || null, exerciseBar(ex, getBar()), meta.unit);
+    const edit = buildEditBlock(editLabel, draft, prev[curIdx] || null, exerciseBar(ex, getBar()), meta.unit, platesOn(ex, null));
     container.appendChild(edit.block);
 
     const repInSession = previousSetInSession(v, curIdx);
@@ -2570,7 +2573,7 @@ function renderFocusNormal(ex, idx, container, footer) {
 let draftA = { kg: "", reps: "", comments: [] };
 let draftB = { kg: "", reps: "", comments: [] };
 
-function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, idx, bar = getBar(), meta = { factor: 1, unit: "reps" }) {
+function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, idx, bar = getBar(), meta = { factor: 1, unit: "reps" }, showPlates = true) {
   const exId = exIdAt(idx);
   const wrap = document.createElement("div");
   wrap.className = "track";
@@ -2628,7 +2631,7 @@ function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, 
 
   if (!allDone) {
     const editLabel = meta.unit === "sec" ? `Serie ${curIdx + 1} ${trackKey.toUpperCase()} — secondi` : `Serie ${curIdx + 1} ${trackKey.toUpperCase()} — step 0.5 kg`;
-    const edit = buildEditBlock(editLabel, state, prevSets[curIdx] || null, bar, meta.unit);
+    const edit = buildEditBlock(editLabel, state, prevSets[curIdx] || null, bar, meta.unit, showPlates);
     wrap.appendChild(edit.block);
 
     const inSess = previousSetInSession(trackEntry, curIdx);
@@ -2692,8 +2695,8 @@ function renderFocusSuperset(ex, idx, container, footer) {
 
   const ssBar = exerciseBar(ex, getBar());
   const metaA = volumeMeta(ex, "a"), metaB = volumeMeta(ex, "b");
-  const a = trackBlock("a", nameA.trim(), e.a, tgt.a, prev.a, draftA, idx, ssBar, metaA);
-  const b = trackBlock("b", nameB.trim(), e.b, tgt.b, prev.b, draftB, idx, ssBar, metaB);
+  const a = trackBlock("a", nameA.trim(), e.a, tgt.a, prev.a, draftA, idx, ssBar, metaA, platesOn(ex, "a"));
+  const b = trackBlock("b", nameB.trim(), e.b, tgt.b, prev.b, draftB, idx, ssBar, metaB, platesOn(ex, "b"));
   // si mostra solo la traccia del tab attivo (blocco totale: una per volta)
   container.appendChild(supersetTab === "a" ? a.wrap : b.wrap);
 
