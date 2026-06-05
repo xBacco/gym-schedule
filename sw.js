@@ -2,7 +2,7 @@
 // dentro (vive su api.github.com, cross-origin): la sync resta gestita da app.js.
 // NB: bumpare CACHE (es. -v2) quando cambia un file dell'app-shell, per
 // invalidare la cache vecchia ed evitare codice stantio.
-const CACHE = "gymsched-v64";
+const CACHE = "gymsched-v65";
 const ASSETS = [
   "./",
   "./index.html",
@@ -11,6 +11,9 @@ const ASSETS = [
   "./focus-ui.js",
   "./editor.js",
   "./catalog.js",
+  "./body.js",
+  "./body-data.js",
+  "./media-map.js",
   "./plan.js",
   "./session.js",
   "./store.js",
