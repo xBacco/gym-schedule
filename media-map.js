@@ -9,8 +9,39 @@ const norm = (s) => String(s ?? "").trim().toLowerCase();
 
 // nome seed (normalizzato) → "<id>/<NomeFile>" wger
 const MAP = {
+  // --- già presenti ---
   "panca piana bilanciere": "192/Bench-press",
   "crunch a terra": "91/Crunches",
+
+  // --- petto ---
+  "spinte manubri panca piana": "97/Dumbbell-bench-press",
+  "spinte su panca inclinata (manubri)": "41/Incline-bench-press",
+  "croci ai cavi": "71/Cable-crossover",
+  "dips": "83/Bench-dips",
+
+  // --- schiena ---
+  "rematore bilanciere": "109/Barbell-rear-delt-row",
+  "rematore al cavo": "143/Cable-seated-rows",
+
+  // --- gambe ---
+  "stacco rumeno": "161/Dead-lifts",
+  "affondi con manubri": "113/Walking-lunges",
+
+  // --- spalle ---
+  "lento avanti bilanciere": "119/seated-barbell-shoulder-press-large",
+  "lento avanti manubri": "123/dumbbell-shoulder-press-large",
+  "alzate laterali": "148/lateral-dumbbell-raises-large",
+
+  // --- bicipiti ---
+  "curl manubri": "81/Biceps-curl",
+  "curl ez": "74/Bicep-curls",
+  "curl concentrato": "193/Preacher-curl-3",
+
+  // --- tricipiti ---
+  "skullcrusher/french press": "84/Lying-close-grip-triceps-press-to-chin",
+
+  // --- core ---
+  "leg raise": "125/Leg-raises",
 };
 
 // { img1, img2 } per le voci mappate, { img1 } con il solo override utente,
