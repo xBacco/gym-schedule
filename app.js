@@ -30,7 +30,6 @@ import {
   muscleContributions, lastTrainedByGroup,
 } from "./session.js";
 import { renderBody, heatByGroup, freshnessByGroup, dayCoverage, GROUP_ZONES, scanBootLog } from "./body.js";
-import { mediaFor } from "./media-map.js";
 import { RestTimer, formatTime, withoutSession, goSlug, VisibleCountdown } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
 import { renderNutritionGuide } from "./nutrition.js";
@@ -576,13 +575,6 @@ function dbDetHTML(entry) {
   h += `<div class="crt-panel">${renderBody({ zones, secondaries: secZones, w: 88 })}` +
     `<div class="bd-leg"><span style="color:#f0a73c">● ${dbEsc(entry.muscle.toLowerCase())}</span>${secTxt}</div>` +
     `${CRT_CORNERS}<span class="crt-tag">TGT·${dbEsc(String(entry.id).replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 8))}</span></div>`;
-  const media = mediaFor(entry);
-  if (media) {
-    h += `<div class="crt-panel bd-media" style="margin-top:9px">` +
-      `<div class="bd-frames"><img src="${dbEsc(media.img1)}" alt="">` +
-      (media.img2 ? `<img src="${dbEsc(media.img2)}" alt="">` : "") + `</div>` +
-      `${CRT_CORNERS}<span class="crt-tag">MOV·0↔1</span></div>`;
-  }
   h += `<div style="margin-top:9px"><span class="sec">nota</span></div>`;
   h += `<textarea class="note" data-id="${entry.id}" placeholder="cue tecnico, presa, link…">${dbEsc(entry.note || "")}</textarea>`;
   h += `<div class="dacts"><button class="edit">✎ modifica</button><button class="del">× elimina</button></div>`;
@@ -659,11 +651,6 @@ function wireDetail(k, entry) {
     if (ta.value === (entry.note || "")) return;
     mutateCatalog((b) => setCatalogNote(b, entry.id, ta.value));
   };
-  // Hotlink wger: offline o immagine sparita → si nasconde l'intero pannello
-  // media e resta il fallback "solo figura" (nessun pannello rotto).
-  k.querySelectorAll(".bd-media img").forEach((img) => {
-    img.onerror = () => { const p = img.closest(".bd-media"); if (p) p.style.display = "none"; };
-  });
   k.querySelector(".edit").onclick = (e) => { e.stopPropagation(); openCatalogForm(entry); };
   k.querySelector(".del").onclick = (e) => { e.stopPropagation(); openCatalogDelete(entry); };
 }
@@ -682,7 +669,6 @@ function openCatalogForm(entry, prefill = "") {
   const name0 = isEdit ? entry.name : prefill;
   const grp0 = isEdit ? entry.muscle : MUSCLE_GROUPS[0];
   const sec0 = isEdit ? (entry.secondary ?? []) : [];
-  const img0 = isEdit ? (entry.img ?? "") : "";
   mbody.innerHTML =
     `<label class="editlabel">nome esercizio</label>` +
     `<input id="dbFNm" value="${dbEsc(name0)}" placeholder="es. Panca piana bilanciere" autocomplete="off">` +
@@ -695,8 +681,6 @@ function openCatalogForm(entry, prefill = "") {
     MUSCLE_GROUPS.map((m) =>
       `<button type="button" class="chip${sec0.includes(m) ? " on" : ""}${m === grp0 ? " dis" : ""}" data-g="${m}">${m.toLowerCase()}</button>`).join("") +
     `</div>` +
-    `<label class="editlabel">immagine (URL, opzionale)</label>` +
-    `<input id="dbFImg" value="${dbEsc(img0)}" placeholder="https://… (vuota = automatica)" autocomplete="off">` +
     `<div class="db-mfoot"><button class="db-cancel" type="button" id="dbFCancel">annulla</button>` +
     `<button class="confirm" type="button" id="dbFOk">salva</button></div>`;
   const nm = document.getElementById("dbFNm");
@@ -732,9 +716,8 @@ function openCatalogForm(entry, prefill = "") {
     // gruppo aperto + filtro azzerato sono riflessi senza un render extra.
     if (!isEdit) { dbOpenGroups[muscle] = true; dbFilter = ""; document.getElementById("dbQ").value = ""; }
     const secondary = [...document.querySelectorAll("#dbFSec .chip.on")].map((b) => b.dataset.g);
-    const img = document.getElementById("dbFImg").value.trim();
-    if (isEdit) mutateCatalog((b) => renameCatalogEntry(b, entry.id, { name, muscle, secondary, img }));
-    else mutateCatalog((b) => addCatalogEntry(b, { name, muscle, secondary, img }));
+    if (isEdit) mutateCatalog((b) => renameCatalogEntry(b, entry.id, { name, muscle, secondary }));
+    else mutateCatalog((b) => addCatalogEntry(b, { name, muscle, secondary }));
     dbCloseModal();
   };
   if (!dlg.open) dlg.showModal();
@@ -2438,15 +2421,7 @@ function scheduleSave() {
   pusher.schedule();
 }
 
-// Voce di catalogo con lo stesso nome (normalizzato) dell'esercizio, per
-// l'override img per-voce. Null se assente.
-function catalogByName(name) {
-  const n = String(name ?? "").trim().toLowerCase();
-  return (data.catalog ?? []).find((e) => String(e.name ?? "").trim().toLowerCase() === n) ?? null;
-}
-
-// Pannello in testa al focus (spec §2, mockup focus-media.html variante A):
-// chip REC/VOL×2 + i 2 frame wger se disponibili. Null se non c'è nulla.
+// Pannello in testa al focus (spec §2): chip REC/VOL×2. Null se non c'è nulla.
 function buildFocusTop(ex) {
   const wrap = document.createElement("div");
   wrap.className = "f-top"; // NON "focus-top": quella classe è già la barra-cornice del focus
@@ -2466,24 +2441,6 @@ function buildFocusTop(ex) {
     if (volumeMeta(ex, "b").factor === 2) addVol("B ×2");
   } else if (volumeMeta(ex, null).factor === 2) addVol("VOL ×2");
   if (chips.children.length) wrap.appendChild(chips);
-
-  // Media: prova ogni traccia (superset "A + B"), primo hit vince.
-  const names = ex.superset && String(ex.name).includes(" + ")
-    ? String(ex.name).split(" + ") : [ex.name];
-  for (const nm of names) {
-    const m = mediaFor(catalogByName(nm) ?? { name: nm });
-    if (!m) continue;
-    const box = document.createElement("div");
-    box.className = "f-media";
-    for (const src of [m.img1, m.img2].filter(Boolean)) {
-      const img = document.createElement("img");
-      img.src = src; img.loading = "lazy"; img.alt = nm; img.decoding = "async";
-      img.addEventListener("error", () => { if (box.isConnected) box.remove(); }); // hotlink rotto → via tutto
-      box.appendChild(img);
-    }
-    wrap.appendChild(box);
-    break;
-  }
   return wrap.children.length ? wrap : null;
 }
 

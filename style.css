@@ -1357,14 +1357,6 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
    resta per le legende a chip corte. */
 .bd-leg .warn{color:#e0705a;white-space:normal;text-align:center;}
 
-/* Illustrazioni wger in resa "fosforo" sul pannello blueprint */
-.bd-frames{display:flex;position:relative;}
-.bd-frames img{flex:1;width:50%;display:block;
-  filter:invert(1) grayscale(1) sepia(1) saturate(3) hue-rotate(-14deg)
-    brightness(.95) contrast(1.2) drop-shadow(0 0 5px rgba(240,167,60,.55));
-  mix-blend-mode:screen;}
-.bd-frames img:only-child{width:70%;flex:none;margin:0 auto;}
-
 /* Tabs della schermata Scan (stile plan-tabs ma 2 voci fisse) */
 .scan-tabs{display:flex;gap:8px;margin-bottom:12px;}
 .scan-tabs button{flex:1;padding:9px 8px;background:var(--surf2);color:var(--ink);
@@ -1398,16 +1390,13 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .srow .cmt-btn{opacity:.28;font-size:12px;cursor:pointer;padding:4px 6px;
   margin-left:4px;min-width:28px;text-align:center;-webkit-user-select:none;user-select:none;}
 .srow .cmt-btn.on{opacity:.95;}
-/* Batch sessione-ux: testa del focus con chip e media wger.
+/* Batch sessione-ux: testa del focus con i chip REC/VOL.
    Classe .f-top (NON .focus-top: già usata dalla barra-cornice del focus). */
 .f-top{margin-bottom:10px;}
-.f-top .f-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.f-top .f-chips{display:flex;gap:6px;flex-wrap:wrap;}
 .f-top .f-chip{border:1px solid var(--line);border-radius:3px;padding:2px 7px;
   font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.08em;color:var(--dim);}
 .f-top .f-chip.rec{border-color:var(--acc);color:var(--acc);}
-.f-top .f-media{display:flex;gap:8px;}
-.f-top .f-media img{flex:1;min-width:0;aspect-ratio:4/3;object-fit:contain;
-  background:#101418;border:1px solid var(--line);border-radius:6px;}
 
 /* Batch sessione-ux: linea che si scarica sotto il GO (auto-dismiss 8s) */
 .g-drain{height:2px;background:var(--line);margin-top:10px;overflow:hidden;}

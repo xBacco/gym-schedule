@@ -200,56 +200,51 @@ test("migrateExerciseName: non muta l'input", () => {
   assert.equal(blob.catalog[0].name, "Croci ai cavi");
 });
 
-// ---- secondary / img (heatmap anatomica) ----
+// ---- secondary (heatmap anatomica) ----
 
-test("addCatalogEntry: salva secondary validi e img; scarta gruppo primario e ignoti", () => {
+test("addCatalogEntry: salva secondary validi; scarta gruppo primario e ignoti", () => {
   const out = addCatalogEntry(base(), { name: "Chest press", muscle: "Petto",
-    secondary: ["Spalle", "Petto", "Tricipiti", "Spalle", "Marziani"], img: " https://x/y.png " });
+    secondary: ["Spalle", "Petto", "Tricipiti", "Spalle", "Marziani"] });
   const e = out.catalog.find((x) => x.name === "Chest press");
   assert.deepEqual(e.secondary, ["Spalle", "Tricipiti"]); // dedup, no primario, no ignoti
-  assert.equal(e.img, "https://x/y.png");
 });
 
-test("addCatalogEntry: default secondary [] e img \"\"", () => {
+test("addCatalogEntry: default secondary []", () => {
   const out = addCatalogEntry(base(), { name: "Croci", muscle: "Petto" });
   const e = out.catalog.find((x) => x.name === "Croci");
   assert.deepEqual(e.secondary, []);
-  assert.equal(e.img, "");
 });
 
-test("renameCatalogEntry: aggiorna secondary/img e ripulisce il nuovo primario", () => {
+test("renameCatalogEntry: aggiorna secondary e ripulisce il nuovo primario", () => {
   const blob = { ...base(), catalog: [{ id: "c1", name: "Panca", muscle: "Petto",
-    note: "cue", secondary: ["Spalle", "Tricipiti"], img: "u" }] };
+    note: "cue", secondary: ["Spalle", "Tricipiti"] }] };
   const out = renameCatalogEntry(blob, "c1", { name: "Panca", muscle: "Tricipiti",
-    secondary: ["Spalle", "Tricipiti"], img: "u2" });
+    secondary: ["Spalle", "Tricipiti"] });
   const e = out.catalog[0];
   assert.deepEqual(e.secondary, ["Spalle"]); // Tricipiti ora è il primario
-  assert.equal(e.img, "u2");
   assert.equal(e.note, "cue");
 });
 
-test("renameCatalogEntry: senza secondary/img espliciti conserva gli esistenti", () => {
+test("renameCatalogEntry: senza secondary esplicito conserva l'esistente", () => {
   const blob = { ...base(), catalog: [{ id: "c1", name: "Panca", muscle: "Petto",
-    note: "", secondary: ["Spalle"], img: "u" }] };
+    note: "", secondary: ["Spalle"] }] };
   const out = renameCatalogEntry(blob, "c1", { name: "Panca larga", muscle: "Petto" });
   assert.deepEqual(out.catalog[0].secondary, ["Spalle"]);
-  assert.equal(out.catalog[0].img, "u");
 });
 
-test("voci legacy senza secondary/img restano valide nelle letture", () => {
+test("voci legacy senza secondary restano valide nelle letture", () => {
   // groupedCatalog e catalogUsage non devono rompersi su voci vecchie
-  const blob = base(); // la voce di base() non ha secondary/img
+  const blob = base(); // la voce di base() non ha secondary
   assert.ok(groupedCatalog(blob).length >= 1);
 });
 
-test("seedCatalog: voci con secondary sensati e img vuota", () => {
+test("seedCatalog: voci con secondary sensati", () => {
   const seed = seedCatalog();
   const panca = seed.find((e) => e.name === "Panca piana bilanciere");
   assert.deepEqual(panca.secondary, ["Spalle", "Tricipiti"]);
-  assert.equal(panca.img, "");
   const curl = seed.find((e) => e.name === "Curl bilanciere");
   assert.deepEqual(curl.secondary, []);
-  for (const e of seed) assert.ok(Array.isArray(e.secondary) && typeof e.img === "string");
+  for (const e of seed) assert.ok(Array.isArray(e.secondary));
 });
 
 test("backfillCatalogSecondaries: riempie SOLO le voci con secondary undefined", () => {
@@ -266,6 +261,6 @@ test("backfillCatalogSecondaries: riempie SOLO le voci con secondary undefined",
 
 test("backfillCatalogSecondaries: idempotente, stesso riferimento se nulla da fare", () => {
   const done = backfillCatalogSecondaries({ ...base(), catalog: [
-    { id: "c1", name: "X", muscle: "Petto", note: "", secondary: [], img: "" }] });
+    { id: "c1", name: "X", muscle: "Petto", note: "", secondary: [] }] });
   assert.equal(backfillCatalogSecondaries(done), done); // niente save inutile
 });

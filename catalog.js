@@ -71,7 +71,7 @@ export function seedCatalog() {
   for (const [muscle, names] of Object.entries(SEED_BY_GROUP)) {
     for (const name of names) {
       out.push({ id: `seed-${i}`, name, muscle, note: "",
-        secondary: SEED_SECONDARY[name] ?? [], img: "" });
+        secondary: SEED_SECONDARY[name] ?? [] });
       i += 1;
     }
   }
@@ -113,18 +113,18 @@ const cleanSecondary = (secondary, muscle) =>
   [...new Set((Array.isArray(secondary) ? secondary : [])
     .filter((g) => MUSCLE_GROUPS.includes(g) && g !== muscle))];
 
-export function addCatalogEntry(blob, { name, muscle, note = "", secondary = [], img = "" }) {
+export function addCatalogEntry(blob, { name, muscle, note = "", secondary = [] }) {
   const n = String(name ?? "").trim();
   if (!n) return blob;
   if (catalogHasDup(blob, n, muscle)) return blob;
   const out = clone(blob);
   const id = genId(cat(out).map((e) => e.id));
   out.catalog = [...cat(out), { id, name: n, muscle, note: String(note ?? "").trim(),
-    secondary: cleanSecondary(secondary, muscle), img: String(img ?? "").trim() }];
+    secondary: cleanSecondary(secondary, muscle) }];
   return out;
 }
 
-export function renameCatalogEntry(blob, id, { name, muscle, secondary, img }) {
+export function renameCatalogEntry(blob, id, { name, muscle, secondary }) {
   const n = String(name ?? "").trim();
   if (!n) return blob;
   if (catalogHasDup(blob, n, muscle, id)) return blob;
@@ -132,10 +132,9 @@ export function renameCatalogEntry(blob, id, { name, muscle, secondary, img }) {
   out.catalog = cat(out).map((e) => {
     if (e.id !== id) return e;
     const next = { ...e, name: n, muscle };
-    // secondary/img espliciti → aggiornati; impliciti → conservati ma ripuliti
+    // secondary esplicito → aggiornato; implicito → conservato ma ripulito
     // (il nuovo primario non può restare tra i secondari).
     next.secondary = cleanSecondary(secondary !== undefined ? secondary : e.secondary, muscle);
-    if (img !== undefined) next.img = String(img ?? "").trim();
     return next;
   });
   return out;

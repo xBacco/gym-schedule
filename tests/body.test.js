@@ -34,7 +34,7 @@ test("GROUP_ZONES: copre tutti gli 8 gruppi con zone valide della figura", () =>
 
 test("heatByGroup: primario pieno, secondario 0.5 via catalogo, normalizzato sul max", () => {
   const catalog = [{ id: "c1", name: "Panca piana bilanciere", muscle: "Petto",
-    note: "", secondary: ["Spalle", "Tricipiti"], img: "" }];
+    note: "", secondary: ["Spalle", "Tricipiti"] }];
   const contribs = [
     { muscle: "Petto", name: "Panca piana bilanciere", volume: 1000 },
     { muscle: "Bicipiti", name: "Curl manubri", volume: 250 },
@@ -130,7 +130,7 @@ test("renderBody: id filtri univoci tra due render nella stessa pagina", () => {
 
 test("dayCoverage: presenze → primario 1, secondario 0.5, fuori catalogo solo primario", () => {
   const catalog = [{ id: "c1", name: "Panca piana bilanciere", muscle: "Petto",
-    note: "", secondary: ["Tricipiti"], img: "" }];
+    note: "", secondary: ["Tricipiti"] }];
   const dp = { day: "A", exercises: [
     { id: "e1", name: "Panca piana bilanciere", muscle: "Petto" },
     { id: "e2", name: "Squat al volo", muscle: "Gambe" },
