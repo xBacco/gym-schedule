@@ -2421,29 +2421,6 @@ function scheduleSave() {
   pusher.schedule();
 }
 
-// Pannello in testa al focus (spec §2): chip REC/VOL×2. Null se non c'è nulla.
-function buildFocusTop(ex) {
-  const wrap = document.createElement("div");
-  wrap.className = "f-top"; // NON "focus-top": quella classe è già la barra-cornice del focus
-  const chips = document.createElement("div");
-  chips.className = "f-chips";
-  const rec = Number.isFinite(ex.restSeconds) ? formatTime(ex.restSeconds) : (ex.recText || "");
-  if (rec) {
-    const c = document.createElement("span"); c.className = "f-chip rec";
-    c.textContent = `REC ${rec}`; chips.appendChild(c);
-  }
-  const addVol = (label) => {
-    const c = document.createElement("span"); c.className = "f-chip";
-    c.textContent = label; chips.appendChild(c);
-  };
-  if (ex.superset) {
-    if (volumeMeta(ex, "a").factor === 2) addVol("A ×2");
-    if (volumeMeta(ex, "b").factor === 2) addVol("B ×2");
-  } else if (volumeMeta(ex, null).factor === 2) addVol("VOL ×2");
-  if (chips.children.length) wrap.appendChild(chips);
-  return wrap.children.length ? wrap : null;
-}
-
 function renderFocusNormal(ex, idx, container, footer) {
   const exId = exIdAt(idx);
   const v = getEntry(data, currentWeek, currentDay, exId);
@@ -2465,9 +2442,6 @@ function renderFocusNormal(ex, idx, container, footer) {
       _key: draftKey,
     };
   }
-
-  const top = buildFocusTop(ex);
-  if (top) container.appendChild(top);
 
   const trendRow = buildTrendRow(exerciseTrend(data, currentDay, exId, currentWeek, 3), currentWeek);
   if (trendRow) container.appendChild(trendRow);
@@ -2734,9 +2708,6 @@ function renderFocusSuperset(ex, idx, container, footer) {
   const [nameA, nameB] = ex.name.includes(" + ") ? ex.name.split(" + ") : [ex.name, ex.name];
   const prev = previousSupersetSets(currentWeek, currentDay, exId);
 
-  const top = buildFocusTop(ex);
-  if (top) container.appendChild(top);
-
   // sotto-tab A / B
   const tabs = document.createElement("div");
   tabs.className = "ss-tabs";
@@ -2879,7 +2850,11 @@ function renderList() {
     const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = ex.name;
     if (ex.superset) { const b = document.createElement("span"); b.className = "ssbadge"; b.textContent = "superset"; nm.appendChild(b); }
     const sub = document.createElement("div"); sub.className = "sub";
-    sub.append(document.createTextNode(ex.setsReps));
+    // rec da restSeconds (m:ss); fallback recText per piani importati senza
+    // restSeconds numerico; se mancano entrambi il segmento è omesso.
+    const rec = Number.isFinite(ex.restSeconds) ? `rec ${formatTime(ex.restSeconds)}`
+      : (ex.recText ? `rec ${ex.recText}` : "");
+    sub.append(document.createTextNode(rec ? `${ex.setsReps} · ${rec}` : ex.setsReps));
     // "ult." in kg espliciti: normale -> "ult. 55 kg · 10 rip"; superset -> "ult. A 20 kg · B 7.5 kg".
     if (!isComplete(i)) {
       if (ex.superset) {
