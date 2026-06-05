@@ -12,6 +12,7 @@ import {
 import {
   addCatalogEntry, renameCatalogEntry, deleteCatalogEntry, setCatalogNote,
   groupedCatalog, catalogUsage, MUSCLE_GROUPS, seedCatalogIfAbsent, migrateExerciseName,
+  backfillCatalogSecondaries,
 } from "./catalog.js";
 import { supabase } from "./supabase-client.js";
 import { bindAuthScreen, hideAuthScreen, signOut } from "./auth.js";
@@ -28,7 +29,7 @@ import {
   isDumbbell, volumeMeta, exerciseVolume, setVolume,
   muscleContributions, lastTrainedByGroup,
 } from "./session.js";
-import { renderBody, heatByGroup, freshnessByGroup, dayCoverage } from "./body.js";
+import { renderBody, heatByGroup, freshnessByGroup, dayCoverage, GROUP_ZONES } from "./body.js";
 import { mediaFor } from "./media-map.js";
 import { RestTimer, formatTime, withoutSession, goSlug } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
@@ -555,6 +556,22 @@ function dbDetHTML(entry) {
   } else {
     h += `<div class="none">— ancora nessuno storico —</div>`;
   }
+  h += `<div style="margin-top:9px"><span class="sec">muscoli</span></div>`;
+  const zones = {};
+  for (const z of GROUP_ZONES[entry.muscle] ?? []) zones[z] = 1;
+  const secZones = new Set((entry.secondary ?? []).flatMap((g) => GROUP_ZONES[g] ?? []));
+  const secTxt = (entry.secondary ?? []).length
+    ? ` <span style="color:#7FC8FF">◐ ${(entry.secondary ?? []).map((g) => g.toLowerCase()).join(" · ")}</span>` : "";
+  h += `<div class="crt-panel">${renderBody({ zones, secondaries: secZones, w: 88 })}` +
+    `<div class="bd-leg"><span style="color:#f0a73c">● ${dbEsc(entry.muscle.toLowerCase())}</span>${secTxt}</div>` +
+    `${CRT_CORNERS}<span class="crt-tag">TGT·${dbEsc(String(entry.id).replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 8))}</span></div>`;
+  const media = mediaFor(entry);
+  if (media) {
+    h += `<div class="crt-panel bd-media" style="margin-top:9px">` +
+      `<div class="bd-frames"><img src="${dbEsc(media.img1)}" alt="">` +
+      (media.img2 ? `<img src="${dbEsc(media.img2)}" alt="">` : "") + `</div>` +
+      `${CRT_CORNERS}<span class="crt-tag">MOV·0↔1</span></div>`;
+  }
   h += `<div style="margin-top:9px"><span class="sec">nota</span></div>`;
   h += `<textarea class="note" data-id="${entry.id}" placeholder="cue tecnico, presa, link…">${dbEsc(entry.note || "")}</textarea>`;
   h += `<div class="dacts"><button class="edit">✎ modifica</button><button class="del">× elimina</button></div>`;
@@ -631,6 +648,11 @@ function wireDetail(k, entry) {
     if (ta.value === (entry.note || "")) return;
     mutateCatalog((b) => setCatalogNote(b, entry.id, ta.value));
   };
+  // Hotlink wger: offline o immagine sparita → si nasconde l'intero pannello
+  // media e resta il fallback "solo figura" (nessun pannello rotto).
+  k.querySelectorAll(".bd-media img").forEach((img) => {
+    img.onerror = () => { const p = img.closest(".bd-media"); if (p) p.style.display = "none"; };
+  });
   k.querySelector(".edit").onclick = (e) => { e.stopPropagation(); openCatalogForm(entry); };
   k.querySelector(".del").onclick = (e) => { e.stopPropagation(); openCatalogDelete(entry); };
 }
@@ -648,6 +670,8 @@ function openCatalogForm(entry, prefill = "") {
   mttl.textContent = isEdit ? "MODIFICA ESERCIZIO" : "NUOVO ESERCIZIO";
   const name0 = isEdit ? entry.name : prefill;
   const grp0 = isEdit ? entry.muscle : MUSCLE_GROUPS[0];
+  const sec0 = isEdit ? (entry.secondary ?? []) : [];
+  const img0 = isEdit ? (entry.img ?? "") : "";
   mbody.innerHTML =
     `<label class="editlabel">nome esercizio</label>` +
     `<input id="dbFNm" value="${dbEsc(name0)}" placeholder="es. Panca piana bilanciere" autocomplete="off">` +
@@ -655,6 +679,13 @@ function openCatalogForm(entry, prefill = "") {
     `<label class="editlabel">gruppo muscolare</label><select id="dbFGrp">` +
     MUSCLE_GROUPS.map((m) => `<option ${m === grp0 ? "selected" : ""}>${m}</option>`).join("") +
     `</select>` +
+    `<label class="editlabel">muscoli secondari</label>` +
+    `<div class="db-chips" id="dbFSec">` +
+    MUSCLE_GROUPS.map((m) =>
+      `<button type="button" class="chip${sec0.includes(m) ? " on" : ""}${m === grp0 ? " dis" : ""}" data-g="${m}">${m.toLowerCase()}</button>`).join("") +
+    `</div>` +
+    `<label class="editlabel">immagine (URL, opzionale)</label>` +
+    `<input id="dbFImg" value="${dbEsc(img0)}" placeholder="https://… (vuota = automatica)" autocomplete="off">` +
     `<div class="db-mfoot"><button class="db-cancel" type="button" id="dbFCancel">annulla</button>` +
     `<button class="confirm" type="button" id="dbFOk">salva</button></div>`;
   const nm = document.getElementById("dbFNm");
@@ -670,14 +701,29 @@ function openCatalogForm(entry, prefill = "") {
     ok.disabled = dup; warn.textContent = dup ? "già presente in " + grp.value : "";
   }
   nm.oninput = check; grp.onchange = check; check();
+  const secBox = document.getElementById("dbFSec");
+  secBox.addEventListener("click", (e) => {
+    const c = e.target.closest(".chip"); if (!c || c.classList.contains("dis")) return;
+    c.classList.toggle("on");
+  });
+  // Cambiando il primario: il suo chip si disabilita (e si spegne se era acceso).
+  grp.addEventListener("change", () => {
+    for (const c of secBox.querySelectorAll(".chip")) {
+      const isPrimary = c.dataset.g === grp.value;
+      c.classList.toggle("dis", isPrimary);
+      if (isPrimary) c.classList.remove("on");
+    }
+  });
   document.getElementById("dbFCancel").onclick = dbCloseModal;
   ok.onclick = () => {
     const name = nm.value.trim(), muscle = grp.value;
     // Stato vista PRIMA della mutazione: mutateCatalog ri-renderizza già, così
     // gruppo aperto + filtro azzerato sono riflessi senza un render extra.
     if (!isEdit) { dbOpenGroups[muscle] = true; dbFilter = ""; document.getElementById("dbQ").value = ""; }
-    if (isEdit) mutateCatalog((b) => renameCatalogEntry(b, entry.id, { name, muscle }));
-    else mutateCatalog((b) => addCatalogEntry(b, { name, muscle }));
+    const secondary = [...document.querySelectorAll("#dbFSec .chip.on")].map((b) => b.dataset.g);
+    const img = document.getElementById("dbFImg").value.trim();
+    if (isEdit) mutateCatalog((b) => renameCatalogEntry(b, entry.id, { name, muscle, secondary, img }));
+    else mutateCatalog((b) => addCatalogEntry(b, { name, muscle, secondary, img }));
     dbCloseModal();
   };
   if (!dlg.open) dlg.showModal();
@@ -3353,6 +3399,9 @@ async function boot() {
     // Migrazione nome one-shot (2026-06: variante eseguita in piedi). Idempotente:
     // dopo il primo run non matcha più nulla e ritorna lo stesso riferimento.
     _maybe = migrateExerciseName(_maybe, "Croci ai cavi", "Croci ai cavi in piedi");
+    // Backfill one-shot dei secondari sui cataloghi seminati prima della heatmap
+    // (solo voci con secondary undefined; idempotente, stesso ref se nulla da fare).
+    _maybe = backfillCatalogSecondaries(_maybe);
     if (_maybe !== _blob) { data = hydrate(_maybe); scheduleSave(); }
     render();
     setStatus("ok ✓", "ok");
