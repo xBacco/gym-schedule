@@ -1163,7 +1163,11 @@ function toggleMuscleB(on) {
 // Chip-toggle "opzioni carico" del dialog esercizio. Finché l'utente non tocca
 // una chip, i valori seguono la derivazione automatica dal form (nome/bar/SS).
 let exChipsTouched = false;
-const setChip = (id, on) => document.getElementById(id).classList.toggle("on", !!on);
+const setChip = (id, on) => {
+  const el = document.getElementById(id);
+  el.classList.toggle("on", !!on);
+  el.setAttribute("aria-pressed", on ? "true" : "false");
+};
 const chipOn = (id) => document.getElementById(id).classList.contains("on");
 function exDialogProbe() {
   const barRaw = document.getElementById("exBar").value.trim();
@@ -3364,7 +3368,7 @@ async function boot() {
   document.getElementById("exDlgSave").addEventListener("click", saveExDialog);
   for (const id of ["exVol2", "exPlates", "exVol2B", "exPlatesB"]) {
     document.getElementById(id).addEventListener("click", () => {
-      document.getElementById(id).classList.toggle("on");
+      setChip(id, !chipOn(id));
       exChipsTouched = true;
     });
   }

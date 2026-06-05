@@ -1381,9 +1381,9 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 #drawerPanel .dr-item:nth-child(5){grid-column:1 / -1;}
 
 /* Batch sessione-ux: chip-toggle "opzioni carico" nel dialog esercizio */
-.ex-chips{display:flex;gap:8px;margin:4px 0 10px;}
-.ex-chip{border:1px solid var(--line);background:transparent;color:var(--dim);
+.ex-dialog .ex-chips{display:flex;gap:8px;margin:4px 0 10px;}
+.ex-dialog .ex-chip{border:1px solid var(--line);background:transparent;color:var(--dim);
   font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.06em;
   padding:7px 10px;border-radius:4px;cursor:pointer;min-height:32px;}
-.ex-chip.on{border-color:var(--acc);color:var(--acc);
+.ex-dialog .ex-chip.on{border-color:var(--acc);color:var(--acc);
   background:color-mix(in srgb,var(--acc) 12%,transparent);}
