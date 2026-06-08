@@ -123,12 +123,12 @@ export function normalizeEntry(v) {
 }
 
 export function normalizeSupersetEntry(v) {
-  if (v && typeof v === "object" && ("a" in v || "b" in v)) {
-    return { a: normalizeEntry(v.a), b: normalizeEntry(v.b), note: v.note ?? "" };
+  if (v && typeof v === "object" && ("a" in v || "b" in v || "c" in v)) {
+    return { a: normalizeEntry(v.a), b: normalizeEntry(v.b), c: normalizeEntry(v.c), note: v.note ?? "" };
   }
   // Legacy/single entry -> traccia A; la nota resta a livello superset (e dentro A via base).
   const base = normalizeEntry(v);
-  return { a: base, b: { sets: [], note: "" }, note: base.note };
+  return { a: base, b: { sets: [], note: "" }, c: { sets: [], note: "" }, note: base.note };
 }
 
 export function prefillSets(data, weekKey, day, exId) {

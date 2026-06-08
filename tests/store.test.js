@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry, parsePlateSet, normalizeSet, toggleComment, planIsEmpty } from "../store.js";
 import { migrate } from "../editor.js";
@@ -163,8 +163,29 @@ test("normalizeSupersetEntry: entry legacy singola finisce nella traccia A, B vu
   assert.deepEqual(out.b, { sets: [], note: "" });
 });
 
-test("normalizeSupersetEntry: vuoto -> due tracce vuote", () => {
-  assert.deepEqual(normalizeSupersetEntry(""), { a: { sets: [], note: "" }, b: { sets: [], note: "" }, note: "" });
+test("normalizeSupersetEntry: vuoto -> tre tracce vuote", () => {
+  assert.deepEqual(normalizeSupersetEntry(""), { a: { sets: [], note: "" }, b: { sets: [], note: "" }, c: { sets: [], note: "" }, note: "" });
+});
+
+describe("normalizeSupersetEntry con c", () => {
+  it("forma {a,b,c,note}", () => {
+    const r = normalizeSupersetEntry({
+      a: { sets: [{ reps: "8", kg: "" }] },
+      b: { sets: [{ reps: "9", kg: "" }] },
+      c: { sets: [{ reps: "10", kg: "" }] },
+      note: "x",
+    });
+    assert.equal(r.c.sets[0].reps, "10");
+    assert.equal(r.note, "x");
+  });
+  it("vuoto -> tre tracce vuote", () => {
+    const r = normalizeSupersetEntry(undefined);
+    assert.deepEqual(r, { a: { sets: [], note: "" }, b: { sets: [], note: "" }, c: { sets: [], note: "" }, note: "" });
+  });
+  it("duo legacy {a,b} -> c vuota", () => {
+    const r = normalizeSupersetEntry({ a: { sets: [{ reps: "8", kg: "" }] }, b: { sets: [] } });
+    assert.deepEqual(r.c, { sets: [], note: "" });
+  });
 });
 import { prefillSets } from "../store.js";
 
