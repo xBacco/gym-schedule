@@ -26,7 +26,7 @@ import {
   topSetSeries, chartGeometry,
   sessionDates, monthGrid, sessionHasDoneSet,
   lastWorkingSet,
-  volumeMeta, platesOn, exerciseVolume, setVolume,
+  volumeMeta, platesOn, exerciseVolume, setVolume, supersetTrackKeys, trackName,
   muscleContributions, lastTrainedByGroup,
 } from "./session.js";
 import { renderBody, heatByGroup, freshnessByGroup, dayCoverage, GROUP_ZONES, scanBootLog } from "./body.js";
@@ -47,7 +47,6 @@ let sha = null;
 let currentWeek = isoWeekKey(new Date());
 let currentDay = "A";
 let openIndex = null;        // esercizio aperto nel focus a schermo intero (null = nessuno)
-let supersetTab = "a";       // sotto-tab attivo nel focus di un superset
 let focusDrawerOpen = false; // cassetto "⋯ Altro" del focus esercizio (UI effimera, non persistita)
 let store = null;
 let session = null;        // { user: {id, email}, ... } da Supabase
@@ -66,7 +65,6 @@ let pusher = null;
 // (che fa scattare popstate, dove avviene la chiusura vera).
 function openFocus(i) {
   openIndex = i;
-  supersetTab = "a";
   focusDrawerOpen = false;
   history.pushState({ gymFocus: true }, "");
   render();
@@ -2210,7 +2208,6 @@ function advanceAfterExercise(idx) {
   const exs = dayPlan().exercises;
   if (idx + 1 < exs.length) {
     openIndex = idx + 1;
-    supersetTab = "a";
     render();
   } else {
     closeFocus();
@@ -2219,8 +2216,8 @@ function advanceAfterExercise(idx) {
 
 // Mostra la striscia "com'è andata?" per l'ultima serie conclusa. Resta visibile
 // (anche sull'ultima serie dell'esercizio: NON si chiude più il focus prima di
-// poter valutare). Sui superset mostra DUE barre separate A e B, così si può dare
-// una sensazione diversa a ciascuna traccia. La selezione corrente è evidenziata.
+// poter valutare). Sui superset mostra una barra RPE per ogni traccia (N tracce).
+// La selezione corrente è evidenziata.
 function showFeelAsk(info) {
   clearTimeout(scheduleFeelAskClose._t); // riapertura: annulla l'auto-chiusura pendente del giudizio precedente
   scheduleFeelAskClose._t = null;
@@ -2235,12 +2232,13 @@ function showFeelAsk(info) {
     const v = getEntry(data, currentWeek, currentDay, exId);
     host.replaceChildren();
     if (info.superset) {
-      labelN.textContent = String(info.aIdx + 1);
+      const tracks = info.tracks ?? [];
+      labelN.textContent = String((tracks[0]?.idx ?? 0) + 1);
       const e = normalizeSupersetEntry(v);
       const mkTrack = (track, sIdx, name) => {
         const wrap = document.createElement("div"); wrap.className = "fa-track";
         const tl = document.createElement("span"); tl.className = "fa-tl"; tl.textContent = name;
-        const cur = (track === "a" ? e.a : e.b).sets[sIdx]?.feel ?? "";
+        const cur = e[track].sets[sIdx]?.feel ?? "";
         const bar = buildRpeBar(cur, (feel) => {
           const cv = getEntry(data, currentWeek, currentDay, exId);
           data = setEntry(data, currentWeek, currentDay, exId, withSupersetSet(cv, track, sIdx, { feel }), new Date().toISOString());
@@ -2248,12 +2246,12 @@ function showFeelAsk(info) {
           paint();   // riflette la selezione sulla barra
           render();  // aggiorna i badge nella lista/overlay
           const e2 = normalizeSupersetEntry(getEntry(data, currentWeek, currentDay, exId));
-          if (e2.a.sets[info.aIdx]?.feel && e2.b.sets[info.bIdx]?.feel) scheduleFeelAskClose(info);
+          if (tracks.every((t) => e2[t.track].sets[t.idx]?.feel)) scheduleFeelAskClose(info);
         });
         wrap.append(tl, bar);
         return wrap;
       };
-      host.append(mkTrack("a", info.aIdx, "A"), mkTrack("b", info.bIdx, "B"));
+      host.append(...tracks.map((t) => mkTrack(t.track, t.idx, t.track.toUpperCase())));
     } else {
       labelN.textContent = String(info.setIndex + 1);
       const cur = normalizeEntry(v).sets[info.setIndex]?.feel ?? "";
@@ -2593,9 +2591,8 @@ function renderFocusNormal(ex, idx, container, footer) {
   ));
 }
 
-// Bozze separate per traccia A e B della serie corrente del superset.
-let draftA = { kg: "", reps: "", comments: [] };
-let draftB = { kg: "", reps: "", comments: [] };
+// Bozze separate per traccia (A/B/C) della serie corrente del superset.
+let draftTracks = { a: { kg: "", reps: "", comments: [] }, b: { kg: "", reps: "", comments: [] }, c: { kg: "", reps: "", comments: [] } };
 
 function trackBlock(trackKey, trackName, trackEntry, tgtTrack, prevSets, state, idx, bar = getBar(), meta = { factor: 1, unit: "reps" }, showPlates = true) {
   const exId = exIdAt(idx);
@@ -2704,75 +2701,74 @@ function renderFocusSuperset(ex, idx, container, footer) {
   const exId = exIdAt(idx);
   const v = getEntry(data, currentWeek, currentDay, exId);
   const e = normalizeSupersetEntry(v);
-  const tgt = parseTarget(ex.setsReps, true);
-  const [nameA, nameB] = ex.name.includes(" + ") ? ex.name.split(" + ") : [ex.name, ex.name];
+  const keys = supersetTrackKeys(ex);
+  const tgt = parseTarget(ex.setsReps, true, keys.length);
   const prev = previousSupersetSets(currentWeek, currentDay, exId);
-
-  // sotto-tab A / B
-  const tabs = document.createElement("div");
-  tabs.className = "ss-tabs";
-  [["a", nameA.trim()], ["b", nameB.trim()]].forEach(([key, name]) => {
-    const b = document.createElement("button");
-    b.textContent = `${key.toUpperCase()} · ${name}`;
-    if (supersetTab === key) b.classList.add("on");
-    b.addEventListener("click", () => { supersetTab = key; render(); });
-    tabs.appendChild(b);
-  });
-  container.appendChild(tabs);
 
   const trendRow = buildTrendRow(exerciseTrend(data, currentDay, exId, currentWeek, 3, true), currentWeek);
   if (trendRow) container.appendChild(trendRow);
 
   const ssBar = exerciseBar(ex, getBar());
-  const metaA = volumeMeta(ex, "a"), metaB = volumeMeta(ex, "b");
-  const a = trackBlock("a", nameA.trim(), e.a, tgt.a, prev.a, draftA, idx, ssBar, metaA, platesOn(ex, "a"));
-  const b = trackBlock("b", nameB.trim(), e.b, tgt.b, prev.b, draftB, idx, ssBar, metaB, platesOn(ex, "b"));
-  // si mostra solo la traccia del tab attivo (blocco totale: una per volta)
-  container.appendChild(supersetTab === "a" ? a.wrap : b.wrap);
+  const metas = keys.map((k) => volumeMeta(ex, k));
+  // Tracce impilate (blocchi interi, niente sotto-tab): ognuna tiene stepper, dischi e storico.
+  const blocks = keys.map((k, i) =>
+    trackBlock(k, trackName(ex, k), e[k], tgt[k], prev[k] ?? [], draftTracks[k], idx, ssBar, metas[i], platesOn(ex, k)));
+  blocks.forEach((b) => container.appendChild(b.wrap));
 
-  // header serie X/Y riferito alla traccia attiva
-  const active = supersetTab === "a" ? a : b;
-  const tgtT = supersetTab === "a" ? tgt.a : tgt.b;
+  // "Traccia attiva" = prima non completa (o la prima): guida header serie, drawer, +serie.
+  const ai = Math.max(0, blocks.findIndex((b) => !b.allDone));
+  const active = blocks[ai];
+  const activeKey = keys[ai];
+  const tgtT = tgt[activeKey];
   document.getElementById("focusSet").textContent =
-    `serie ${Math.min(active.curIdx + 1, tgtT.sets)} / ${tgtT.sets} · ${supersetTab.toUpperCase()}`;
+    `serie ${Math.min(active.curIdx + 1, tgtT.sets)} / ${tgtT.sets}`;
 
   if (!isEntryComplete(getEntry(data, currentWeek, currentDay, exId), ex)) {
+    const label = keys.filter((k, i) => !blocks[i].allDone).map((k) => k.toUpperCase()).join("+");
     const cta = document.createElement("button");
-    cta.className = "cta"; cta.textContent = "Serie fatta (A+B) · avvia recupero ▸";
+    cta.className = "cta"; cta.textContent = `Serie fatta (${label}) · avvia recupero ▸`;
     cta.addEventListener("click", () => {
-      const _pa = bestKg(data, currentDay, exId, "a");
-      const _pb = bestKg(data, currentDay, exId, "b");
-      if (isSetRecord(_pa, draftA.kg) || isSetRecord(_pb, draftB.kg)) showRecordToast();
-      let nv = withSupersetSet(v, "a", a.curIdx, { reps: draftA.reps, kg: draftA.kg, done: true, feel: e.a.sets[a.curIdx]?.feel ?? "", comments: draftA.comments });
-      nv = withSupersetSet(nv, "b", b.curIdx, { reps: draftB.reps, kg: draftB.kg, done: true, feel: e.b.sets[b.curIdx]?.feel ?? "", comments: draftB.comments });
+      let nv = getEntry(data, currentWeek, currentDay, exId);
+      const feelTracks = [];
+      let anyRecord = false;
+      keys.forEach((k, i) => {
+        const blk = blocks[i];
+        if (blk.allDone) return; // salta tracce gia complete
+        const d = draftTracks[k];
+        if (isSetRecord(bestKg(data, currentDay, exId, k), d.kg)) anyRecord = true;
+        nv = withSupersetSet(nv, k, blk.curIdx, { reps: d.reps, kg: d.kg, done: true, feel: e[k].sets[blk.curIdx]?.feel ?? "", comments: d.comments });
+        feelTracks.push({ track: k, idx: blk.curIdx });
+      });
+      if (anyRecord) showRecordToast();
       data = setEntry(data, currentWeek, currentDay, exId, nv, new Date().toISOString());
       persist(idx);
       const _doneAll = isEntryComplete(getEntry(data, currentWeek, currentDay, exId), ex);
       const _nx = nextExercisePreview(dayPlan().exercises, idx);
       const _go = _doneAll
         ? (_nx.last ? { fine: true } : { slug: goSlug(_nx.name), serie: 1 })
-        : { slug: goSlug(ex.name), serie: a.curIdx + 2 };
+        : { slug: goSlug(ex.name), serie: active.curIdx + 2 };
       startRest(getRest(currentDay, exId, ex.restSeconds), ex.name, _go);
       render();
-      // Due barre A/B separate (sensazione indipendente per traccia); resta
-      // aperto anche sull'ultima serie. Si torna alla lista con il tasto ←.
-      showFeelAsk({ idx, superset: true, aIdx: a.curIdx, bIdx: b.curIdx, last: _doneAll });
+      showFeelAsk({ idx, superset: true, tracks: feelTracks, last: _doneAll });
     });
     footer.appendChild(cta);
   }
+
   // Volume per traccia + totale superset (con ×2 manubri; tracce a tempo escluse).
-  const volA = e.a.sets.reduce((s, x) => s + setVolume(x, metaA), 0);
-  const volB = e.b.sets.reduce((s, x) => s + setVolume(x, metaB), 0);
   const volNodes = [];
-  if (volA > 0) volNodes.push(buildVolLine(`Volume A${metaA.factor === 2 ? " · ×2 manubri" : ""}`, volA));
-  if (volB > 0) volNodes.push(buildVolLine(`Volume B${metaB.factor === 2 ? " · ×2 manubri" : ""}`, volB));
-  if (volA + volB > 0) volNodes.push(buildVolLine("Totale superset", volA + volB));
+  let totVol = 0;
+  keys.forEach((k, i) => {
+    const vol = e[k].sets.reduce((s, x) => s + setVolume(x, metas[i]), 0);
+    if (vol > 0) volNodes.push(buildVolLine(`Volume ${k.toUpperCase()}${metas[i].factor === 2 ? " · ×2 manubri" : ""}`, vol));
+    totVol += vol;
+  });
+  if (totVol > 0) volNodes.push(buildVolLine("Totale superset", totVol));
 
   // "+ serie" della traccia attiva, dentro al cassetto.
   const addRow = document.createElement("div");
   addRow.className = "addrow";
   const addS = document.createElement("button");
-  addS.className = "addset"; addS.textContent = `+ serie ${supersetTab.toUpperCase()}`;
+  addS.className = "addset"; addS.textContent = `+ serie ${activeKey.toUpperCase()}`;
   addS.addEventListener("click", active.onAddSet);
   addRow.appendChild(addS);
 
@@ -2784,20 +2780,21 @@ function renderFocusSuperset(ex, idx, container, footer) {
   }));
 }
 
-// Sets della settimana loggata più recente, per entrambe le tracce ({a:[...], b:[...]}).
+// Sets della settimana loggata più recente, per ogni traccia ({a:[...], b:[...], c:[...]}).
 function previousSupersetSets(weekKey, day, idx) {
   const keys = Object.keys(data?.weeks ?? {})
     .filter((k) => /^\d{4}-W\d{2}(\.\d+)?$/.test(k) && k < weekKey).sort();
   for (let i = keys.length - 1; i >= 0; i--) {
     const e = normalizeSupersetEntry(getEntry(data, keys[i], day, idx));
-    if (e.a.sets.length || e.b.sets.length) {
+    if (e.a.sets.length || e.b.sets.length || e.c.sets.length) {
       return {
         a: e.a.sets.map(({ reps, kg }) => ({ reps, kg })),
         b: e.b.sets.map(({ reps, kg }) => ({ reps, kg })),
+        c: e.c.sets.map(({ reps, kg }) => ({ reps, kg })),
       };
     }
   }
-  return { a: [], b: [] };
+  return { a: [], b: [], c: [] };
 }
 
 // Mini sparkline inline (storico top-set): polyline + dot finale; piatta se <2 punti.
@@ -3380,7 +3377,7 @@ async function boot() {
     if (openIndex === null) return;
     const ex = dayPlan().exercises[openIndex];
     if (!ex) return;
-    openChartDialog(ex.id, ex.superset ? supersetTab : null);
+    openChartDialog(ex.id, ex.superset ? "a" : null);
   });
   document.getElementById("chartClose").addEventListener("click", () => document.getElementById("chartDialog").close());
   document.getElementById("chartDialog").addEventListener("click", (e) => {
