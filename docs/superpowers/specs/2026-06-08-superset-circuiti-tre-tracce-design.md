@@ -1,7 +1,7 @@
 # Superset a 3 tracce (circuiti) — design
 
 **Data:** 2026-06-08
-**Stato:** approvato in brainstorming, pronto per il piano
+**Stato:** implementato (2026-06-08) — branch `feat/superset-circuiti-3-tracce`, Task 1–9; 409 test verdi, SW v71
 
 ## Problema
 
