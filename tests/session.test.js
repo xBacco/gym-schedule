@@ -1149,3 +1149,45 @@ describe("traccia c", () => {
     assert.equal(bestKg(data, "A", "x1", "c"), 30);
   });
 });
+
+describe("iterazioni 3 tracce", () => {
+  const ex = { name: "A + B + C", superset: true, setsReps: "1 × 8 / 1 × 8 / 1 × 8", muscle: "Core", muscleB: "Core", muscleC: "Core" };
+  it("isEntryComplete trio: completo solo se tutte le tracce (non vuote) sono ok", () => {
+    const full = {
+      a: { sets: [{ reps: "8", kg: "", done: true }] },
+      b: { sets: [{ reps: "8", kg: "", done: true }] },
+      c: { sets: [{ reps: "8", kg: "", done: true }] },
+    };
+    assert.equal(isEntryComplete(full, ex), true);
+    const cMissing = { ...full, c: { sets: [{ reps: "8", kg: "", done: false }] } };
+    assert.equal(isEntryComplete(cMissing, ex), false);
+  });
+  it("isEntryComplete trio: traccia c vuota non blocca", () => {
+    const e = {
+      a: { sets: [{ reps: "8", kg: "", done: true }] },
+      b: { sets: [{ reps: "8", kg: "", done: true }] },
+      c: { sets: [] },
+    };
+    assert.equal(isEntryComplete(e, ex), true);
+  });
+  it("exerciseVolume trio somma a+b+c", () => {
+    const exW = { name: "A + B + C", superset: true };
+    const e = {
+      a: { sets: [{ reps: "10", kg: "10", done: true }] },
+      b: { sets: [{ reps: "10", kg: "10", done: true }] },
+      c: { sets: [{ reps: "10", kg: "10", done: true }] },
+    };
+    assert.equal(exerciseVolume(e, exW), 300);
+  });
+  it("volumeByMuscle trio attribuisce anche c->muscleC", () => {
+    const exW = { id: "x1", name: "A + B + C", superset: true, muscle: "Petto", muscleB: "Dorso", muscleC: "Gambe" };
+    const e = {
+      a: { sets: [{ reps: "10", kg: "10", done: true }] },
+      b: { sets: [{ reps: "10", kg: "10", done: true }] },
+      c: { sets: [{ reps: "10", kg: "10", done: true }] },
+    };
+    const data = { weeks: { "2026-W23": { entries: { A: { x1: e } } } } };
+    const res = volumeByMuscle(data, "2026-W23", "A", { exercises: [exW] });
+    assert.deepEqual(res.sort((a,b)=>a.muscle<b.muscle?-1:1).map(r=>r.muscle), ["Dorso","Gambe","Petto"]);
+  });
+});

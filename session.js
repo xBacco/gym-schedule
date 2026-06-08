@@ -59,12 +59,12 @@ function trackComplete(track, targetSets) {
 export function isEntryComplete(entry, ex) {
   if (ex && ex.superset) {
     const e = normalizeSupersetEntry(entry);
-    const tgt = parseTarget(ex.setsReps, true);
-    const aEmpty = e.a.sets.length === 0, bEmpty = e.b.sets.length === 0;
-    if (aEmpty && bEmpty) return false;
-    const aOk = aEmpty || trackComplete(e.a, tgt.a.sets);
-    const bOk = bEmpty || trackComplete(e.b, tgt.b.sets);
-    return aOk && bOk;
+    const keys = supersetTrackKeys(ex);
+    const n = keys.length;
+    const tgt = parseTarget(ex.setsReps, true, n);
+    const tracks = keys.map((k) => ({ track: e[k], tgt: tgt[k] }));
+    if (tracks.every((t) => t.track.sets.length === 0)) return false;
+    return tracks.every((t) => t.track.sets.length === 0 || trackComplete(t.track, t.tgt.sets));
   }
   const e = normalizeEntry(entry);
   const tgt = parseTarget(ex?.setsReps, false);
@@ -372,7 +372,7 @@ function trackVolume(track, meta = {}) {
 export function exerciseVolume(entry, ex) {
   if (ex?.superset) {
     const e = normalizeSupersetEntry(entry);
-    return trackVolume(e.a, volumeMeta(ex, "a")) + trackVolume(e.b, volumeMeta(ex, "b"));
+    return supersetTrackKeys(ex).reduce((sum, k) => sum + trackVolume(e[k], volumeMeta(ex, k)), 0);
   }
   return trackVolume(normalizeEntry(entry), volumeMeta(ex, null));
 }
@@ -394,7 +394,7 @@ export function sessionHasDoneSet(data, weekKey, day, dayPlan) {
   for (const ex of dayPlan?.exercises ?? []) {
     const v = getEntry(data, weekKey, day, ex.id);
     const tracks = ex?.superset
-      ? [normalizeSupersetEntry(v).a, normalizeSupersetEntry(v).b]
+      ? supersetTrackKeys(ex).map((k) => normalizeSupersetEntry(v)[k])
       : [normalizeEntry(v)];
     if (tracks.some((t) => t.sets.some((st) => st.done))) return true;
   }
@@ -416,8 +416,7 @@ export function volumeByMuscle(data, weekKey, day, dayPlan) {
     const v = getEntry(data, weekKey, day, ex.id);
     if (ex?.superset) {
       const e = normalizeSupersetEntry(v);
-      add(ex.muscle, trackVolume(e.a, volumeMeta(ex, "a")));
-      add(ex.muscleB, trackVolume(e.b, volumeMeta(ex, "b")));
+      for (const k of supersetTrackKeys(ex)) add(trackMuscle(ex, k), trackVolume(e[k], volumeMeta(ex, k)));
     } else {
       add(ex?.muscle, trackVolume(normalizeEntry(v), volumeMeta(ex, null)));
     }
@@ -437,9 +436,9 @@ export function muscleContributions(data, weekKey, day, dayPlan) {
     const name = String(ex?.name ?? "");
     if (ex?.superset) {
       const e = normalizeSupersetEntry(v);
-      const [nameA, nameB] = name.includes(" + ") ? name.split(" + ") : [name, name];
-      out.push({ muscle: ex.muscle, name: nameA, volume: trackVolume(e.a, volumeMeta(ex, "a")) });
-      out.push({ muscle: ex.muscleB, name: nameB, volume: trackVolume(e.b, volumeMeta(ex, "b")) });
+      for (const k of supersetTrackKeys(ex)) {
+        out.push({ muscle: trackMuscle(ex, k), name: trackName(ex, k), volume: trackVolume(e[k], volumeMeta(ex, k)) });
+      }
     } else {
       out.push({ muscle: ex?.muscle, name, volume: trackVolume(normalizeEntry(v), volumeMeta(ex, null)) });
     }
@@ -451,7 +450,7 @@ export function muscleContributions(data, weekKey, day, dayPlan) {
 function weekTopKg(data, weekKey, day, exId, superset) {
   const v = getEntry(data, weekKey, day, exId);
   const tracks = superset
-    ? [normalizeSupersetEntry(v).a, normalizeSupersetEntry(v).b]
+    ? (() => { const e = normalizeSupersetEntry(v); return [e.a, e.b, e.c]; })()
     : [normalizeEntry(v)];
   let best = null;
   for (const t of tracks) {
