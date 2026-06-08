@@ -1126,8 +1126,8 @@ function buildPlanRow(ex, i, count) {
   sub.textContent = [
     ex.setsReps, rec,
     ex.bar ? `bilanciere ${ex.bar}kg` : "",
-    (volumeMeta(ex, null).factor === 2 || (ex.superset && volumeMeta(ex, "b").factor === 2)) ? "vol ×2" : "",
-    (ex.unit === "sec" || ex.unitB === "sec") ? "a tempo" : "",
+    (volumeMeta(ex, null).factor === 2 || (ex.superset && (volumeMeta(ex, "b").factor === 2 || volumeMeta(ex, "c").factor === 2))) ? "vol ×2" : "",
+    (ex.unit === "sec" || ex.unitB === "sec" || ex.unitC === "sec") ? "a tempo" : "",
   ].filter(Boolean).join(" · ");
   meta.append(nm, sub);
   const edit = document.createElement("button"); edit.type = "button"; edit.className = "pe-ic"; edit.textContent = "✎";
