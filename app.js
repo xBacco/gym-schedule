@@ -2184,7 +2184,7 @@ function wireSetDialog() {
 
 // Sensazione chiesta dopo la conferma, durante il recupero. lastDone descrive la
 // serie appena conclusa: { idx, superset:false, setIndex } oppure
-// { idx, superset:true, aIdx, bIdx } (il superset rate entrambe le tracce).
+// { idx, superset:true, tracks:[{track,idx},…], last } (una barra RPE per traccia).
 let lastDone = null;
 
 // Chiusura programmata del feel-ask (1.2s dopo il giudizio): si vede la
