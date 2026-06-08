@@ -6,7 +6,7 @@ import { bestKg, bestKgBefore, isWeekRecord, isSetRecord, progressionDelta, with
 import { historyIsBodyweight, bestReps, bestRepsBefore } from "../session.js";
 import { sessionDates, monthGrid, sessionHasDoneSet } from "../session.js";
 import { muscleContributions, lastTrainedByGroup } from "../session.js";
-import { isDumbbell, volumeMeta, exerciseVolume, setVolume, platesOn } from "../session.js";
+import { isDumbbell, volumeMeta, exerciseVolume, setVolume, platesOn, supersetTrackKeys, trackMuscle } from "../session.js";
 import { emptyData, setEntry, getEntry } from "../store.js";
 
 test("sessionDates: estrae le date da weeks[].dates, ordinate per data", () => {
@@ -1058,4 +1058,27 @@ test("platesOn: traccia B del superset con platesB", () => {
   const ex = { name: "Pushdown + Skullcrusher", superset: true, platesB: true };
   assert.equal(platesOn(ex, "a"), false);
   assert.equal(platesOn(ex, "b"), true);
+});
+
+test("supersetTrackKeys: non-superset -> []", () => {
+  assert.deepEqual(supersetTrackKeys({ name: "Panca", superset: false }), []);
+});
+
+test("supersetTrackKeys: duo (2 pezzi nel nome) -> [a,b]", () => {
+  assert.deepEqual(supersetTrackKeys({ name: "Curl + Skull", superset: true }), ["a", "b"]);
+});
+
+test("supersetTrackKeys: trio (3 pezzi) -> [a,b,c]", () => {
+  assert.deepEqual(supersetTrackKeys({ name: "Dead bug + Crunch + Plank", superset: true }), ["a", "b", "c"]);
+});
+
+test("supersetTrackKeys: superset senza ' + ' nel nome -> [a,b] (fallback duo)", () => {
+  assert.deepEqual(supersetTrackKeys({ name: "Solo nome", superset: true }), ["a", "b"]);
+});
+
+test("trackMuscle: a -> muscle, b -> muscleB, c -> muscleC", () => {
+  const ex = { name: "A + B + C", superset: true, muscle: "Core", muscleB: "Spalle", muscleC: "Gambe" };
+  assert.equal(trackMuscle(ex, "a"), "Core");
+  assert.equal(trackMuscle(ex, "b"), "Spalle");
+  assert.equal(trackMuscle(ex, "c"), "Gambe");
 });

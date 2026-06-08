@@ -289,6 +289,21 @@ export function isDumbbell(name) {
   return /manubr/i.test(String(name ?? ""));
 }
 
+// Chiavi traccia di un superset, dedotte dal nome: 2 pezzi " + " = duo [a,b],
+// 3 pezzi = trio [a,b,c]. Non-superset -> []. Fonte unica dell'arità.
+export function supersetTrackKeys(ex) {
+  if (!ex?.superset) return [];
+  const parts = String(ex?.name ?? "").split(" + ").length;
+  return parts >= 3 ? ["a", "b", "c"] : ["a", "b"];
+}
+
+// Muscolo della singola traccia: a->muscle, b->muscleB, c->muscleC.
+export function trackMuscle(ex, track) {
+  if (track === "c") return ex?.muscleC;
+  if (track === "b") return ex?.muscleB;
+  return ex?.muscle;
+}
+
 // Nome della singola traccia di un esercizio ("A + B" nei superset).
 function trackName(ex, track) {
   const name = String(ex?.name ?? "");
