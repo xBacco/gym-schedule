@@ -110,6 +110,43 @@ export function withoutSession(map, key) {
   return out;
 }
 
+// ---- Cronometro sessione (gymsched_session): voce { start, end, pausedAt, pausedMs }.
+//      Funzioni pure (niente DOM/localStorage) così sono testabili in Node. ----
+
+// Normalizza una voce (anche legacy {start,end}) alla forma canonica a 4 campi.
+export function normalizeSessionEntry(entry) {
+  if (!entry || typeof entry !== "object" || !entry.start) {
+    return { start: null, end: null, pausedAt: null, pausedMs: 0 };
+  }
+  return {
+    start: entry.start,
+    end: entry.end ?? null,
+    pausedAt: entry.pausedAt ?? null,
+    pausedMs: Number(entry.pausedMs) || 0,
+  };
+}
+
+// Millisecondi di allenamento effettivo: dal start a un "punto di riferimento"
+// (end se finito, pausedAt se in pausa, altrimenti now), meno le pause accumulate.
+export function elapsedMs(entry, nowMs) {
+  const c = normalizeSessionEntry(entry);
+  if (!c.start) return 0;
+  let ref;
+  if (c.end) ref = Date.parse(c.end);
+  else if (c.pausedAt) ref = Date.parse(c.pausedAt);
+  else ref = nowMs;
+  return Math.max(0, ref - Date.parse(c.start) - c.pausedMs);
+}
+
+// Macchina a stati derivata dalla sola voce: "PRONTO" | "IN_CORSO" | "IN_PAUSA" | "FINITO".
+export function sessionState(entry) {
+  const c = normalizeSessionEntry(entry);
+  if (!c.start) return "PRONTO";
+  if (c.end) return "FINITO";
+  if (c.pausedAt) return "IN_PAUSA";
+  return "IN_CORSO";
+}
+
 // ---- Countdown "a tempo visibile": scade dopo durationMs di schermo acceso.
 //      hide() congela il residuo (document.hidden), show() riparte. Side effect
 //      e clock iniettabili per i test. Usato per l'auto-dismiss dello stato GO. ----
