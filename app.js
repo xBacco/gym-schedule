@@ -30,7 +30,7 @@ import {
   muscleContributions, lastTrainedByGroup,
 } from "./session.js";
 import { renderBody, heatByGroup, freshnessByGroup, dayCoverage, GROUP_ZONES, scanBootLog } from "./body.js";
-import { RestTimer, formatTime, withoutSession, goSlug, VisibleCountdown } from "./timer.js";
+import { RestTimer, formatTime, withoutSession, goSlug, VisibleCountdown, normalizeSessionEntry, elapsedMs, sessionState } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
 import { renderNutritionGuide } from "./nutrition.js";
 import { createPusher } from "./sync.js";
@@ -1391,11 +1391,44 @@ const setSessionMap = (m) => localStorage.setItem(SESSION_KEY, JSON.stringify(m)
 const sessClockKey = () => `${currentWeek}-${currentDay}`;
 function startSessionIfAbsent() {
   const m = getSessionMap(); const k = sessClockKey();
-  if (!m[k] || !m[k].start) { m[k] = { start: new Date().toISOString(), end: null }; setSessionMap(m); }
+  if (!m[k] || !m[k].start) { m[k] = { start: new Date().toISOString(), end: null, pausedAt: null, pausedMs: 0 }; setSessionMap(m); }
+}
+
+// Avvio esplicito dal bottone "Avvia allenamento" (stato PRONTO).
+function startSession() {
+  const m = getSessionMap(); const k = sessClockKey();
+  m[k] = { start: new Date().toISOString(), end: null, pausedAt: null, pausedMs: 0 };
+  setSessionMap(m);
+  renderSessionControl();
+}
+
+// Mette in pausa: marca pausedAt (solo se in corso).
+function pauseSession() {
+  const m = getSessionMap(); const k = sessClockKey();
+  const c = m[k];
+  if (c && c.start && !c.end && !c.pausedAt) { c.pausedAt = new Date().toISOString(); setSessionMap(m); renderSessionControl(); }
+}
+
+// Riprende: ripiega l'intervallo di pausa in pausedMs e azzera pausedAt.
+function resumeSession() {
+  const m = getSessionMap(); const k = sessClockKey();
+  const c = m[k];
+  if (c && c.pausedAt) {
+    c.pausedMs = (Number(c.pausedMs) || 0) + (Date.now() - Date.parse(c.pausedAt));
+    c.pausedAt = null;
+    setSessionMap(m);
+    renderSessionControl();
+  }
 }
 function endSessionClock() {
   const m = getSessionMap(); const k = sessClockKey();
-  if (m[k] && m[k].start && !m[k].end) { m[k].end = new Date().toISOString(); setSessionMap(m); renderSessClock(); }
+  const c = m[k];
+  if (c && c.start && !c.end) {
+    if (c.pausedAt) { c.pausedMs = (Number(c.pausedMs) || 0) + (Date.now() - Date.parse(c.pausedAt)); c.pausedAt = null; }
+    c.end = new Date().toISOString();
+    setSessionMap(m);
+    renderSessionControl();
+  }
 }
 function fmtDuration(totalSec) {
   let s = Math.max(0, Math.floor(totalSec));
@@ -1408,18 +1441,51 @@ function fmtDuration(totalSec) {
 // Rimuove SOLO la voce gymsched_session: le serie loggate (in `data`) restano intatte.
 function cancelSessionClock() {
   setSessionMap(withoutSession(getSessionMap(), sessClockKey()));
-  renderSessClock();
+  renderSessionControl();
 }
-function renderSessClock() {
+function renderSessionControl() {
   const el = document.getElementById("sessClock");
   if (!el) return;
-  const c = getSessionMap()[sessClockKey()];
-  if (!c || !c.start) { el.classList.add("hidden"); return; }
-  const startMs = Date.parse(c.start);
-  const endMs = c.end ? Date.parse(c.end) : Date.now();
+  // Piano vuoto → nessuno slot (l'empty-state guida la creazione).
+  if (planIsEmpty(data)) { el.replaceChildren(); el.classList.add("hidden"); return; }
+
+  const entry = getSessionMap()[sessClockKey()];
+  const state = sessionState(entry);
+  el.classList.remove("hidden");
+  el.classList.toggle("ended", state === "FINITO");
+  el.classList.toggle("ready", state === "PRONTO");
+
+  if (state === "PRONTO") {
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "sc-start";
+    go.textContent = "▶ Avvia allenamento";
+    go.addEventListener("click", (e) => { e.stopPropagation(); startSession(); });
+    el.replaceChildren(go);
+    return;
+  }
+
+  const secs = elapsedMs(entry, Date.now()) / 1000;
+  const prefix = state === "FINITO" ? "⏱ allenamento " : state === "IN_PAUSA" ? "⏸ in pausa · " : "● in corso · ";
   const txt = document.createElement("span");
   txt.className = "sc-t";
-  txt.textContent = (c.end ? "⏱ allenamento " : "⏱ in corso · ") + fmtDuration((endMs - startMs) / 1000);
+  txt.id = "sessClockText";
+  txt.textContent = prefix + fmtDuration(secs);
+  el.replaceChildren(txt);
+
+  if (state === "FINITO") return; // congelato, nessun controllo
+
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "sc-toggle";
+  toggle.textContent = state === "IN_PAUSA" ? "▶" : "⏸";
+  toggle.setAttribute("aria-label", state === "IN_PAUSA" ? "Riprendi allenamento" : "Pausa allenamento");
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (sessionState(getSessionMap()[sessClockKey()]) === "IN_PAUSA") resumeSession();
+    else pauseSession();
+  });
+
   const x = document.createElement("button");
   x.type = "button";
   x.className = "sc-x";
@@ -1427,13 +1493,10 @@ function renderSessClock() {
   x.setAttribute("aria-label", "Annulla cronometro");
   x.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (confirm("Annullare il cronometro di questo allenamento? Le serie loggate restano salvate.")) {
-      cancelSessionClock();
-    }
+    if (confirm("Annullare il cronometro di questo allenamento? Le serie loggate restano salvate.")) cancelSessionClock();
   });
-  el.replaceChildren(txt, x);
-  el.classList.toggle("ended", !!c.end);
-  el.classList.remove("hidden");
+
+  el.append(toggle, x);
 }
 
 // ---- Status indicator ----
@@ -3057,7 +3120,7 @@ function render() {
   // Giorno completo → ferma il cronometro (congela la durata totale).
   const dp = dayPlan();
   if (dp.exercises.length && dp.exercises.every((_, i) => isComplete(i))) endSessionClock();
-  renderSessClock();
+  renderSessionControl();
 }
 
 // ---- Editing + saving ----
@@ -3768,7 +3831,7 @@ function dismissSplash() {
 window.addEventListener("load", boot);
 
 // Aggiorna la durata della sessione ogni secondo (no-op finché il cronometro è nascosto).
-setInterval(renderSessClock, 1000);
+setInterval(renderSessionControl, 1000);
 
 // PWA: registra il service worker e gestisce l'aggiornamento (best-effort).
 // `swUpdating` distingue l'aggiornamento voluto dall'utente (tap sul banner)

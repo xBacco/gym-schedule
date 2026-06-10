@@ -595,6 +595,16 @@ dialog#settingsDialog.settings-v2-host::backdrop{
   min-width:24px;min-height:24px;padding:2px 4px;border:0;background:none;cursor:pointer;
   color:inherit;font-size:13px;line-height:1;opacity:.75;}
 .sc-x:hover,.sc-x:focus-visible{opacity:1;}
+/* PRONTO: bottone pieno (niente chip attorno) */
+.sessclock.ready{background:none;border:none;padding:0;}
+.sc-start{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;letter-spacing:.04em;
+  color:var(--acc-ink);background:var(--acc);border:none;border-radius:9px;padding:10px 18px;cursor:pointer;min-height:42px;}
+.sc-start:active{transform:translateY(1px);}
+/* Pausa/Riprendi: stesso stile di .sc-x */
+.sc-toggle{margin-left:8px;display:inline-flex;align-items:center;justify-content:center;
+  min-width:24px;min-height:24px;padding:2px 4px;border:0;background:none;cursor:pointer;
+  color:inherit;font-size:13px;line-height:1;opacity:.8;}
+.sc-toggle:hover,.sc-toggle:focus-visible{opacity:1;}
 
 /* lo stack in basso (timer e/o striscia giudizio) non deve coprire le note del focus */
 body.timer-on .focus-body{padding-bottom:calc(var(--bottom-pad,196px) + 28px);}
