@@ -96,15 +96,14 @@
     <div class="kicker">DAY <b id="kickDay">A</b> · <span id="kickWeek">SETT. —</span></div>
     <h1 id="dayTitle">—</h1>
 
-    <div class="day-tabs" id="dayTabs">
-      <button data-day="A" class="on">A</button>
-      <button data-day="B">B</button>
-      <button data-day="C">C</button>
-    </div>
-
-    <div class="week-row">
+    <div class="ctl-row">
+      <div class="day-tabs" id="dayTabs">
+        <button data-day="A" class="on">A</button>
+        <button data-day="B">B</button>
+        <button data-day="C">C</button>
+      </div>
       <select id="weekSelect" aria-label="Settimana"></select>
-      <button id="newWeekBtn" class="btn-soft">+ Sett.</button>
+      <button id="newWeekBtn" class="btn-soft btn-add" aria-label="Aggiungi settimana">+</button>
     </div>
 
     <div id="sessClock" class="sessclock hidden" aria-label="Durata allenamento"></div>
