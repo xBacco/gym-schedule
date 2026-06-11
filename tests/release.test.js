@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { APP_VERSION, STORE_UPDATE_ENABLED, VERSION_MANIFEST_URL, isNewer, getPlatform, pickStore, STORE } from "../release.js";
+import { APP_VERSION, STORE_UPDATE_ENABLED, VERSION_MANIFEST_URL, isNewer, getPlatform, pickStore, STORE, checkStoreUpdate } from "../release.js";
 
 test("costanti: APP_VERSION è semver, flag OFF, manifest url relativo", () => {
   assert.match(APP_VERSION, /^\d+\.\d+\.\d+$/);
@@ -55,4 +55,41 @@ test("pickStore: store iniettato", () => {
   const s = { ios: { url: "X" }, android: { url: "Y" } };
   assert.equal(pickStore("ios", s), "X");
   assert.equal(pickStore("android", s), "Y");
+});
+
+const okFetch = (body) => async () => ({ json: async () => body });
+
+test("checkStoreUpdate: latest più nuovo → updateAvailable con storeUrl", async () => {
+  const r = await checkStoreUpdate({
+    fetchFn: okFetch({ latest: "1.1.0" }), currentVersion: "1.0.0", platform: "ios",
+  });
+  assert.deepEqual(r, { updateAvailable: true, latest: "1.1.0", storeUrl: STORE.ios.url });
+});
+test("checkStoreUpdate: latest uguale/minore → null", async () => {
+  const r = await checkStoreUpdate({
+    fetchFn: okFetch({ latest: "1.0.0" }), currentVersion: "1.0.0", platform: "ios",
+  });
+  assert.equal(r, null);
+});
+test("checkStoreUpdate: platform web → null senza chiamare fetch", async () => {
+  let called = false;
+  const r = await checkStoreUpdate({
+    fetchFn: async () => { called = true; return { json: async () => ({ latest: "9.9.9" }) }; },
+    currentVersion: "1.0.0", platform: "web",
+  });
+  assert.equal(r, null);
+  assert.equal(called, false);
+});
+test("checkStoreUpdate: fetch che rigetta → null", async () => {
+  const r = await checkStoreUpdate({
+    fetchFn: async () => { throw new Error("net down"); }, currentVersion: "1.0.0", platform: "ios",
+  });
+  assert.equal(r, null);
+});
+test("checkStoreUpdate: JSON malformato → null", async () => {
+  const r = await checkStoreUpdate({
+    fetchFn: async () => ({ json: async () => { throw new Error("bad json"); } }),
+    currentVersion: "1.0.0", platform: "ios",
+  });
+  assert.equal(r, null);
 });

@@ -37,6 +37,29 @@ export function getPlatform(
   return "web";
 }
 
+// Best-effort: ritorna {updateAvailable, latest, storeUrl} oppure null. Ogni errore → null,
+// per non mostrare mai un banner sbagliato. Su 'web' non chiama nemmeno la rete.
+export async function checkStoreUpdate({
+  fetchFn = (typeof fetch !== "undefined" ? fetch : undefined),
+  manifestUrl = VERSION_MANIFEST_URL,
+  currentVersion = APP_VERSION,
+  platform = getPlatform(),
+} = {}) {
+  try {
+    if (platform === "web") return null;
+    if (typeof fetchFn !== "function") return null;
+    const res = await fetchFn(manifestUrl, { cache: "no-store" });
+    const data = await res.json();
+    const latest = data && data.latest;
+    if (!isNewer(latest, currentVersion)) return null;
+    const storeUrl = pickStore(platform);
+    if (!storeUrl) return null;
+    return { updateAvailable: true, latest, storeUrl };
+  } catch {
+    return null;
+  }
+}
+
 // Confronto semver "x.y.z": true se remote è strettamente più nuovo di current.
 // Input malformati → false (meglio non mostrare un banner spurio).
 export function isNewer(remote, current) {
