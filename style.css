@@ -1256,7 +1256,7 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 .sv-term .qc-add button{ background:var(--ctb); border:1px solid var(--ctc); color:var(--acc); border-radius:6px; width:44px; min-height:44px; cursor:pointer; }
 
 /* ===== Splash d'apertura — set.log (power-on + wordmark + prompt) ======== */
-#splash{ position:fixed; inset:0; z-index:1000; background:var(--bg); color:var(--tx);
+#splash{ position:fixed; inset:0; z-index:2000; /* sopra #auth-screen (anch'esso z 1000): lo splash deve coprire tutto durante il boot, altrimenti il login lo nasconde */ background:var(--bg); color:var(--tx);
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
   cursor:pointer; -webkit-tap-highlight-color:transparent; }
 /* hint discreto "tocca per saltare", in basso; sparisce col reduced-motion */
