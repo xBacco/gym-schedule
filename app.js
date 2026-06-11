@@ -1447,13 +1447,16 @@ function renderSessionControl() {
   const el = document.getElementById("sessClock");
   if (!el) return;
   // Piano vuoto → nessuno slot (l'empty-state guida la creazione).
-  if (planIsEmpty(data)) { el.replaceChildren(); el.classList.add("hidden"); return; }
+  if (planIsEmpty(data)) { el.replaceChildren(); el.classList.add("hidden"); el.dataset.state = "EMPTY"; return; }
 
   const entry = getSessionMap()[sessClockKey()];
   const state = sessionState(entry);
   el.classList.remove("hidden");
   el.classList.toggle("ended", state === "FINITO");
   el.classList.toggle("ready", state === "PRONTO");
+  el.classList.toggle("running", state === "IN_CORSO");
+  el.classList.toggle("paused", state === "IN_PAUSA");
+  el.dataset.state = state;
 
   if (state === "PRONTO") {
     const go = document.createElement("button");
@@ -1466,12 +1469,24 @@ function renderSessionControl() {
   }
 
   const secs = elapsedMs(entry, Date.now()) / 1000;
-  const prefix = state === "FINITO" ? "⏱ allenamento " : state === "IN_PAUSA" ? "⏸ in pausa · " : "● in corso · ";
   const txt = document.createElement("span");
   txt.className = "sc-t";
   txt.id = "sessClockText";
-  txt.textContent = prefix + fmtDuration(secs);
-  el.replaceChildren(txt);
+  txt.textContent = fmtDuration(secs); // SOLO il tempo: il tick aggiorna questo nodo
+  const kids = [];
+  if (state === "IN_CORSO") {
+    const dot = document.createElement("span");
+    dot.className = "sc-dot";
+    kids.push(dot, document.createTextNode("in corso · "), txt);
+  } else if (state === "IN_PAUSA") {
+    const ico = document.createElement("span");
+    ico.className = "sc-ico";
+    ico.textContent = "⏸";
+    kids.push(ico, document.createTextNode("in pausa · "), txt);
+  } else { // FINITO
+    kids.push(document.createTextNode("⏱ allenamento "), txt);
+  }
+  el.replaceChildren(...kids);
 
   if (state === "FINITO") return; // congelato, nessun controllo
 

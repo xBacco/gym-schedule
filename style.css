@@ -615,6 +615,13 @@ dialog#settingsDialog.settings-v2-host::backdrop{
   min-width:24px;min-height:24px;padding:2px 4px;border:0;background:none;cursor:pointer;
   color:inherit;font-size:13px;line-height:1;opacity:.8;}
 .sc-toggle:hover,.sc-toggle:focus-visible{opacity:1;}
+/* In corso: pallino ambra che pulsa. In pausa: chip grigia spenta. */
+.sc-dot{width:8px;height:8px;border-radius:50%;background:var(--acc);
+  display:inline-block;margin-right:7px;flex:0 0 auto;animation:scpulse 1.3s ease-in-out infinite;}
+.sc-ico{margin-right:6px;}
+.sessclock.paused{color:var(--dim);border-color:var(--line);}
+@keyframes scpulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.7);}}
+@media (prefers-reduced-motion:reduce){.sc-dot{animation:none;}}
 
 /* lo stack in basso (timer e/o striscia giudizio) non deve coprire le note del focus */
 body.timer-on .focus-body{padding-bottom:calc(var(--bottom-pad,196px) + 28px);}
