@@ -3989,6 +3989,8 @@ function showStoreUpdateBanner(latest, storeUrl) {
   go.className = "ut-go";
   go.textContent = "›";
   go.setAttribute("aria-label", "Apri lo store");
+  // TODO(native): in una build Capacitor, per il deep-link allo store nativo usare il
+  // plugin Browser/App invece di window.open (ok per ora: flag spento, ID store segnaposto).
   go.addEventListener("click", () => window.open(storeUrl, "_blank", "noopener"));
 
   const x = document.createElement("button");
@@ -4035,7 +4037,8 @@ if (STORE_UPDATE_ENABLED) {
         showStoreUpdateBanner(u.latest, u.storeUrl);
         renderAppLine(u);
       }
-    });
+    }).catch(() => {});   // checkStoreUpdate già inghiotte gli errori di rete; questo è solo
+                          // un guard contro rejection impreviste, niente unhandled rejection.
   };
   window.addEventListener("load", runStoreCheck);
   document.addEventListener("visibilitychange", () => {
