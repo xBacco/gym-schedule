@@ -555,11 +555,20 @@ dialog#settingsDialog.settings-v2-host::backdrop{
   font-family:"JetBrains Mono",monospace;opacity:.85;white-space:nowrap;}
 .nextstrip.end .nx-end{font-size:12px;color:var(--faint);font-style:italic;}
 
-/* banner aggiornamento PWA */
-#updateBanner{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:50;
-  background:var(--acc);color:var(--acc-ink);border:none;border-radius:12px;padding:11px 16px;
-  font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;cursor:pointer;
-  box-shadow:0 6px 20px rgba(0,0,0,.4);}
+/* banner aggiornamento PWA — toast terminale */
+.update-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:50;
+  display:flex;align-items:center;gap:10px;max-width:min(420px,calc(100vw - 28px));
+  background:var(--surf2);color:var(--tx);border:1px solid var(--line-acc);border-left:3px solid var(--acc);
+  border-radius:12px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  animation:ut-in .28s ease-out;}
+.update-toast .ut-dot{width:8px;height:8px;border-radius:50%;background:var(--acc);flex:0 0 auto;
+  animation:scpulse 1.3s ease-in-out infinite;}
+.update-toast .ut-tx{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;flex:1;}
+.update-toast .ut-go{background:var(--acc);color:var(--acc-ink);border:none;border-radius:8px;padding:7px 12px;
+  font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;cursor:pointer;}
+.update-toast .ut-x{background:none;border:none;color:var(--dim);font-size:15px;line-height:1;cursor:pointer;padding:0 2px;}
+@keyframes ut-in{from{opacity:0;transform:translate(-50%,12px);}to{opacity:1;transform:translate(-50%,0);}}
+@media (prefers-reduced-motion:reduce){.update-toast{animation:none;}.update-toast .ut-dot{animation:none;}}
 
 /* ---- Lotto 1: popup serie + striscia sensazione ---- */
 .set-dialog{max-width:330px;width:90vw;}

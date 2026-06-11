@@ -3915,18 +3915,46 @@ setInterval(tickSessionDisplays, 1000);
 // `swUpdating` distingue l'aggiornamento voluto dall'utente (tap sul banner)
 // dal primo clients.claim alla prima installazione: ricarica solo nel primo caso.
 let swUpdating = false;
+// Toast aggiornamento rimandato col `✕`: di sola sessione (riparte a false al
+// prossimo load, così se l'update è ancora pending il toast riappare).
+let updateDismissed = false;
 let swReg = null;
 
 function showUpdateBanner(reg) {
-  if (document.getElementById("updateBanner")) return;
-  const b = document.createElement("button");
+  if (updateDismissed) return;                                 // rimandato in questa sessione
+  if (document.getElementById("updateBanner")) return;         // già presente
+  const b = document.createElement("div");
   b.id = "updateBanner";
-  b.type = "button";
-  b.textContent = "Nuova versione · tocca per aggiornare";
-  b.addEventListener("click", () => {
+  b.className = "update-toast";
+  b.setAttribute("role", "status");
+
+  const dot = document.createElement("span");
+  dot.className = "ut-dot";
+
+  const tx = document.createElement("span");
+  tx.className = "ut-tx";
+  tx.textContent = "Nuova versione disponibile";
+
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "ut-go";
+  go.textContent = "› aggiorna";
+  go.addEventListener("click", () => {
     swUpdating = true;
     if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
   });
+
+  const x = document.createElement("button");
+  x.type = "button";
+  x.className = "ut-x";
+  x.textContent = "✕";
+  x.setAttribute("aria-label", "Rimanda");
+  x.addEventListener("click", () => {
+    updateDismissed = true;
+    b.remove();
+  });
+
+  b.append(dot, tx, go, x);
   document.body.appendChild(b);
 }
 
