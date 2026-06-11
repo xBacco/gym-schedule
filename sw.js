@@ -23,6 +23,7 @@ const ASSETS = [
   "./theme.js",
   "./manifest.json",
   "./icon.svg",
+  "./favicon.svg",
   "./icon-180.png",
   "./icon-192.png",
   "./icon-512.png",
