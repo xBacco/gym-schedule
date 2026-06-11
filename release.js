@@ -15,6 +15,13 @@ export const STORE = {
   android: { pkg:   "it.placeholder.setlog", url: "https://play.google.com/store/apps/details?id=it.placeholder.setlog" },
 };
 
+// URL dello store per la piattaforma; 'web' → null.
+export function pickStore(platform, store = STORE) {
+  if (platform === "ios") return store.ios?.url ?? null;
+  if (platform === "android") return store.android?.url ?? null;
+  return null;
+}
+
 // 'ios' | 'android' | 'web'. Capacitor (se presente) ha priorità; poi UA; fallback 'web'.
 export function getPlatform(
   nav = (typeof navigator !== "undefined" ? navigator : {}),

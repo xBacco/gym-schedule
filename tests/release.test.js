@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { APP_VERSION, STORE_UPDATE_ENABLED, VERSION_MANIFEST_URL, isNewer, getPlatform } from "../release.js";
+import { APP_VERSION, STORE_UPDATE_ENABLED, VERSION_MANIFEST_URL, isNewer, getPlatform, pickStore, STORE } from "../release.js";
 
 test("costanti: APP_VERSION è semver, flag OFF, manifest url relativo", () => {
   assert.match(APP_VERSION, /^\d+\.\d+\.\d+$/);
@@ -42,4 +42,17 @@ test("getPlatform: UA Android → android", () => {
 test("getPlatform: desktop/sconosciuto → web", () => {
   assert.equal(getPlatform({ userAgent: "Mozilla/5.0 (Windows NT 10.0)" }, undefined), "web");
   assert.equal(getPlatform({}, undefined), "web");
+});
+
+test("pickStore: ios/android → url dello store", () => {
+  assert.equal(pickStore("ios"), STORE.ios.url);
+  assert.equal(pickStore("android"), STORE.android.url);
+});
+test("pickStore: web → null (resta sul Service Worker)", () => {
+  assert.equal(pickStore("web"), null);
+});
+test("pickStore: store iniettato", () => {
+  const s = { ios: { url: "X" }, android: { url: "Y" } };
+  assert.equal(pickStore("ios", s), "X");
+  assert.equal(pickStore("android", s), "Y");
 });
