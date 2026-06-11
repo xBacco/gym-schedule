@@ -13,9 +13,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <script>
-    // Applica il tema prima del paint per evitare il flash (chiaro→scuro) al boot.
-    // Fonte di verità: theme.js (stessa chiave gymsched_theme).
-    try { if (localStorage.getItem("gymsched_theme") === "graphite")
+    // Applica il tema prima del paint per evitare il flash al boot. Default = graphite
+    // (theme.js DEFAULT_THEME): si applica sempre tranne quando l'utente ha scelto
+    // "carta" (chiaro). Fonte di verità: theme.js (stessa chiave gymsched_theme).
+    try { if (localStorage.getItem("gymsched_theme") !== "carta")
       document.documentElement.setAttribute("data-theme", "graphite"); } catch (e) {}
   </script>
 </head>
@@ -153,11 +154,11 @@
 
           <div class="sv-sec">tema</div>
           <div class="sv-themecards" id="themeCards">
-            <button type="button" class="sv-tc" data-theme="carta" aria-pressed="true">
+            <button type="button" class="sv-tc" data-theme="carta" aria-pressed="false">
               <span class="sv-tc-mini sv-tc-carta"><span class="m-w">set<b>.log</b></span><span class="m-bar a"></span><span class="m-bar"></span></span>
               <span class="sv-tc-cap"><span class="nm">Carta</span><span class="rd"></span></span>
             </button>
-            <button type="button" class="sv-tc" data-theme="graphite" aria-pressed="false">
+            <button type="button" class="sv-tc is-on" data-theme="graphite" aria-pressed="true">
               <span class="sv-tc-mini sv-tc-graph"><span class="m-w">set<b>.log</b></span><span class="m-bar a"></span><span class="m-bar"></span></span>
               <span class="sv-tc-cap"><span class="nm">Graphite</span><span class="rd"></span></span>
             </button>
