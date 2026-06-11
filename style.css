@@ -1296,12 +1296,19 @@ h1{ font-family:var(--mono); font-size:22px; font-weight:700; letter-spacing:0;
 @keyframes sp-type{ from{width:0ch} to{width:13ch} }
 
 @media (prefers-reduced-motion: reduce){
-  #splash .sp-badge,#splash .sp-word,#splash .cap .pr{
-    animation:none !important; opacity:1 !important; transform:none !important; filter:none !important; }
+  /* Niente movimento (no scaleY/typing-width/translate): lo splash si rivela con
+     dissolvenza + alone, e il testo si DECIFRA sul posto — churn di glifi pilotato
+     da app.js (startSplashDecrypt), nessun carattere si sposta. */
+  #splash .sp-badge{ animation:sp-rm-in .55s ease-out .1s both, sp-rm-glow 1.7s ease-out .15s both !important; }
   #splash .core{ animation:none !important; }
-  #splash .cap .type{ animation:none !important; width:12ch; }
-  #splash .cap .cur{ animation:none !important; opacity:1; }
+  #splash .sp-word{ animation:none !important; opacity:1 !important; transform:none !important; filter:none !important; }
+  #splash .cap .pr{ animation:sp-fade .3s ease-out .15s both !important; }
+  #splash .cap .type{ animation:none !important; width:auto !important; opacity:1 !important; }
+  #splash .cap .cur{ opacity:0; animation:sp-fade .3s ease-out 2.0s both, sp-blink 1.05s steps(1) 2.2s infinite !important; }
 }
+@keyframes sp-rm-in{ from{opacity:0} to{opacity:1} }
+@keyframes sp-rm-glow{ 0%{filter:drop-shadow(0 0 0 transparent)}
+  40%{filter:drop-shadow(0 0 13px var(--acc))} 100%{filter:drop-shadow(0 0 4px var(--acc))} }
 
 /* ===== Database esercizi — overlay (porting da mockup rev5) ===== */
 #dbOverlay .db-prompt{display:flex;align-items:center;gap:7px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:8px 11px;margin-bottom:13px;position:sticky;top:0;z-index:5;}

@@ -38,6 +38,10 @@ import { getFx, setFx, applyFx } from "./fx.js";
 import { getTheme, setTheme, applyTheme } from "./theme.js";
 import { actionBarSpec } from "./focus-ui.js";
 import { APP_VERSION, STORE_UPDATE_ENABLED, checkStoreUpdate } from "./release.js";
+import {
+  DECRYPT_GLYPHS, DECRYPT_TICK_MS, WORD_DELAY_MS, CAP_DELAY_MS,
+  REDUCE_MIN_MS, FULL_MIN_MS, isLocked, decryptDone,
+} from "./splash.js";
 
 const PENDING_KEY = "gymsched_pending"; // local buffer of unsynced edits
 const SEED_URL = "https://xbacco.github.io/gym-schedule/data.json";
@@ -3885,13 +3889,46 @@ function dismissSplash() {
   el.classList.add("splash-out");
   setTimeout(() => el.remove(), 460);
 }
+// Resa reduced-motion: niente movimento, il testo si "decifra" sul posto. Ogni
+// carattere parte come glifo casuale e si blocca sul finale, da sinistra a destra.
+function startSplashDecrypt(splash) {
+  const randGlyph = () => DECRYPT_GLYPHS[Math.floor(Math.random() * DECRYPT_GLYPHS.length)];
+  const run = (el, text, accentFrom, delay) => {
+    if (!el) return;
+    el.textContent = "";
+    const cells = [...text].map((ch, i) => {
+      const s = document.createElement("span");
+      if (accentFrom != null && i >= accentFrom) s.className = "a";
+      s.style.opacity = "0";
+      s.textContent = ch === " " ? " " : randGlyph();
+      el.appendChild(s);
+      return { s, ch };
+    });
+    setTimeout(() => {
+      cells.forEach((c) => { c.s.style.opacity = "1"; });
+      let frame = 0;
+      const id = setInterval(() => {
+        frame++;
+        cells.forEach((c, i) => {
+          if (c.ch === " ") return;
+          c.s.textContent = isLocked(i, frame) ? c.ch : randGlyph();
+        });
+        if (decryptDone(text, frame)) clearInterval(id);
+      }, DECRYPT_TICK_MS);
+    }, delay);
+  };
+  run(splash.querySelector(".sp-word"), "set.log", 3, WORD_DELAY_MS);
+  run(splash.querySelector(".cap .type"), "system ready", null, CAP_DELAY_MS);
+}
 {
   const splash = document.getElementById("splash");
   if (splash) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // La riga "> system ready" finisce di digitarsi a ~2.85s; lasciamo un beat
-    // per leggerla prima di dismettere lo splash (era 2400 → spariva a metà).
-    const minMs = reduce ? 250 : 3400;
+    // reduce: niente accensione CRT (vietato il movimento), il testo si decifra sul
+    // posto e lo splash resta finché il reveal non finisce. full: l'accensione CRT
+    // finisce di "digitare" verso ~2.85s, più un beat di lettura.
+    if (reduce) startSplashDecrypt(splash);
+    const minMs = reduce ? REDUCE_MIN_MS : FULL_MIN_MS;
     const ready = new Promise((r) => { resolveSplashReady = r; });
     const minDelay = new Promise((r) => setTimeout(r, minMs));
     const safety = new Promise((r) => setTimeout(r, 7000));
