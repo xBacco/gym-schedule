@@ -22,7 +22,6 @@ const ASSETS = [
   "./fx.js",
   "./theme.js",
   "./release.js",
-  "./version.json",
   "./manifest.json",
   "./icon.svg",
   "./favicon.svg",
@@ -64,6 +63,9 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   // Solo GET same-origin: API GitHub e font passano diretti alla rete.
   if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
+  // version.json è dato di runtime e deve restare sempre fresco: lascia passare alla rete
+  // senza intercettare/cacheare (checkStoreUpdate usa già fetch con cache:"no-store").
+  if (new URL(req.url).pathname.endsWith("/version.json")) return;
   e.respondWith(
     caches.match(req).then((hit) => hit || fetch(req).then((res) => {
       const copy = res.clone();

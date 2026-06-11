@@ -4013,7 +4013,7 @@ function renderAppLine(update) {
 
   const tagEl = document.getElementById("appUpdateTag");
   if (!tagEl) return;
-  tagEl.innerHTML = "";
+  tagEl.textContent = "";
   if (STORE_UPDATE_ENABLED && update && update.updateAvailable) {
     const t = document.createElement("button");
     t.type = "button";
