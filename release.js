@@ -25,7 +25,7 @@ export function pickStore(platform, store = STORE) {
 // 'ios' | 'android' | 'web'. Capacitor (se presente) ha priorità; poi UA; fallback 'web'.
 export function getPlatform(
   nav = (typeof navigator !== "undefined" ? navigator : {}),
-  cap = (typeof globalThis !== "undefined" ? globalThis.Capacitor : undefined),
+  cap = globalThis.Capacitor,
 ) {
   if (cap && typeof cap.getPlatform === "function") {
     const p = cap.getPlatform();
@@ -37,27 +37,30 @@ export function getPlatform(
   return "web";
 }
 
-// Best-effort: ritorna {updateAvailable, latest, storeUrl} oppure null. Ogni errore → null,
-// per non mostrare mai un banner sbagliato. Su 'web' non chiama nemmeno la rete.
+// Best-effort: ritorna {updateAvailable, latest, storeUrl} oppure null. Errori di rete/parse
+// → null (per non mostrare mai un banner sbagliato); la logica sincrona fuori dal try resta
+// libera di propagare eventuali errori di programmazione. Su 'web' non chiama la rete.
 export async function checkStoreUpdate({
   fetchFn = (typeof fetch !== "undefined" ? fetch : undefined),
   manifestUrl = VERSION_MANIFEST_URL,
   currentVersion = APP_VERSION,
   platform = getPlatform(),
+  store = STORE,
 } = {}) {
+  if (platform === "web") return null;
+  if (typeof fetchFn !== "function") return null;
+  let data;
   try {
-    if (platform === "web") return null;
-    if (typeof fetchFn !== "function") return null;
     const res = await fetchFn(manifestUrl, { cache: "no-store" });
-    const data = await res.json();
-    const latest = data && data.latest;
-    if (!isNewer(latest, currentVersion)) return null;
-    const storeUrl = pickStore(platform);
-    if (!storeUrl) return null;
-    return { updateAvailable: true, latest, storeUrl };
+    data = await res.json();
   } catch {
     return null;
   }
+  const latest = data && data.latest;
+  if (!isNewer(latest, currentVersion)) return null;
+  const storeUrl = pickStore(platform, store);
+  if (!storeUrl) return null;
+  return { updateAvailable: true, latest, storeUrl };
 }
 
 // Confronto semver "x.y.z": true se remote è strettamente più nuovo di current.

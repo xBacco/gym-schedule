@@ -65,6 +65,12 @@ test("checkStoreUpdate: latest più nuovo → updateAvailable con storeUrl", asy
   });
   assert.deepEqual(r, { updateAvailable: true, latest: "1.1.0", storeUrl: STORE.ios.url });
 });
+test("checkStoreUpdate: platform android → url Play Store", async () => {
+  const r = await checkStoreUpdate({
+    fetchFn: okFetch({ latest: "1.1.0" }), currentVersion: "1.0.0", platform: "android",
+  });
+  assert.deepEqual(r, { updateAvailable: true, latest: "1.1.0", storeUrl: STORE.android.url });
+});
 test("checkStoreUpdate: latest uguale/minore → null", async () => {
   const r = await checkStoreUpdate({
     fetchFn: okFetch({ latest: "1.0.0" }), currentVersion: "1.0.0", platform: "ios",
