@@ -42,6 +42,7 @@ import {
   DECRYPT_GLYPHS, DECRYPT_TICK_MS, WORD_DELAY_MS, CAP_DELAY_MS,
   REDUCE_MIN_MS, FULL_MIN_MS, isLocked, decryptDone,
 } from "./splash.js";
+import { ctx } from "./app-context.js";
 
 const PENDING_KEY = "gymsched_pending"; // local buffer of unsynced edits
 const SEED_URL = "https://xbacco.github.io/gym-schedule/data.json";
@@ -63,6 +64,25 @@ let chartExId = null;   // id esercizio mostrato
 let chartTrack = null;  // null | "a" | "b"
 let chartAll = false;   // false = ultime 3 settimane, true = tutto lo storico
 let pusher = null;
+
+// Bridge: espone i local di app.js come proprietà vive di ctx, così i moduli
+// estratti leggono/scrivono ctx.<x> senza che app.js cambi i propri riferimenti.
+// I getter sono lazy (arrow): nutritionOpen/planOpen sono dichiarati più sotto,
+// ma vengono letti solo a runtime (a quel punto inizializzati).
+Object.defineProperties(ctx, {
+  data:           { get: () => data,           set: (v) => { data = v; },           configurable: true },
+  currentWeek:    { get: () => currentWeek,    set: (v) => { currentWeek = v; },    configurable: true },
+  currentDay:     { get: () => currentDay,     set: (v) => { currentDay = v; },     configurable: true },
+  openIndex:      { get: () => openIndex,      set: (v) => { openIndex = v; },      configurable: true },
+  nutritionOpen:  { get: () => nutritionOpen,  set: (v) => { nutritionOpen = v; },  configurable: true },
+  planOpen:       { get: () => planOpen,       set: (v) => { planOpen = v; },       configurable: true },
+  store:          { get: () => store,          set: (v) => { store = v; },          configurable: true },
+  session:        { get: () => session,        set: (v) => { session = v; },        configurable: true },
+  profileStorage: { get: () => profileStorage, set: (v) => { profileStorage = v; }, configurable: true },
+  dataVersion:    { get: () => dataVersion,    set: (v) => { dataVersion = v; },    configurable: true },
+  pusher:         { get: () => pusher,         set: (v) => { pusher = v; },         configurable: true },
+});
+ctx.render = render; // render è una function declaration (hoisted)
 
 // L'overlay dell'esercizio è registrato come voce di history, così la gesture
 // "indietro" del telefono (swipe dal bordo / tasto back) chiude l'esercizio
