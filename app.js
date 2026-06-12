@@ -3,12 +3,9 @@ import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, keepLocalPlan } fro
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
   normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, exerciseBar,
-  SupabaseStore, mergeBlobs, ConflictError, AuthError, planIsEmpty, fromBase64,
+  SupabaseStore, mergeBlobs, ConflictError, AuthError, planIsEmpty,
 } from "./store.js";
-import {
-  hydrate, dehydrate, addSheet, importSheet, renameSheet, deleteSheet, setActiveSheet, sheetSummaries,
-  sortSheetSummaries, sheetSlug, fmtSheetDate,
-} from "./sheets.js";
+import { hydrate, dehydrate } from "./sheets.js";
 import { seedCatalogIfAbsent, migrateExerciseName, backfillCatalogSecondaries } from "./catalog.js";
 import { supabase } from "./supabase-client.js";
 import { bindAuthScreen, hideAuthScreen, signOut } from "./auth.js";
@@ -43,11 +40,11 @@ import {
   bufferEdit, getRest, setRest, getBar, getPlateSet, notifyOn,
   getTimerVol, setTimerVol, getQuickComments, setQuickComments,
 } from "./local-prefs.js";
-import { mkBtn, a11yToggle, a11yRestoreFocus, mkPrompt, mkNew } from "./a11y.js";
 import { openCalendar, closeCalendar, calShiftMonth, renderCalendar, closeCalDay, setCalMetric } from "./calendar.js";
 import { openScan, closeScan, renderScan, setScanTab } from "./scan-ui.js";
 import { openCatalog, closeCatalog, renderCatalog, openCatalogForm, setDbFilter, dbCloseModal } from "./catalog-ui.js";
 import { openPlanEditor, closePlanEditor, renderPlanEditor, wireExerciseDialog } from "./plan-editor.js";
+import { openSheets, closeSheets, renderSheets } from "./sheets-ui.js";
 
 const SEED_URL = "https://xbacco.github.io/gym-schedule/data.json";
 
@@ -93,7 +90,8 @@ ctx.scheduleSave = scheduleSave; // function hoisted, usata da catalog-ui.js (mu
 ctx.openCalendar = openCalendar; // import da calendar.js; lo userà il drawer (Ondata 2)
 ctx.openScan = openScan;         // import da scan-ui.js; lo userà il drawer (Ondata 2)
 ctx.openCatalog = openCatalog;   // import da catalog-ui.js; lo userà il drawer (Ondata 2)
-ctx.openPlanEditor = openPlanEditor; // import da plan-editor.js; lo useranno drawer (Ondata 2) e sheets-ui (1.5)
+ctx.openPlanEditor = openPlanEditor; // import da plan-editor.js; lo useranno drawer (Ondata 2) e sheets-ui
+ctx.openSheets = openSheets;     // import da sheets-ui.js; lo userà il drawer (Ondata 2)
 
 // L'overlay dell'esercizio è registrato come voce di history, così la gesture
 // "indietro" del telefono (swipe dal bordo / tasto back) chiude l'esercizio
@@ -140,162 +138,6 @@ function renderNutritionOverlay() {
 }
 
 // ---- Calendario allenamenti: overlay estratto in calendar.js ----
-
-// ---- Gestore schede: overlay a schermo intero (stessa logica history degli altri). ----
-let sheetsOpen = false;
-let sheetsPending = null; // azione da eseguire dopo la chiusura del gestore schede
-let sheetsExpandedId = null; // id scheda espansa nell'accordion (null → default: l'attiva)
-
-function openSheets() {
-  sheetsOpen = true;
-  sheetsExpandedId = null; // a ogni apertura riparte con l'attiva espansa
-  history.pushState({ gymSheets: true }, "");
-  renderSheets();
-}
-
-function closeSheets() {
-  if (!sheetsOpen) return;
-  if (history.state && history.state.gymSheets) history.back(); // → popstate chiude
-  else { sheetsOpen = false; renderSheets(); const t = sheetsPending; sheetsPending = null; if (t) t(); }
-}
-
-// Applica una mutazione (blob→blob) alla scheda corrente, deidratando/idratando
-// attorno, poi salva e ridisegna gestore + home.
-function mutateSheets(fn) {
-  data = hydrate(fn(dehydrate(data)));
-  scheduleSave();
-  renderSheets();
-  render();
-}
-
-function renderSheets() {
-  const ov = document.getElementById("sheetsOverlay");
-  if (!sheetsOpen) { ov.classList.add("hidden"); ov.setAttribute("aria-hidden", "true"); return; }
-  ov.classList.remove("hidden"); ov.setAttribute("aria-hidden", "false");
-  const body = document.getElementById("sheetsBody");
-  body.innerHTML = "";
-  const sums = sortSheetSummaries(sheetSummaries(dehydrate(data)));
-  document.getElementById("sheetsSub").textContent =
-    `${sums.length} sched${sums.length === 1 ? "a" : "e"} · attiva + archivio`;
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const ultTxt = (s) => (s.lastDate ? `ult ${fmtSheetDate(s.lastDate, todayIso)}` : fmtSheetDate(null, todayIso));
-  // null → default (attiva espansa); "" → tutte chiuse; altrimenti id della scheda espansa.
-  const expandedId = sheetsExpandedId ?? (sums.find((s) => s.active) || {}).id;
-
-  const inner = document.createElement("div");
-  inner.className = "sheets-inner";
-  inner.appendChild(mkPrompt("$", "ls schede/ --sort=ultima"));
-
-  for (const s of sums) {
-    const open = s.id === expandedId;
-    const blk = document.createElement("div");
-    blk.className = "sh-blk" + (s.active ? " active" : "") + (open ? " open" : "");
-    blk.addEventListener("click", () => { sheetsExpandedId = open ? "" : s.id; renderSheets(); });
-
-    const h = document.createElement("div");
-    h.className = "sh-h";
-    const ar = document.createElement("span"); ar.className = "sh-ar"; ar.textContent = open ? "▸" : "▹";
-    const nm = document.createElement("span"); nm.className = "sh-nm"; nm.textContent = sheetSlug(s.name) + "/";
-    h.append(ar, nm);
-    h.dataset.id = s.id;
-    a11yToggle(h, open, `#sheetsBody .sh-h[data-id="${s.id}"]`);
-    if (s.active) {
-      const tag = document.createElement("span"); tag.className = "sh-tag"; tag.textContent = "attiva";
-      h.appendChild(tag);
-    } else if (!open) {
-      const mt = document.createElement("span"); mt.className = "sh-mt";
-      mt.textContent = `${s.days}g · ${s.exercises} es · ${ultTxt(s)}`;
-      h.appendChild(mt);
-    }
-    blk.appendChild(h);
-
-    if (open) {
-      const x = document.createElement("div");
-      x.className = "sh-x";
-
-      const days = document.createElement("div");
-      days.className = "sh-days";
-      for (const dl of s.dayLines) {
-        const ln = document.createElement("div");
-        const L = document.createElement("span"); L.className = "L"; L.textContent = dl.day;
-        const n = document.createElement("span"); n.className = "n"; n.textContent = ` ${dl.count} es`;
-        ln.append(L, document.createTextNode(dl.title.toLowerCase()), n);
-        days.appendChild(ln);
-      }
-      x.appendChild(days);
-
-      const meta = document.createElement("div");
-      meta.className = "sh-meta";
-      meta.textContent =
-        `${ultTxt(s)} · ${s.weeks} settiman${s.weeks === 1 ? "a" : "e"} loggat${s.weeks === 1 ? "a" : "e"}`;
-      x.appendChild(meta);
-
-      const acts = document.createElement("div");
-      acts.className = "sh-acts";
-      if (s.active) {
-        acts.appendChild(mkBtn("✎ modifica", "p", () => { sheetsPending = openPlanEditor; closeSheets(); }));
-      } else {
-        acts.appendChild(mkBtn("↪ attiva", "p", () => mutateSheets((b) => setActiveSheet(b, s.id))));
-      }
-      acts.appendChild(mkBtn("rinomina", "", () => renameSheetPrompt(s)));
-      acts.appendChild(mkBtn("⧉ duplica", "", () =>
-        mutateSheets((b) => s.active
-          ? addSheet(b, { duplicateActive: true })
-          : addSheet(setActiveSheet(b, s.id), { duplicateActive: true }))));
-      if (sums.length > 1) acts.appendChild(mkBtn("rm", "r", () => deleteSheetConfirm(s)));
-      x.appendChild(acts);
-      blk.appendChild(x);
-    }
-    inner.appendChild(blk);
-  }
-
-  inner.appendChild(mkPrompt("›", "tap su una scheda per aprirla"));
-
-  const newrow = document.createElement("div");
-  newrow.className = "sh-newrow";
-  newrow.appendChild(mkNew("nuova", () => mutateSheets((b) => addSheet(b, { duplicateActive: false }))));
-  newrow.appendChild(mkNew("duplica", () => mutateSheets((b) => addSheet(b, { duplicateActive: true }))));
-  newrow.appendChild(mkNew("importa", importSheetPrompt));
-  inner.appendChild(newrow);
-  body.appendChild(inner);
-  a11yRestoreFocus();
-}
-
-// ---- Helper UI/a11y (mkBtn, a11yToggle, a11yRestoreFocus, mkPrompt, mkNew)
-//      estratti in a11y.js ----
-
-function renameSheetPrompt(s) {
-  const name = window.prompt("Nome scheda:", s.name);
-  if (name === null) return;            // annullato
-  const t = name.trim();
-  if (!t) return;                        // vuoto ignorato (coerente con renameSheet)
-  mutateSheets((b) => renameSheet(b, s.id, t));
-}
-
-// Importa una scheda da un codice incollato (utile su mobile, niente console).
-// Accetta sia il codice base64 fornito, sia JSON grezzo; payload = {name, plan}
-// oppure direttamente l'array `plan`. Crea la scheda, la attiva, salva.
-function importSheetPrompt() {
-  const raw = window.prompt("Incolla qui il codice della scheda:");
-  if (raw == null) return;            // annullato
-  const t = raw.trim();
-  if (!t) return;
-  let payload = null;
-  for (const parse of [() => JSON.parse(fromBase64(t)), () => JSON.parse(t)]) {
-    try { const v = parse(); if (v) { payload = v; break; } } catch (_) {}
-  }
-  if (!payload) { alert("Codice non valido: non riesco a leggerlo."); return; }
-  const plan = Array.isArray(payload) ? payload : payload.plan;
-  const name = Array.isArray(payload) ? "Scheda importata" : (payload.name || "Scheda importata");
-  if (!Array.isArray(plan) || plan.length === 0) { alert("Codice non valido: nessun giorno trovato."); return; }
-  mutateSheets((b) => importSheet(b, name, plan));
-  alert(`Importata "${name}" (${plan.length} giorni). Ora è la scheda attiva.`);
-}
-
-function deleteSheetConfirm(s) {
-  if (!window.confirm(`Eliminare "${s.name}"? Verrà cancellato anche lo storico di questa scheda.`)) return;
-  mutateSheets((b) => deleteSheet(b, s.id));
-}
 
 // ---- Menu drawer in fondo: stessa logica history degli overlay. ----
 let drawerOpen = false;
@@ -2535,7 +2377,7 @@ async function boot() {
     if (nutritionOpen) { nutritionOpen = false; renderNutritionOverlay(); }
     if (ctx.planOpen) { ctx.planOpen = false; renderPlanEditor(); }
     if (ctx.calendarOpen) { ctx.calendarOpen = false; renderCalendar(); }
-    if (sheetsOpen) { sheetsOpen = false; renderSheets(); const t = sheetsPending; sheetsPending = null; if (t) t(); }
+    if (ctx.sheetsOpen) { ctx.sheetsOpen = false; renderSheets(); const t = ctx.sheetsPending; ctx.sheetsPending = null; if (t) t(); }
     if (ctx.catalogOpen) { ctx.catalogOpen = false; renderCatalog(); }
     if (ctx.scanOpen) { ctx.scanOpen = false; renderScan(); }
   });
