@@ -1,7 +1,6 @@
 // cues.js — feedback audio/vibrazione per il timer (WebAudio + navigator.vibrate).
-// Il volume viene dalla preferenza utente: per ora via ctx.getTimerVol (registrata
-// da app.js); dopo l'estrazione di local-prefs.js passerà a import diretto.
-import { ctx } from "./app-context.js";
+// Il volume viene dalla preferenza utente (getTimerVol da local-prefs.js).
+import { getTimerVol } from "./local-prefs.js";
 
 let audioCtx = null;
 export function ensureAudio() {
@@ -12,7 +11,7 @@ export function ensureAudio() {
 // viene dalla preferenza utente (getTimerVol, 0–40%): attacco dolce 50ms e
 // coda esponenziale — pensato per non "sparare" in cuffia.
 export function tone(freq, dur = 0.18, after = 0) {
-  const vol = ctx.getTimerVol() / 100;
+  const vol = getTimerVol() / 100;
   if (vol <= 0) return;
   try {
     ensureAudio();

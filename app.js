@@ -2,7 +2,7 @@ import { PLAN } from "./plan.js";
 import { migrate, backfillMuscles, patchPlanV4, patchPlanV5, addExercise, removeExercise, reorderExercise, updateExercise, keepLocalPlan, addDay, renameDay, removeDay, tabMiniLabel } from "./editor.js";
 import {
   isoWeekKey, nextFreeWeekKey, emptyData, ensureWeek, setEntry, getEntry,
-  normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, parsePlateSet, exerciseBar,
+  normalizeEntry, normalizeSupersetEntry, prefillSets, platesPerSide, exerciseBar,
   SupabaseStore, mergeBlobs, ConflictError, AuthError, planIsEmpty, fromBase64,
 } from "./store.js";
 import {
@@ -44,8 +44,12 @@ import {
 } from "./splash.js";
 import { ctx } from "./app-context.js";
 import { ensureAudio, beep, cueWarning, cueCountdown } from "./cues.js";
+import {
+  PENDING_KEY, BAR_KEY, PLATES_KEY, NOTIFY_KEY,
+  bufferEdit, getRest, setRest, getBar, getPlateSet, notifyOn,
+  getTimerVol, setTimerVol, getQuickComments, setQuickComments,
+} from "./local-prefs.js";
 
-const PENDING_KEY = "gymsched_pending"; // local buffer of unsynced edits
 const SEED_URL = "https://xbacco.github.io/gym-schedule/data.json";
 
 // ---- App state ----
@@ -84,7 +88,6 @@ Object.defineProperties(ctx, {
   pusher:         { get: () => pusher,         set: (v) => { pusher = v; },         configurable: true },
 });
 ctx.render = render; // render è una function declaration (hoisted)
-ctx.getTimerVol = getTimerVol; // usato da cues.js (tone) finché resta in app.js
 
 // L'overlay dell'esercizio è registrato come voce di history, così la gesture
 // "indietro" del telefono (swipe dal bordo / tasto back) chiude l'esercizio
@@ -1354,60 +1357,8 @@ function attachDragHandle(row, grip, day) {
   });
 }
 
-// ---- Pending buffer (browser only) ----
-const getPending = () => JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
-const setPending = (arr) => localStorage.setItem(PENDING_KEY, JSON.stringify(arr));
-function bufferEdit(weekKey, day, idx, value) {
-  const p = getPending().filter((e) => !(e.weekKey === weekKey && e.day === day && e.idx === idx));
-  p.push({ weekKey, day, idx, value });
-  setPending(p);
-}
-function applyPending(target) {
-  let d = target;
-  for (const e of getPending()) d = setEntry(d, e.weekKey, e.day, e.idx, e.value, new Date().toISOString());
-  return d;
-}
-
-// ---- Per-exercise rest overrides (browser only) ----
-const REST_KEY = "gymsched_rest";
-const getRestMap = () => JSON.parse(localStorage.getItem(REST_KEY) || "{}");
-function getRest(day, idx, fallback) {
-  const v = getRestMap()[`${day}-${idx}`];
-  return Number.isFinite(v) ? v : fallback;
-}
-function setRest(day, idx, seconds) {
-  const m = getRestMap();
-  m[`${day}-${idx}`] = seconds;
-  localStorage.setItem(REST_KEY, JSON.stringify(m));
-}
-
-// ---- Impostazioni calcolatore dischi (browser only) ----
-const BAR_KEY = "gymsched_bar";
-const PLATES_KEY = "gymsched_plates";
-const getBar = () => { const n = parseFloat(localStorage.getItem(BAR_KEY)); return Number.isFinite(n) && n > 0 ? n : 20; };
-const getPlateSet = () => { const v = parsePlateSet(localStorage.getItem(PLATES_KEY) || ""); return v.length ? v : [20, 15, 10, 5, 2.5, 1.25]; };
-const NOTIFY_KEY = "gymsched_notify";
-function notifyOn() {
-  return localStorage.getItem(NOTIFY_KEY) === "1"
-    && "Notification" in window && Notification.permission === "granted";
-}
-
-// Volume dei suoni timer: 0–40 (%), default 10. 0 = muto (resta la vibrazione).
-const TIMERVOL_KEY = "gymsched_timervol";
-function getTimerVol() {
-  const n = parseInt(localStorage.getItem(TIMERVOL_KEY), 10);
-  return Number.isFinite(n) && n >= 0 && n <= 40 ? n : 10;
-}
-function setTimerVol(v) { localStorage.setItem(TIMERVOL_KEY, String(v)); }
-
-// ---- Commenti veloci (preset, browser only) ----
-const QC_KEY = "gymsched_quickcomments";
-const QC_DEFAULT = ["alzare 1kg", "diminuire leggermente", "ultima reps forzata/sporca"];
-function getQuickComments() {
-  try { const v = JSON.parse(localStorage.getItem(QC_KEY)); if (Array.isArray(v)) return v.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()); } catch (_) {}
-  return QC_DEFAULT.slice();
-}
-function setQuickComments(arr) { localStorage.setItem(QC_KEY, JSON.stringify(arr)); }
+// ---- Preferenze localStorage (pending buffer, rest override, calcolatore
+//      dischi, volume timer, commenti veloci) estratte in local-prefs.js ----
 
 // ---- Cronometro sessione: durata totale dell'allenamento, per (settimana, giorno).
 // Parte al primo recupero avviato del giorno, si ferma quando il giorno è completo.
