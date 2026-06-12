@@ -45,6 +45,7 @@ import { openCatalog, closeCatalog, renderCatalog, openCatalogForm, setDbFilter,
 import { openPlanEditor, closePlanEditor, renderPlanEditor, wireExerciseDialog } from "./plan-editor.js";
 import { openSheets, closeSheets, renderSheets } from "./sheets-ui.js";
 import { openNutrition, closeNutrition, renderNutritionOverlay } from "./nutrition-ui.js";
+import { renderDrawer, wireDrawer } from "./drawer.js";
 
 const SEED_URL = "https://xbacco.github.io/gym-schedule/data.json";
 
@@ -92,6 +93,11 @@ ctx.openCatalog = openCatalog;   // import da catalog-ui.js; lo userà il drawer
 ctx.openPlanEditor = openPlanEditor; // import da plan-editor.js; lo useranno drawer (Ondata 2) e sheets-ui
 ctx.openSheets = openSheets;     // import da sheets-ui.js; lo userà il drawer (Ondata 2)
 ctx.openNutrition = openNutrition; // import da nutrition-ui.js; lo userà il drawer (Ondata 2)
+// openSettings è un let riassegnato in wireSettings() → accessor (getter) così
+// il drawer legge il valore corrente, non il null iniziale.
+Object.defineProperty(ctx, "openSettings", {
+  get: () => openSettings, set: (v) => { openSettings = v; }, configurable: true,
+});
 
 // L'overlay dell'esercizio è registrato come voce di history, così la gesture
 // "indietro" del telefono (swipe dal bordo / tasto back) chiude l'esercizio
@@ -112,43 +118,7 @@ function closeFocus() {
 
 // ---- Calendario allenamenti: overlay estratto in calendar.js ----
 
-// ---- Menu drawer in fondo: stessa logica history degli overlay. ----
-let drawerOpen = false;
-let drawerPending = null; // azione da eseguire dopo che il drawer si è chiuso
-
-function renderDrawer() {
-  const d = document.getElementById("menuDrawer");
-  const scrim = document.getElementById("drawerScrim");
-  d.classList.toggle("open", drawerOpen);
-  d.setAttribute("aria-hidden", drawerOpen ? "false" : "true");
-  document.getElementById("drawerHandle").setAttribute("aria-expanded", String(drawerOpen));
-  scrim.classList.toggle("hidden", !drawerOpen);
-}
-function openDrawer() {
-  if (drawerOpen) return;
-  drawerOpen = true;
-  history.pushState({ gymMenu: true }, "");
-  renderDrawer();
-}
-function closeDrawer() {
-  if (!drawerOpen) return;
-  if (history.state && history.state.gymMenu) history.back(); // → popstate chiude
-  else { drawerOpen = false; renderDrawer(); }
-}
-// Su touch un tap genera un click di compatibilità: aprendo, la maniglia sale
-// (il pannello si espande) e quel click cadrebbe su scrim/voce sottostante
-// richiudendo subito il drawer. preventDefault sul pointerdown non basta su
-// tutti i browser (iOS Safari lo ignora), quindi inghiottiamo ogni click per la
-// durata dell'animazione: il ghost click muore ovunque cada, i tap veri sulle
-// voci arrivano dopo e restano attivi.
-function swallowGhostClick() {
-  const swallow = (e) => { e.stopPropagation(); e.preventDefault(); };
-  document.addEventListener("click", swallow, true);
-  setTimeout(() => document.removeEventListener("click", swallow, true), 400);
-}
-function toggleDrawer() { swallowGhostClick(); drawerOpen ? closeDrawer() : openDrawer(); }
-// Chiude il drawer e, una volta chiuso (history consumata), lancia l'azione scelta.
-function drawerLaunch(fn) { drawerPending = fn; closeDrawer(); }
+// ---- Menu drawer in fondo: overlay estratto in drawer.js ----
 
 // Assegnata in wireSettings(): apre il dialog impostazioni. Vive a livello
 // modulo per essere richiamata dal drawer, ma il corpo gira nello scope di
@@ -2167,39 +2137,6 @@ function wireTimerControls() {
   });
 }
 
-function wireDrawer() {
-  const handle = document.getElementById("drawerHandle");
-  let startY = null, moved = false;
-  handle.addEventListener("pointerdown", (e) => {
-    e.preventDefault(); // niente click di compatibilità: il tap apre il drawer,
-    // il pannello si espande e la maniglia sale; il ghost click cadrebbe sullo
-    // scrim/voce sottostante richiudendo subito il drawer appena aperto.
-    startY = e.clientY; moved = false;
-    handle.setPointerCapture(e.pointerId);
-  });
-  handle.addEventListener("pointermove", (e) => {
-    if (startY === null) return;
-    if (Math.abs(e.clientY - startY) > 8) moved = true;
-  });
-  handle.addEventListener("pointerup", (e) => {
-    if (startY === null) return;
-    const dy = e.clientY - startY;
-    startY = null;
-    if (!moved) { toggleDrawer(); return; }      // tap
-    if (dy < -24 && !drawerOpen) openDrawer();    // trascina su → apre
-    else if (dy > 24 && drawerOpen) closeDrawer(); // trascina giù → chiude
-  });
-  handle.addEventListener("pointercancel", () => { startY = null; moved = false; });
-  document.getElementById("drawerScrim").addEventListener("click", closeDrawer);
-  document.getElementById("drawerPanel").addEventListener("click", (e) => {
-    const b = e.target.closest(".dr-item");
-    if (!b) return;
-    const map = { nutrition: openNutrition, calendar: openCalendar, sheets: openSheets, catalog: openCatalog, settings: openSettings, scan: openScan };
-    const fn = map[b.dataset.act];
-    if (fn) drawerLaunch(fn);
-  });
-}
-
 // ---- Boot ----
 async function boot() {
   localStorage.removeItem("gymsched_token"); // migration cleanup: legacy GitHub PAT
@@ -2339,10 +2276,10 @@ async function boot() {
       else if (openIndex !== null) history.pushState({ gymFocus: true }, "");
       return;
     }
-    if (drawerOpen) {
-      drawerOpen = false;
+    if (ctx.drawerOpen) {
+      ctx.drawerOpen = false;
       renderDrawer();
-      const t = drawerPending; drawerPending = null;
+      const t = ctx.drawerPending; ctx.drawerPending = null;
       if (t) t();
       return;
     }
