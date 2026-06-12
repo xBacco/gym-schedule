@@ -23,7 +23,6 @@ import {
 } from "./session.js";
 import { RestTimer, formatTime, withoutSession, goSlug, VisibleCountdown, normalizeSessionEntry, elapsedMs, sessionState } from "./timer.js";
 import { ScreenWakeLock } from "./wakelock.js";
-import { renderNutritionGuide } from "./nutrition.js";
 import { createPusher } from "./sync.js";
 import { getFx, setFx, applyFx } from "./fx.js";
 import { getTheme, setTheme, applyTheme } from "./theme.js";
@@ -45,6 +44,7 @@ import { openScan, closeScan, renderScan, setScanTab } from "./scan-ui.js";
 import { openCatalog, closeCatalog, renderCatalog, openCatalogForm, setDbFilter, dbCloseModal } from "./catalog-ui.js";
 import { openPlanEditor, closePlanEditor, renderPlanEditor, wireExerciseDialog } from "./plan-editor.js";
 import { openSheets, closeSheets, renderSheets } from "./sheets-ui.js";
+import { openNutrition, closeNutrition, renderNutritionOverlay } from "./nutrition-ui.js";
 
 const SEED_URL = "https://xbacco.github.io/gym-schedule/data.json";
 
@@ -60,6 +60,7 @@ let session = null;        // { user: {id, email}, ... } da Supabase
 let profileStorage = null; // ProfileStorage per la sessione corrente
 let dataVersion = 0;       // optimistic lock version (sostituisce 'sha')
 let planOpen = false;      // overlay editor scheda aperto: logica in plan-editor.js, stato qui per il bridge
+let nutritionOpen = false; // overlay guida alimentazione: logica in nutrition-ui.js, stato qui per il bridge
 
 // Stato del dialog progressione
 let chartExId = null;   // id esercizio mostrato
@@ -69,8 +70,6 @@ let pusher = null;
 
 // Bridge: espone i local di app.js come proprietà vive di ctx, così i moduli
 // estratti leggono/scrivono ctx.<x> senza che app.js cambi i propri riferimenti.
-// I getter sono lazy (arrow): nutritionOpen è dichiarato più sotto (sezione
-// nutrition), ma viene letto solo a runtime (a quel punto inizializzato).
 Object.defineProperties(ctx, {
   data:           { get: () => data,           set: (v) => { data = v; },           configurable: true },
   currentWeek:    { get: () => currentWeek,    set: (v) => { currentWeek = v; },    configurable: true },
@@ -92,6 +91,7 @@ ctx.openScan = openScan;         // import da scan-ui.js; lo userà il drawer (O
 ctx.openCatalog = openCatalog;   // import da catalog-ui.js; lo userà il drawer (Ondata 2)
 ctx.openPlanEditor = openPlanEditor; // import da plan-editor.js; lo useranno drawer (Ondata 2) e sheets-ui
 ctx.openSheets = openSheets;     // import da sheets-ui.js; lo userà il drawer (Ondata 2)
+ctx.openNutrition = openNutrition; // import da nutrition-ui.js; lo userà il drawer (Ondata 2)
 
 // L'overlay dell'esercizio è registrato come voce di history, così la gesture
 // "indietro" del telefono (swipe dal bordo / tasto back) chiude l'esercizio
@@ -108,33 +108,6 @@ function closeFocus() {
   hideFeelAsk();
   if (history.state && history.state.gymFocus) history.back(); // → popstate chiude
   else { openIndex = null; render(); }
-}
-
-// Overlay guida alimentazione: stessa logica history del focus esercizio, così
-// il tasto "indietro" del telefono chiude la guida invece di uscire dall'app.
-let nutritionOpen = false;
-function openNutrition() {
-  nutritionOpen = true;
-  history.pushState({ gymNutrition: true }, "");
-  renderNutritionOverlay();
-}
-function closeNutrition() {
-  if (!nutritionOpen) return;
-  if (history.state && history.state.gymNutrition) history.back(); // → popstate chiude
-  else { nutritionOpen = false; renderNutritionOverlay(); }
-}
-function renderNutritionOverlay() {
-  const ov = document.getElementById("nutritionOverlay");
-  if (!nutritionOpen) {
-    ov.classList.add("hidden");
-    ov.setAttribute("aria-hidden", "true");
-    if (openIndex === null) document.body.style.overflow = "";
-    return;
-  }
-  renderNutritionGuide(document.getElementById("nutritionBody"));
-  ov.classList.remove("hidden");
-  ov.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
 }
 
 // ---- Calendario allenamenti: overlay estratto in calendar.js ----
@@ -2359,7 +2332,7 @@ async function boot() {
     if (openDlg) {
       openDlg.close();
       if (ctx.planOpen) history.pushState({ gymPlan: true }, "");
-      else if (nutritionOpen) history.pushState({ gymNutrition: true }, "");
+      else if (ctx.nutritionOpen) history.pushState({ gymNutrition: true }, "");
       else if (ctx.calendarOpen) history.pushState({ gymCalendar: true }, "");
       else if (ctx.catalogOpen) history.pushState({ gymCatalog: true }, "");
       else if (ctx.scanOpen) history.pushState({ gymScan: true }, "");
@@ -2374,7 +2347,7 @@ async function boot() {
       return;
     }
     if (openIndex !== null) { hideFeelAsk(); openIndex = null; render(); }
-    if (nutritionOpen) { nutritionOpen = false; renderNutritionOverlay(); }
+    if (ctx.nutritionOpen) { ctx.nutritionOpen = false; renderNutritionOverlay(); }
     if (ctx.planOpen) { ctx.planOpen = false; renderPlanEditor(); }
     if (ctx.calendarOpen) { ctx.calendarOpen = false; renderCalendar(); }
     if (ctx.sheetsOpen) { ctx.sheetsOpen = false; renderSheets(); const t = ctx.sheetsPending; ctx.sheetsPending = null; if (t) t(); }
