@@ -21,8 +21,12 @@ test("supabase-client.js importa il bundle locale, non un CDN", () => {
   assert.ok(!/from\s*["']https?:\/\//.test(src), "supabase-client.js importa ancora da un URL");
 });
 
-test("sw.js cacha il bundle vendorizzato e ha bumpato CACHE a v79", () => {
+test("sw.js cacha il bundle vendorizzato e mantiene la CACHE bumpata (≥ v79)", () => {
   const sw = readFileSync(at("../sw.js"), "utf8");
   assert.match(sw, /["']\.\/vendor\/supabase\.js["']/, "ASSETS deve includere ./vendor/supabase.js");
-  assert.match(sw, /const CACHE\s*=\s*["']gymsched-v79["']/, "CACHE deve essere gymsched-v79");
+  // La CACHE va avanti a ogni cambio dell'app-shell (vedi split di app.js):
+  // qui basta garantire che non sia regredita prima del vendoring (v79).
+  const m = sw.match(/const CACHE\s*=\s*["']gymsched-v(\d+)["']/);
+  assert.ok(m, "CACHE deve essere nel formato gymsched-vNN");
+  assert.ok(Number(m[1]) >= 79, `CACHE deve essere ≥ v79 (vendoring), trovato v${m[1]}`);
 });
